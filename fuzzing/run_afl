@@ -1,0 +1,2 @@
+#!/bin/sh
+make -C build && afl_fuzzer/afl/afl-fuzz -i corpus/ -o artifacts/afl -x afl_fuzzer/mj.dict ./afl_fuzzer/build/mjc_instr

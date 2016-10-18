@@ -1,0 +1,11 @@
+afl-g++
+afl-clang
+afl-showmap
+afl-gotcpu
+as
+afl-gcc
+afl-clang++
+afl-fuzz
+afl-tmin
+afl-analyze
+afl-as
