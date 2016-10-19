@@ -9,7 +9,6 @@ set(CMAKE_C_COMPILER clang)
 set(CMAKE_CXX_COMPILER clang++)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-# set(ORIG_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address,undefined -fsanitize-coverage=edge")
 # set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=memory,undefined,safe-stack -fsanitize-coverage=edge,trace-cmp,indirect-calls,8bit-counters") # all options

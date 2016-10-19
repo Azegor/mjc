@@ -30,3 +30,4 @@
 
 # Others
 build/
+*.kdev4

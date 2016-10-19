@@ -8,6 +8,8 @@ project(fuzzmjc_afl)
 set(CMAKE_C_COMPILER ${CMAKE_CURRENT_SOURCE_DIR}/afl/afl-gcc)
 set(CMAKE_CXX_COMPILER ${CMAKE_CURRENT_SOURCE_DIR}/afl/afl-g++)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+
 include(ExternalProject) # load module
 
 # build afl binaries

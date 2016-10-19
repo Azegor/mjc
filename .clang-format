@@ -36,8 +36,8 @@ BreakBeforeBinaryOperators: None
 BreakBeforeBraces: Stroustrup
 BreakBeforeTernaryOperators: true
 BreakConstructorInitializersBeforeComma: false
-BreakAfterJavaFieldAnnotations: false
-BreakStringLiterals: true
+# BreakAfterJavaFieldAnnotations: false
+# BreakStringLiterals: true
 ColumnLimit:     80
 CommentPragmas:  '^ IWYU pragma:'
 ConstructorInitializerAllOnOneLineOrOnePerLine: false
@@ -55,12 +55,12 @@ IncludeCategories:
     Priority:        3
   - Regex:           '.*'
     Priority:        1
-IncludeIsMainRegex: '$'
+# IncludeIsMainRegex: '$'
 IndentCaseLabels: false
 IndentWidth:     2
 IndentWrappedFunctionNames: false
-JavaScriptQuotes: Leave
-JavaScriptWrapImports: true
+# JavaScriptQuotes: Leave
+# JavaScriptWrapImports: true
 KeepEmptyLinesAtTheStartOfBlocks: true
 MacroBlockBegin: ''
 MacroBlockEnd:   ''
@@ -79,7 +79,7 @@ PointerAlignment: Right
 ReflowComments:  true
 SortIncludes:    true
 SpaceAfterCStyleCast: false
-SpaceAfterTemplateKeyword: true
+# SpaceAfterTemplateKeyword: true
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeParens: ControlStatements
 SpaceInEmptyParentheses: false
