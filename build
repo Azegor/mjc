@@ -7,7 +7,7 @@ builddir=${basedir}/builddir
 
 edo() {
     echo "${@}"
-    "${@}"
+    "${@}" || exit 100
 }
 
 _cleanup() {

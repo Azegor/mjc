@@ -10,7 +10,7 @@ compilerpath=${builddir}/${compilername}
 
 edo() {
     echo "${@}"
-    "${@}"
+    "${@}" || exit 100
 }
 
 _run() {
