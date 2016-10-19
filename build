@@ -1,0 +1,37 @@
+#!/bin/sh
+
+scriptpath=$(readlink -f "${0}")
+basedir=$(dirname "${scriptpath}")
+builddir=${basedir}/builddir
+
+
+edo() {
+    echo "${@}"
+    "${@}"
+}
+
+_cleanup() {
+    edo rm -rf "${builddir}"
+}
+
+_configure() {
+    [ ${#} -eq 1 ] || exit 125
+
+    edo mkdir "${builddir}"
+    edo cmake                           \
+        -DCMAKE_BUILD_TYPE="${1}"       \
+        -H"${basedir}"                  \
+        -B"${builddir}"
+}
+
+_compile() {
+    edo make -C"${builddir}"
+}
+
+_main() {
+    _cleanup
+    _configure "${1:-Release}"
+    _compile
+}
+
+_main "${@}"
