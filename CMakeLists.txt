@@ -13,10 +13,11 @@ if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
   endif()
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common")
 #   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address,undefined -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fno-common") # works only with clang
+
+  add_subdirectory(fuzzing)
 endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 add_executable(mjc main.cpp)
 
-add_subdirectory(fuzzing)
