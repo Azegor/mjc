@@ -1,0 +1,24 @@
+#!/bin/sh
+
+scriptpath=$(readlink -f "${0}")
+basedir=$(dirname "${scriptpath}")
+builddir=${basedir}/builddir
+
+compilername=mjc
+compilerpath=${builddir}/${compilername}
+
+
+edo() {
+    echo "${@}"
+    "${@}"
+}
+
+_run() {
+    edo "${compilerpath}" "${@}"
+}
+
+_main() {
+    _run "${@}"
+}
+
+_main "${@}"
