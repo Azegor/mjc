@@ -18,6 +18,9 @@ if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
   add_subdirectory(fuzzing)
 endif()
 
+enable_testing()
+add_subdirectory(test)
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 add_executable(mjc main.cpp)
