@@ -32,3 +32,5 @@
 build/
 builddir/
 *.kdev4
+
+fuzzing/*.sancov
