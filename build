@@ -6,7 +6,7 @@ builddir=${basedir}/builddir
 
 
 edo() {
-    echo "${@}"
+    [ -z ${DEBUG_SCRIPTS} ] || echo "${@}"
     "${@}" || exit 100
 }
 
