@@ -23,5 +23,8 @@ add_subdirectory(test)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
+find_package(Boost COMPONENTS program_options REQUIRED)
+
 add_executable(mjc main.cpp)
 
+target_link_libraries(mjc ${Boost_LIBRARIES})
