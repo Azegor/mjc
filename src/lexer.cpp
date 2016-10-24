@@ -26,8 +26,4 @@
 
 #include "lexer.hpp"
 
-Token Lexer::nextToken()
-{
-  return Token{Token::Type::eof, 0, 0, "EOF"};
-}
-
+Token Lexer::nextToken() { return Token{Token::Type::eof, 0, 0, "EOF"}; }

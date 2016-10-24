@@ -27,8 +27,8 @@
 #ifndef INPUT_FILE_H
 #define INPUT_FILE_H
 
-#include <istream>
 #include <fstream>
+#include <istream>
 
 class InputFile {
 public:

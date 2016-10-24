@@ -38,7 +38,7 @@ class Compiler {
 
 public:
   int echoFile(const std::string &fileName);
-  int lexTest(const std::string& inputFileName);
+  int lexTest(const std::string &inputFileName);
 };
 
 #endif // COMPILER_H
