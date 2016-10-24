@@ -24,44 +24,46 @@
  * SOFTWARE.
  */
 
-#include "compiler.hpp"
+#ifndef INPUT_FILE_H
+#define INPUT_FILE_H
 
+#include <istream>
 #include <fstream>
 
-#include "error.hpp"
-#include "input_file.hpp"
-#include "lexer.hpp"
+class InputFile {
+public:
+  InputFile(std::string file, std::istream *is = nullptr)
+      : fileName(std::move(file)), istream(is) {}
 
-co::color_ostream<std::ostream> Compiler::cl_cout{std::cout};
-co::color_ostream<std::ostream> Compiler::cl_cerr{std::cerr};
+  InputFile(const InputFile &o) = delete;
+  InputFile(InputFile &&o) {
+    fileName = std::move(o.fileName);
+    istream = o.istream;
+    ownsStream = o.ownsStream;
 
-int Compiler::echoFile(const std::string &fileName) {
-  // open file as binary since we don't care about the content
-  std::ifstream inFile(fileName, std::ios::binary);
-  if (!inFile.is_open()) {
-    cl_cerr << co::color(co::red) << co::mode(co::bold) << "error" << co::reset
-            << ": could not read input file" << std::endl;
-    return EXIT_FAILURE;
+    o.istream = nullptr;
+    o.ownsStream = false;
+  };
+
+  ~InputFile() {
+    if (ownsStream)
+      delete istream;
   }
-  std::cout << inFile.rdbuf();
-  return EXIT_SUCCESS;
-}
 
-int Compiler::lexTest(const std::string &inputFileName) {
-  InputFile inputFile(inputFileName);
-  Lexer lexer{inputFile};
-  try {
-    while (true) {
-      Token t = lexer.nextToken();
-      std::cout << t << std::endl;
-      // if EOF print eof-Token, then break
-      if (t.type == Token::Type::eof)
-        break;
+  const std::string &getFilename() const { return fileName; }
+
+  std::istream *getStream() const {
+    if (!istream) {
+      ownsStream = true;
+      istream = new std::ifstream(fileName);
     }
-  } catch (LexError &e) {
-    cl_cerr << co::color(co::red) << co::mode(co::bold)
-            << "error: " << co::reset << e.what() << std::endl;
-    return EXIT_FAILURE;
+    return istream;
   }
-  return EXIT_SUCCESS;
-}
+
+private:
+  std::string fileName;
+  mutable std::istream *istream;
+  mutable bool ownsStream = false;
+};
+
+#endif // INPUT_FILE_H

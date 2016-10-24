@@ -66,12 +66,12 @@ bool parseArguments(int argc, char *argv[]) {
     if (var_map.count("echo")) {
       compilerOptions.echoFile = true;
       Compiler compiler;
-      return compiler.echoFile(inputFile);
+      return compiler.echoFile(compilerOptions.inputFile) == EXIT_SUCCESS;
     }
     if (var_map.count("lextest")) {
       compilerOptions.testLexer = true;
       Compiler compiler;
-      return compiler.lexTest(inputFile);
+      return compiler.lexTest(compilerOptions.inputFile) == EXIT_SUCCESS;
     }
   } catch (bpo::required_option &e) {
     cl_cerr << co::mode(co::bold) << co::color(co::red)

@@ -24,21 +24,10 @@
  * SOFTWARE.
  */
 
-#ifndef COMPILER_H
-#define COMPILER_H
+#include "lexer.hpp"
 
-#include <iostream>
-#include <string>
+Token Lexer::nextToken()
+{
+  return Token{Token::Type::eof, 0, 0, "EOF"};
+}
 
-#include "color_ostream.hpp"
-
-class Compiler {
-  static co::color_ostream<std::ostream> cl_cout;
-  static co::color_ostream<std::ostream> cl_cerr;
-
-public:
-  int echoFile(const std::string &fileName);
-  int lexTest();
-};
-
-#endif // COMPILER_H
