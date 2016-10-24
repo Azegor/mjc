@@ -1,11 +1,11 @@
 #ifndef __COLOR_OSTREAM_HPP__
 #define __COLOR_OSTREAM_HPP__
 
-namespace co {
-
 #include <ostream>
 #include <sstream>
 #include <string>
+
+namespace co {
 
 /** enums for color/display manipulation */
 enum modes {
@@ -194,6 +194,6 @@ color_ostream<OT> make_colored(OT &&ot, int color = regular, int mode = normal,
                                bool enbld = true) {
   return {std::forward<OT>(ot), color, mode, enbld};
 }
+}
 
 #endif // __COLOR_OSTREAM_HPP__
-}

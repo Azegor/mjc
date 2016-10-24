@@ -25,6 +25,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 find_package(Boost COMPONENTS program_options REQUIRED)
 
-add_executable(mjc src/main.cpp)
+add_executable(mjc src/main.cpp src/compiler.cpp)
 
 target_link_libraries(mjc ${Boost_LIBRARIES})
