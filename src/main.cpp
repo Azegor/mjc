@@ -34,8 +34,10 @@ bool parseArguments(int argc, char *argv[]) {
       ("help,h", "print this help message")
       // echo
       ("echo", "print the content of the input file")
-      // input file
-      ("input-file", bpo::value<std::string>(&inputFile), "input file");
+      // input file (named version)
+      ("input-file", bpo::value<std::string>(&inputFile), "input file")
+      // test lexer
+      ("testlexer", "test the lexer by printing out tokens on per line");
 
   bpo::variables_map var_map;
   try {
