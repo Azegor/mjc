@@ -32,13 +32,29 @@
 
 #include "color_ostream.hpp"
 
+struct CompilerOptions {
+  std::string inputFile;
+  bool help = false;
+  bool echoFile = false;
+  bool testLexer = false;
+  bool testParser = false;
+  // ...
+};
+
 class Compiler {
   static co::color_ostream<std::ostream> cl_cout;
   static co::color_ostream<std::ostream> cl_cerr;
 
-public:
+  CompilerOptions options;
+
   int echoFile(const std::string &fileName);
   int lexTest(const std::string &inputFileName);
+
+  void checkOptions();
+
+public:
+  Compiler(const CompilerOptions &opt) : options(opt) { checkOptions(); }
+  int run();
 };
 
 #endif // COMPILER_H

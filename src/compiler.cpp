@@ -65,3 +65,17 @@ int Compiler::lexTest(const std::string &inputFileName) {
   }
   return EXIT_SUCCESS;
 }
+
+void Compiler::checkOptions() {
+  if (!options.echoFile != options.testLexer)
+    throw ArgumentError(
+        "Cannot have Options --echo and --lextext simultaneously");
+}
+
+int Compiler::run() {
+  if (options.echoFile) {
+    echoFile(options.inputFile);
+  } else if (options.testLexer) {
+    lexTest(options.inputFile);
+  }
+}

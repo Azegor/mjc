@@ -12,16 +12,7 @@
 auto cl_cout = co::make_colored(std::cout);
 auto cl_cerr = co::make_colored(std::cerr);
 
-struct CompilerOptions {
-  std::string inputFile;
-  bool help = false;
-  bool echoFile = false;
-  bool testLexer = false;
-  bool testParser = false;
-  // ...
-};
-
-bool parseArguments(int argc, char *argv[]) {
+CompilerOptions parseArguments(int argc, char *argv[]) {
   CompilerOptions compilerOptions;
 
   namespace bpo = boost::program_options;
@@ -65,13 +56,9 @@ bool parseArguments(int argc, char *argv[]) {
     }
     if (var_map.count("echo")) {
       compilerOptions.echoFile = true;
-      Compiler compiler;
-      return compiler.echoFile(compilerOptions.inputFile) == EXIT_SUCCESS;
     }
     if (var_map.count("lextest")) {
       compilerOptions.testLexer = true;
-      Compiler compiler;
-      return compiler.lexTest(compilerOptions.inputFile) == EXIT_SUCCESS;
     }
   } catch (bpo::required_option &e) {
     cl_cerr << co::mode(co::bold) << co::color(co::red)
@@ -82,19 +69,20 @@ bool parseArguments(int argc, char *argv[]) {
             << "error: " << co::reset << e.what() << std::endl;
     exit(EXIT_FAILURE);
   }
-  return true;
+  return compilerOptions;
 }
 
 int main(int argc, char *argv[]) try {
-  if (!parseArguments(argc, argv)) {
-    return EXIT_FAILURE;
-  }
-  return EXIT_SUCCESS;
+  CompilerOptions options = parseArguments(argc, argv);
+  Compiler compiler(options);
+  return compiler.run();
 } catch (std::exception &e) {
   cl_cerr << co::mode(co::bold) << co::color(co::red)
           << "error: " << co::color(co::regular) << e.what() << std::endl;
+  return EXIT_FAILURE;
 } catch (...) {
   // catch any exceptions uncaught until now
   cl_cerr << co::mode(co::bold) << co::color(co::red) << "unknown error!"
           << std::endl;
+  return EXIT_FAILURE;
 }

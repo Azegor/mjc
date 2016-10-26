@@ -29,8 +29,14 @@
 
 #include <stdexcept>
 
-class CompilerError : public std::exception {
-  virtual std::string getErrorLineHighlight() = 0;
+class CompilerError : public std::exception {};
+
+class ArgumentError : public CompilerError {
+  std::string errorMessage;
+
+public:
+  ArgumentError(std::string errorMsg) : errorMessage(std::move(errorMsg)) {}
+  const char *what() const noexcept override { return errorMessage.c_str(); }
 };
 
 class LexError : public CompilerError {
@@ -42,7 +48,7 @@ public:
         errorLine(std::move(errorLine)) {}
   const char *what() const noexcept override { return reason.c_str(); }
 
-  std::string getErrorLineHighlight() override {
+  std::string getErrorLineHighlight() {
     std::string error(errorLine);
     error += '\n';
     for (int i = 1; i < col; ++i)
