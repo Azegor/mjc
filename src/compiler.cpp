@@ -35,20 +35,12 @@
 co::color_ostream<std::ostream> Compiler::cl_cout{std::cout};
 co::color_ostream<std::ostream> Compiler::cl_cerr{std::cerr};
 
-int Compiler::echoFile(const std::string &fileName) {
-  // open file as binary since we don't care about the content
-  std::ifstream inFile(fileName, std::ios::binary);
-  if (!inFile.is_open()) {
-    cl_cerr << co::color(co::red) << co::mode(co::bold) << "error" << co::reset
-            << ": could not read input file" << std::endl;
-    return EXIT_FAILURE;
-  }
-  std::cout << inFile.rdbuf();
+int Compiler::echoFile() {
+  std::cout << inputFile.getStream()->rdbuf();
   return EXIT_SUCCESS;
 }
 
-int Compiler::lexTest(const std::string &inputFileName) {
-  InputFile inputFile(inputFileName);
+int Compiler::lexTest() {
   Lexer lexer{inputFile};
   try {
     while (true) {
@@ -74,8 +66,8 @@ void Compiler::checkOptions() {
 
 int Compiler::run() {
   if (options.echoFile) {
-    echoFile(options.inputFile);
+    echoFile();
   } else if (options.testLexer) {
-    lexTest(options.inputFile);
+    lexTest();
   }
 }

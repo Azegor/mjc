@@ -26,7 +26,7 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
       // echo
       ("echo", "print the content of the input file")
       // input file (named version)
-      ("input-file", bpo::value<std::string>(&compilerOptions.inputFile),
+      ("input-file", bpo::value<std::string>(&compilerOptions.inputFileName),
        "input file")
       // test lexer
       ("lextest", "test the lexer by printing out tokens on per line");

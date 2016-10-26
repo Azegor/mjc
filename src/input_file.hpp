@@ -30,6 +30,8 @@
 #include <fstream>
 #include <istream>
 
+#include "error.hpp"
+
 class InputFile {
 public:
   InputFile(std::string file, std::istream *is = nullptr)
@@ -55,7 +57,12 @@ public:
   std::istream *getStream() const {
     if (!istream) {
       ownsStream = true;
-      istream = new std::ifstream(fileName);
+      std::ifstream *inputFileStream =
+          new std::ifstream(fileName, std::ios::binary);
+      if (!inputFileStream->is_open()) {
+        throw ArgumentError("Cannot open File '" + fileName + "'");
+      }
+      istream = inputFileStream;
     }
     return istream;
   }
