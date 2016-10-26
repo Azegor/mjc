@@ -51,8 +51,7 @@ int Compiler::lexTest() {
         break;
     }
   } catch (LexError &e) {
-    cl_cerr << co::color(co::red) << co::mode(co::bold)
-            << "error: " << co::reset << e.what() << std::endl;
+    e.writeErrorMessage(std::cerr);
     return EXIT_FAILURE;
   }
   return EXIT_SUCCESS;

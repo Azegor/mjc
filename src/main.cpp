@@ -76,6 +76,9 @@ int main(int argc, char *argv[]) try {
   CompilerOptions options = parseArguments(argc, argv);
   Compiler compiler(options);
   return compiler.run();
+} catch (CompilerError &e) {
+  e.writeErrorMessage(std::cerr);
+  return EXIT_FAILURE;
 } catch (std::exception &e) {
   cl_cerr << co::mode(co::bold) << co::color(co::red)
           << "error: " << co::color(co::regular) << e.what() << std::endl;

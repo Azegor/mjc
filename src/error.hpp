@@ -29,7 +29,12 @@
 
 #include <stdexcept>
 
-class CompilerError : public std::exception {};
+#include "color_ostream.hpp"
+
+class CompilerError : public std::exception {
+public:
+  virtual void writeErrorMessage(std::ostream &out) const = 0;
+};
 
 class ArgumentError : public CompilerError {
   std::string errorMessage;
@@ -37,6 +42,11 @@ class ArgumentError : public CompilerError {
 public:
   ArgumentError(std::string errorMsg) : errorMessage(std::move(errorMsg)) {}
   const char *what() const noexcept override { return errorMessage.c_str(); }
+  virtual void writeErrorMessage(std::ostream &out) const override {
+    co::color_ostream<std::ostream> cl_out(out);
+    cl_out << co::color(co::red) << co::mode(co::bold)
+           << "error: " << co::color(co::regular) << errorMessage << std::endl;
+  }
 };
 
 class LexError : public CompilerError {
@@ -48,13 +58,20 @@ public:
         errorLine(std::move(errorLine)) {}
   const char *what() const noexcept override { return reason.c_str(); }
 
-  std::string getErrorLineHighlight() {
-    std::string error(errorLine);
-    error += '\n';
+  virtual void writeErrorMessage(std::ostream &out) const override {
+    co::color_ostream<std::ostream> cl_out(out);
+    cl_out << co::color(co::red) << co::mode(co::bold)
+           << "error: " << co::color(co::regular) << reason << std::endl;
+    writeErrorLineHighlight(out);
+  }
+
+  void writeErrorLineHighlight(std::ostream &out) const {
+    co::color_ostream<std::ostream> cl_out(out);
+    cl_out << errorLine << std::endl;
+    cl_out << co::color(co::green);
     for (int i = 1; i < col; ++i)
-      error += '~';
-    error += '^';
-    return error;
+      cl_out << '~';
+    cl_out << '^';
   }
 };
 
