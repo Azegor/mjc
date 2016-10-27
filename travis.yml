@@ -1,0 +1,9 @@
+language: c++
+
+addons:
+  apt:
+    packages:
+    - libboost-program-options-dev 
+
+install: ./build
+script: (cd builddir && ctest)
