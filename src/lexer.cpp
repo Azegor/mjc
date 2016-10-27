@@ -84,3 +84,85 @@ std::unordered_map<std::string, Token::Type> Lexer::identifierTokens{
     {"try", Token::Type::ReservedKeyword},
     {"volatile", Token::Type::ReservedKeyword},
 };
+
+int Lexer::nextChar() {
+  static enum { normal, cr, lf, crlf } lineState = normal;
+
+  lastChar = input.get();
+
+  // the following is to identify different line breaks correctly
+  // (mixture of CR and LF)
+  switch (lineState) {
+  case normal: {
+    switch (lastChar) {
+    case '\r':
+      lineState = cr;
+      break;
+    case '\n':
+      lineState = lf;
+      break;
+    default:
+      // lineState = normal;
+      break;
+    }
+    break;
+  }
+  case cr: {
+    switch (lastChar) {
+    case '\r':
+      // lineState = cr;
+      goto newline;
+    case '\n':
+      lineState = crlf;
+      break;
+    default:
+      lineState = normal;
+      goto newline;
+    }
+    break;
+  }
+  case lf: {
+    switch (lastChar) {
+    case '\r':
+      lineState = cr;
+      goto newline;
+    case '\n':
+      // lineState = lf;
+      goto newline;
+    default:
+      lineState = normal;
+      goto newline;
+    }
+    break;
+  }
+  case crlf: {
+    switch (lastChar) {
+    case '\r':
+      lineState = cr;
+      goto newline;
+    case '\n':
+      lineState = lf;
+      goto newline;
+    default:
+      lineState = normal;
+      goto newline;
+    }
+    break;
+  }
+  newline:
+    lines.emplace_back();
+    currentLine = &lines.back();
+    if (lastChar != '\r' && lastChar != '\n' && !input.eof())
+      *currentLine += lastChar;
+    column = 1;
+    ++line;
+    return lastChar;
+  } // switch end
+
+  if (lastChar != '\r' && lastChar != '\n' && !input.eof())
+    *currentLine += lastChar;
+  ++column;
+  return lastChar;
+}
+
+Token Lexer::nextToken() { return Token{Token::Type::Eof, 0, 0, "EOF"}; }

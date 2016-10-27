@@ -123,6 +123,45 @@ struct Token {
 class Lexer {
   static std::unordered_map<std::string, Token::Type> identifierTokens;
 
+  std::istream &input;
+
+  int lastChar;
+  std::string tokenString;
+  int line = 1, column = 0;
+  int tokenLine, tokenCol;
+  std::vector<std::string> lines;
+  std::string *currentLine; // pointer to current line in 'lines'
+
+  int nextChar();
+  void appendAndNext() {
+    tokenString += lastChar;
+    nextChar();
+  }
+
+  void initToken() {
+    tokenString.clear();
+    tokenLine = line;
+    tokenCol = column;
+  }
+
+  Token makeToken(Token::Type type) {
+    // implicit: make a copy of 'tokenString' to keep the string's buffer
+    return Token(type, tokenLine, tokenCol, tokenString);
+  }
+
+  [[noreturn]] void error(std::string msg) {
+    finishCurrentLine();
+    throw LexError(line, column, std::move(msg), *currentLine);
+  }
+
+  void finishCurrentLine() {
+    if (!input) // if file open failed, don't try to read!
+      return;
+    while (lastChar = nextChar(),
+           lastChar != '\r' && lastChar != '\n' && !input.eof()) {
+    }
+  }
+
 public:
   Lexer(const InputFile &inputFile) : input(*inputFile.getStream()) {
     if (!input) {
