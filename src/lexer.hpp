@@ -40,6 +40,7 @@ struct Token {
     Eof,
 
     Identifier,
+    Integer,
 
     // -- keywords:
     Boolean,
@@ -148,7 +149,7 @@ struct Token {
     case Type::Identifier:
       o << "identifier " << t.str;
       break;
-    case Type::Int:
+    case Type::Integer:
       o << "integer literal " << t.str;
       break;
     default:

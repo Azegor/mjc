@@ -281,14 +281,14 @@ Token Lexer::readLeadingZeroNumber() {
   if ('0' <= lastChar && lastChar <= '9') {
     errorAtTokenStart("Invalid number with leading zero");
   }
-  return makeToken(Token::Type::Int);
+  return makeToken(Token::Type::Integer);
 }
 
 Token Lexer::readDecNumber() {
   tokenString = lastChar;
   while (std::isdigit(nextChar()))
     tokenString += lastChar;
-  return makeToken(Token::Type::Int);
+  return makeToken(Token::Type::Integer);
 }
 
 Token Lexer::readSlash() { error("readSlash not implemented"); }
