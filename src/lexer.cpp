@@ -26,6 +26,9 @@
 
 #include "lexer.hpp"
 
+#include <string>
+using namespace std::string_literals;
+
 std::unordered_map<std::string, Token::Type> Lexer::identifierTokens{
     // keywords
     {"boolean", Token::Type::Boolean},
@@ -84,6 +87,37 @@ std::unordered_map<std::string, Token::Type> Lexer::identifierTokens{
     {"try", Token::Type::ReservedKeyword},
     {"volatile", Token::Type::ReservedKeyword},
 };
+
+Token::Type Lexer::getSingleCharOpToken(int c) {
+  switch (c) {
+  case '(':
+    return Token::Type::LParen;
+  case ')':
+    return Token::Type::RParen;
+  case '[':
+    return Token::Type::LBracket;
+  case ']':
+    return Token::Type::RBracket;
+  case '{':
+    return Token::Type::LBrace;
+  case '}':
+    return Token::Type::RBrace;
+  case '?':
+    return Token::Type::Questionmark;
+  case ',':
+    return Token::Type::Comma;
+  case '.':
+    return Token::Type::Dot;
+  case ':':
+    return Token::Type::Colon;
+  case ';':
+    return Token::Type::Semicolon;
+  case '~':
+    return Token::Type::Tilde;
+  default:
+    return Token::Type::none;
+  }
+}
 
 int Lexer::nextChar() {
   static enum { normal, cr, lf, crlf } lineState = normal;
@@ -165,4 +199,99 @@ int Lexer::nextChar() {
   return lastChar;
 }
 
-Token Lexer::nextToken() { return Token{Token::Type::Eof, 0, 0, "EOF"}; }
+Token Lexer::nextToken() {
+  // skip all whitespaces
+  while (std::isspace(lastChar))
+    nextChar();
+
+  initToken(); // clear tokenstring, sets line/col to current pos
+
+  // identifiers [_a-zA-Z][_a-zA-Z0-9]*
+  if (std::isalpha(lastChar) || lastChar == '_') {
+    tokenString = lastChar;
+    while (std::isalnum(nextChar()) || lastChar == '_')
+      tokenString += lastChar;
+
+    auto res = identifierTokens.find(tokenString);
+    if (res != identifierTokens.end())
+      return makeToken(res->second);
+    return makeToken(Token::Type::Identifier);
+  }
+
+  // leading 0:
+  if (lastChar == '0')
+    return readLeadingZeroNumber();
+
+  // leading 1-9:
+  if (std::isdigit(lastChar))
+    return readDecNumber();
+
+  //-----------
+  // operators (single or multiple characters)
+  if (lastChar == '/')
+    return readSlash();
+
+  if (lastChar == '*')
+    return readStar();
+
+  if (lastChar == '+')
+    return readPlus();
+
+  if (lastChar == '-')
+    return readMinus();
+
+  if (lastChar == '<')
+    return readLT();
+
+  if (lastChar == '>')
+    return readGT();
+
+  if (lastChar == '&')
+    return readAnd();
+
+  if (lastChar == '|')
+    return readOr();
+
+  // seems to not exist as '~=' variant
+  //   if (lastChar == '~')
+  //     return readTilde();
+
+  if (lastChar == '^')
+    return readCarret();
+
+  if (lastChar == '=')
+    return readEq();
+
+  if (lastChar == '!')
+    return readBang();
+
+  // -----------
+  // end of file
+  if (input.eof())
+    return makeToken(Token::Type::Eof);
+
+  // remaining single characters as tokens (i.e. operator symbols)
+  tokenString = lastChar;
+  int thisChar = lastChar;
+  nextChar(); // eat
+  Token::Type type = getSingleCharOpToken(lastChar);
+  if (type == Token::Type::none) { // illegal character
+    error("Invalid input character: '"s + (char)lastChar + "'");
+  }
+  return makeToken(type);
+}
+
+Token Lexer::readLeadingZeroNumber() {}
+Token Lexer::readDecNumber() {}
+Token Lexer::readSlash() {}
+Token Lexer::readStar() {}
+Token Lexer::readPlus() {}
+Token Lexer::readMinus() {}
+Token Lexer::readLT() {}
+Token Lexer::readGT() {}
+Token Lexer::readAnd() {}
+Token Lexer::readOr() {}
+// Token Lexer::readTilde() {}
+Token Lexer::readCarret() {}
+Token Lexer::readEq() {}
+Token Lexer::readBang() {}

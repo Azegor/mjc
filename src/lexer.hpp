@@ -41,7 +41,7 @@ struct Token {
 
     Identifier,
 
-    // keywords:
+    // -- keywords:
     Boolean,
     Class,
     Else,
@@ -58,13 +58,52 @@ struct Token {
     Void,
     While,
 
-    // operators:
-    LParen,
-    RParen,
+    // -- operators:
+    And,
+    AndAnd,
+    AndEq,
+    Bang,
+    BangEq,
+    Carret,
+    CarretEq,
+    Colon,
+    Comma,
+    Dot,
+    Eq,
+    EqEq,
+    Ge,
+    GeEq,
+    GeGe,
+    GeGeEq,
+    GeGeGe,
+    GeGeGeEq,
     LBrace,
-    RBrace,
     LBracket,
+    LParen,
+    LtEq,
+    LtLt,
+    LtLtEq,
+    Minus,
+    MinusEq,
+    MinusMinus,
+    Or,
+    OrEq,
+    OrOr,
+    Percent,
+    PercentEq,
+    Plus,
+    PlusEq,
+    PlusPlus,
+    Questionmark,
+    RBrace,
     RBracket,
+    RParen,
+    Semicolon,
+    Slash,
+    SlashEq,
+    Star,
+    StarEq,
+    Tilde,
 
     ReservedKeyword,
   };
@@ -132,6 +171,8 @@ class Lexer {
   std::vector<std::string> lines;
   std::string *currentLine; // pointer to current line in 'lines'
 
+  Token::Type getSingleCharOpToken(int c);
+
   int nextChar();
   void appendAndNext() {
     tokenString += lastChar;
@@ -170,6 +211,23 @@ public:
   }
 
   Token nextToken();
+
+private:
+  // Parser helper functions
+  Token readLeadingZeroNumber();
+  Token readDecNumber();
+  Token readSlash();
+  Token readStar();
+  Token readPlus();
+  Token readMinus();
+  Token readLT();
+  Token readGT();
+  Token readAnd();
+  Token readOr();
+  //   Token readTilde(); // seems to not exist as '~=' variant
+  Token readCarret();
+  Token readEq();
+  Token readBang();
 };
 
 #endif // LEXER_H
