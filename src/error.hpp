@@ -52,16 +52,18 @@ public:
 class LexError : public CompilerError {
 public:
   const int line, col;
-  const std::string reason, errorLine;
-  LexError(int line, int col, std::string what, std::string errorLine)
-      : line(line), col(col), reason(std::move(what)),
+  const std::string filename, message, errorLine;
+  LexError(std::string file, int line, int col, std::string what,
+           std::string errorLine)
+      : filename(file), line(line), col(col), message(std::move(what)),
         errorLine(std::move(errorLine)) {}
-  const char *what() const noexcept override { return reason.c_str(); }
+  const char *what() const noexcept override { return message.c_str(); }
 
   virtual void writeErrorMessage(std::ostream &out) const override {
     co::color_ostream<std::ostream> cl_out(out);
-    cl_out << co::color(co::red) << co::mode(co::bold)
-           << "error: " << co::color(co::regular) << reason << std::endl;
+    cl_out << co::mode(co::bold) << filename << ':' << line << ':' << col
+           << ": " << co::color(co::red) << "error: " << co::color(co::regular)
+           << message << std::endl;
     writeErrorLineHighlight(out);
   }
 
@@ -71,7 +73,7 @@ public:
     cl_out << co::color(co::green);
     for (int i = 1; i < col; ++i)
       cl_out << '~';
-    cl_out << '^';
+    cl_out << '^' << std::endl;
   }
 };
 

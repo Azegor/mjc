@@ -191,8 +191,13 @@ class Lexer {
   }
 
   [[noreturn]] void error(std::string msg) {
+    int _line = line, _column = column;
     finishCurrentLine();
-    throw LexError(line, column, std::move(msg), *currentLine);
+    throw LexError(filename, _line, _column, std::move(msg), *currentLine);
+  }
+  [[noreturn]] void errorAtTokenStart(std::string msg) {
+    finishCurrentLine();
+    throw LexError(filename, tokenLine, tokenCol, std::move(msg), *currentLine);
   }
 
   void finishCurrentLine() {
@@ -204,7 +209,9 @@ class Lexer {
   }
 
 public:
-  Lexer(const InputFile &inputFile) : input(*inputFile.getStream()) {
+  Lexer(const InputFile &inputFile)
+      : input(*inputFile.getStream()), filename(inputFile.getFilename()),
+        lines(1), currentLine(&lines.at(0)) {
     if (!input) {
       error(std::string("Broken input stream: ") + std::strerror(errno));
     }

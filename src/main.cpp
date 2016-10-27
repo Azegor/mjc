@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) try {
   return EXIT_FAILURE;
 } catch (std::exception &e) {
   cl_cerr << co::mode(co::bold) << co::color(co::red)
-          << "error: " << co::color(co::regular) << e.what() << std::endl;
+          << "error (std::exception): " << co::color(co::regular) << e.what() << std::endl;
   return EXIT_FAILURE;
 } catch (...) {
   // catch any exceptions uncaught until now
