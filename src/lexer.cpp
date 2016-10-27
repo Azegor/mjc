@@ -275,7 +275,7 @@ Token Lexer::nextToken() {
   return makeToken(type);
 }
 
-Token Lexer::readLeadingZeroNumber() {
+Token Lexer::readLeadingZeroNumber() { // read '0'
   tokenString = '0';
   nextChar();
   if ('0' <= lastChar && lastChar <= '9') {
@@ -284,14 +284,49 @@ Token Lexer::readLeadingZeroNumber() {
   return makeToken(Token::Type::Integer);
 }
 
-Token Lexer::readDecNumber() {
+Token Lexer::readDecNumber() { // read '[1-9][0-9]*'
   tokenString = lastChar;
   while (std::isdigit(nextChar()))
     tokenString += lastChar;
   return makeToken(Token::Type::Integer);
 }
 
-Token Lexer::readSlash() { error("readSlash not implemented"); }
+Token Lexer::readSlash() { // read '/' '/=' '//' '/*'
+  tokenString = '/';
+  if (nextChar() == '/') { // single line comment
+    // read until line break or EOF
+    do {
+      nextChar();
+    } while (lastChar != '\r' && lastChar != '\n' && !input.eof());
+    // eat line break
+    if (!input.eof()) {
+      if (lastChar == '\n' || (lastChar == '\r' && nextChar() == '\n'))
+        nextChar(); // eat '\n'
+      if (!input.eof())
+        return nextToken(); // recursive tail call?
+    } else {
+      return makeToken(Token::Type::Eof);
+    }
+  } else if (lastChar == '*') { // multi line comment
+    nextChar();
+    while (!input.eof()) {
+      if (lastChar == '*') {
+        if (nextChar() == '/') {
+          nextChar();         // eat '/'
+          return nextToken(); // recursive tail call?
+        } else
+          continue; // skip call to nextChar() for cases like '**/'
+      }
+      nextChar();
+    }
+    error("unexpected end of file in multi line comment");
+  } else if (lastChar == '=') {
+    appendAndNext();
+    return makeToken(Token::Type::SlashEq);
+  } else {
+    return makeToken(Token::Type::Slash);
+  }
+}
 
 Token Lexer::readStar() { error("readStar not implemented"); }
 
