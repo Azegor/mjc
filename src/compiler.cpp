@@ -47,7 +47,7 @@ int Compiler::lexTest() {
       Token t = lexer.nextToken();
       std::cout << t << std::endl;
       // if EOF print eof-Token, then break
-      if (t.type == Token::Type::eof)
+      if (t.type == Token::Type::Eof)
         break;
     }
   } catch (LexError &e) {
@@ -58,7 +58,7 @@ int Compiler::lexTest() {
 }
 
 void Compiler::checkOptions() {
-  if (!options.echoFile != options.testLexer)
+  if (options.echoFile == options.testLexer)
     throw ArgumentError(
         "Cannot have Options --echo and --lextext simultaneously");
 }

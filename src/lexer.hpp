@@ -27,15 +27,46 @@
 #ifndef LEXER_H
 #define LEXER_H
 
+#include <cstring>  // for std::strerror
+#include <iostream> // TODO remove
+#include <unordered_map>
+#include <vector>
+
 #include "input_file.hpp"
 
 struct Token {
   enum class Type : int {
     none = 0x0,
-    eof,
-    identifier,
-    integer,
-    // ...
+    Eof,
+
+    Identifier,
+
+    // keywords:
+    Boolean,
+    Class,
+    Else,
+    False,
+    If,
+    Int,
+    New,
+    Null,
+    Public,
+    Return,
+    Static,
+    This,
+    True,
+    Void,
+    While,
+
+    // operators:
+    LParen,
+    RParen,
+    LBrace,
+    RBrace,
+    LBracket,
+    RBracket,
+
+    ReservedKeyword,
   };
 
   // Members
@@ -45,7 +76,7 @@ struct Token {
 
   // Operations
   Token() : Token(Type::none, 0, 0, "") {}
-  Token(Type type) : Token(type, 0, 0, "") {}
+  Token(Type type) : Token(type, 0, 0, "<?>") {}
 
   Token(Type type, int line, int col, std::string tokenString)
       : type(type), line(line), col(col), str(std::move(tokenString)) {}
@@ -75,10 +106,10 @@ struct Token {
 
   friend std::ostream &operator<<(std::ostream &o, const Token &t) {
     switch (t.type) {
-    case Type::identifier:
+    case Type::Identifier:
       o << "identifier " << t.str;
       break;
-    case Type::integer:
+    case Type::Int:
       o << "integer literal " << t.str;
       break;
     default:
@@ -90,10 +121,14 @@ struct Token {
 };
 
 class Lexer {
-  const InputFile &inputFile;
+  static std::unordered_map<std::string, Token::Type> identifierTokens;
 
 public:
-  Lexer(const InputFile &inputFile) : inputFile(inputFile) {}
+  Lexer(const InputFile &inputFile) : input(*inputFile.getStream()) {
+    if (!input) {
+      error(std::string("Broken input stream: ") + std::strerror(errno));
+    }
+  }
 
   Token nextToken();
 };
