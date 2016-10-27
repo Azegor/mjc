@@ -274,7 +274,12 @@ Token Lexer::nextToken() {
   nextChar(); // eat
   Token::Type type = getSingleCharOpToken(thisChar);
   if (type == Token::Type::none) { // illegal character
-    error("Invalid input character: '"s + (char)lastChar + "'");
+    if (std::isspace(thisChar) || std::isprint(thisChar)) {
+      errorAtTokenStart("Invalid input character: '"s + (char)thisChar + "'");
+    }
+    std::stringstream invalidChar;
+    invalidChar << "\\0x" << std::hex << thisChar;
+    errorAtTokenStart("Invalid input character: '"s + invalidChar.str() + "'");
   }
   return makeToken(type);
 }
@@ -304,14 +309,15 @@ Token Lexer::readSlash() { // read '/' '/=' '//' '/*'
     } while (lastChar != '\r' && lastChar != '\n' && !input.eof());
     // eat line break
     if (!input.eof()) {
-      if (lastChar == '\n' || (lastChar == '\r' && nextChar() == '\n'))
+      if (lastChar == '\n' || (lastChar == '\r' && nextChar() == '\n')) {
         nextChar(); // eat '\n'
-      if (!input.eof())
+      }
+      if (!input.eof()) {
         return nextToken(); // recursive tail call?
-    } else {
-      tokenString = "EOF";
-      return makeToken(Token::Type::Eof);
+      }
     }
+    tokenString = "EOF";
+    return makeToken(Token::Type::Eof);
   } else if (lastChar == '*') { // multi line comment
     nextChar();
     while (!input.eof()) {

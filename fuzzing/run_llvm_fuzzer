@@ -1,2 +1,2 @@
 #!/bin/sh
-make -C ../builddir && ASAN_OPTIONS=coverage=1 ./llvm_fuzzer/build/fuzzmjc corpus/ -artifact_prefix=artifacts/llvm/
+make -j5 -C llvm_fuzzer/build && ASAN_OPTIONS=coverage=1 ./llvm_fuzzer/build/fuzzmjc corpus/ -artifact_prefix=artifacts/llvm/

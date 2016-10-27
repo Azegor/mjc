@@ -65,8 +65,9 @@ void Compiler::checkOptions() {
 
 int Compiler::run() {
   if (options.echoFile) {
-    echoFile();
+    return echoFile();
   } else if (options.testLexer) {
-    lexTest();
+    return lexTest();
   }
+  return EXIT_FAILURE;
 }
