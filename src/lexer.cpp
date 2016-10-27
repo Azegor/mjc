@@ -229,42 +229,35 @@ Token Lexer::nextToken() {
 
   //-----------
   // operators (single or multiple characters)
-  if (lastChar == '/')
+  switch (lastChar) {
+  case '/':
     return readSlash();
-
-  if (lastChar == '*')
+  case '*':
     return readStar();
-
-  if (lastChar == '+')
+  case '+':
     return readPlus();
-
-  if (lastChar == '-')
+  case '-':
     return readMinus();
-
-  if (lastChar == '<')
+  case '<':
     return readLT();
-
-  if (lastChar == '>')
+  case '>':
     return readGT();
-
-  if (lastChar == '&')
+  case '&':
     return readAnd();
-
-  if (lastChar == '|')
+  case '|':
     return readOr();
-
   // seems to not exist as '~=' variant
-  //   if (lastChar == '~')
-  //     return readTilde();
-
-  if (lastChar == '^')
+  // case '~':
+  //   return readTilde();
+  case '^':
     return readCarret();
-
-  if (lastChar == '=')
+  case '=':
     return readEq();
-
-  if (lastChar == '!')
+  case '!':
     return readBang();
+  default:
+    break;
+  }
 
   // -----------
   // end of file
@@ -290,21 +283,33 @@ Token Lexer::readLeadingZeroNumber() {
   }
   return makeToken(Token::Type::Int);
 }
+
 Token Lexer::readDecNumber() {
   tokenString = lastChar;
   while (std::isdigit(nextChar()))
     tokenString += lastChar;
   return makeToken(Token::Type::Int);
 }
+
 Token Lexer::readSlash() { error("readSlash not implemented"); }
+
 Token Lexer::readStar() { error("readStar not implemented"); }
+
 Token Lexer::readPlus() { error("readPlus not implemented"); }
+
 Token Lexer::readMinus() { error(" readMinusnot implemented"); }
+
 Token Lexer::readLT() { error("readLT not implemented"); }
+
 Token Lexer::readGT() { error("readGT not implemented"); }
+
 Token Lexer::readAnd() { error("readAnd not implemented"); }
+
 Token Lexer::readOr() { error("readOr not implemented"); }
+
 // Token Lexer::readTilde() { error("not implemented");}
 Token Lexer::readCarret() { error("readCarret not implemented"); }
+
 Token Lexer::readEq() { error("readEq not implemented"); }
+
 Token Lexer::readBang() { error("readBang not implemented"); }
