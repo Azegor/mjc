@@ -27,7 +27,7 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#include <cstring>  // for std::strerror
+#include <cstring> // for std::strerror
 #include <iostream> // TODO remove
 #include <unordered_map>
 #include <vector>
@@ -163,13 +163,14 @@ class Lexer {
   static std::unordered_map<std::string, Token::Type> identifierTokens;
 
   std::istream &input;
+  std::string filename;
 
-  int lastChar;
+  int lastChar = ' '; // space will be immediately consumed
   std::string tokenString;
   int line = 1, column = 0;
   int tokenLine, tokenCol;
   std::vector<std::string> lines;
-  std::string *currentLine; // pointer to current line in 'lines'
+  std::string *currentLine = nullptr; // pointer to current line in 'lines'
 
   Token::Type getSingleCharOpToken(int c);
 
@@ -215,6 +216,7 @@ public:
     if (!input) {
       error(std::string("Broken input stream: ") + std::strerror(errno));
     }
+    nextChar();
   }
 
   Token nextToken();

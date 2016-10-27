@@ -194,15 +194,16 @@ int Lexer::nextChar() {
   } // switch end
 
   if (lastChar != '\r' && lastChar != '\n' && !input.eof())
-    *currentLine += lastChar;
+    currentLine->push_back(lastChar);
   ++column;
   return lastChar;
 }
 
 Token Lexer::nextToken() {
   // skip all whitespaces
-  while (std::isspace(lastChar))
+  while (std::isspace(lastChar)) {
     nextChar();
+  }
 
   initToken(); // clear tokenstring, sets line/col to current pos
 
@@ -274,24 +275,36 @@ Token Lexer::nextToken() {
   tokenString = lastChar;
   int thisChar = lastChar;
   nextChar(); // eat
-  Token::Type type = getSingleCharOpToken(lastChar);
+  Token::Type type = getSingleCharOpToken(thisChar);
   if (type == Token::Type::none) { // illegal character
     error("Invalid input character: '"s + (char)lastChar + "'");
   }
   return makeToken(type);
 }
 
-Token Lexer::readLeadingZeroNumber() {}
-Token Lexer::readDecNumber() {}
-Token Lexer::readSlash() {}
-Token Lexer::readStar() {}
-Token Lexer::readPlus() {}
-Token Lexer::readMinus() {}
-Token Lexer::readLT() {}
-Token Lexer::readGT() {}
-Token Lexer::readAnd() {}
-Token Lexer::readOr() {}
-// Token Lexer::readTilde() {}
-Token Lexer::readCarret() {}
-Token Lexer::readEq() {}
-Token Lexer::readBang() {}
+Token Lexer::readLeadingZeroNumber() {
+  tokenString = '0';
+  nextChar();
+  if ('0' <= lastChar && lastChar <= '9') {
+    errorAtTokenStart("Invalid number with leading zero");
+  }
+  return makeToken(Token::Type::Int);
+}
+Token Lexer::readDecNumber() {
+  tokenString = lastChar;
+  while (std::isdigit(nextChar()))
+    tokenString += lastChar;
+  return makeToken(Token::Type::Int);
+}
+Token Lexer::readSlash() { error("readSlash not implemented"); }
+Token Lexer::readStar() { error("readStar not implemented"); }
+Token Lexer::readPlus() { error("readPlus not implemented"); }
+Token Lexer::readMinus() { error(" readMinusnot implemented"); }
+Token Lexer::readLT() { error("readLT not implemented"); }
+Token Lexer::readGT() { error("readGT not implemented"); }
+Token Lexer::readAnd() { error("readAnd not implemented"); }
+Token Lexer::readOr() { error("readOr not implemented"); }
+// Token Lexer::readTilde() { error("not implemented");}
+Token Lexer::readCarret() { error("readCarret not implemented"); }
+Token Lexer::readEq() { error("readEq not implemented"); }
+Token Lexer::readBang() { error("readBang not implemented"); }
