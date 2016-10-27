@@ -434,9 +434,39 @@ Token Lexer::readBang() { // read '!' '!='
   return makeToken(Token::Type::Bang);
 }
 
-Token Lexer::readAnd() { error("readAnd not implemented"); }
+Token Lexer::readAnd() { // read '&' '&&' '&='
+  tokenString = '&';
+  if (nextChar() == '&') {
+    appendAndNext();
+    return makeToken(Token::Type::AndAnd);
+  }
+  if (lastChar == '=') {
+    appendAndNext();
+    return makeToken(Token::Type::AndEq);
+  }
+  return makeToken(Token::Type::And);
+}
 
-Token Lexer::readOr() { error("readOr not implemented"); }
+Token Lexer::readOr() { // read '|' '||' '|='
+  tokenString = '|';
+  if (nextChar() == '|') {
+    appendAndNext();
+    return makeToken(Token::Type::OrOr);
+  }
+  if (lastChar == '=') {
+    appendAndNext();
+    return makeToken(Token::Type::OrEq);
+  }
+  return makeToken(Token::Type::Or);
+}
 
 // Token Lexer::readTilde() { error("not implemented");}
-Token Lexer::readCarret() { error("readCarret not implemented"); }
+
+Token Lexer::readCarret() { // read '^' '^='
+  tokenString = '^';
+  if (nextChar() == '=') {
+    appendAndNext();
+    return makeToken(Token::Type::CarretEq);
+  }
+  return makeToken(Token::Type::Carret);
+}
