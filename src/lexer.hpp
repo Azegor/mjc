@@ -228,6 +228,7 @@ private:
   inline Token readDecNumber();
   inline Token readSlash();
   inline Token readStar();
+  inline Token readPercent();
   inline Token readPlus();
   inline Token readMinus();
   inline Token readLT();

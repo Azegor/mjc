@@ -234,6 +234,8 @@ Token Lexer::nextToken() {
     return readSlash();
   case '*':
     return readStar();
+  case '%':
+    return readPercent();
   case '+':
     return readPlus();
   case '-':
@@ -328,11 +330,49 @@ Token Lexer::readSlash() { // read '/' '/=' '//' '/*'
   }
 }
 
-Token Lexer::readStar() { error("readStar not implemented"); }
+Token Lexer::readStar() { // read '*' '*='
+  tokenString = '*';
+  if (nextChar() == '=') {
+    appendAndNext();
+    return makeToken(Token::Type::StarEq);
+  }
+  return makeToken(Token::Type::Star);
+}
 
-Token Lexer::readPlus() { error("readPlus not implemented"); }
+Token Lexer::readPercent() { // read '%' '%='
+  tokenString = '%';
+  if (nextChar() == '=') {
+    appendAndNext();
+    return makeToken(Token::Type::PercentEq);
+  }
+  return makeToken(Token::Type::Percent);
+}
 
-Token Lexer::readMinus() { error(" readMinusnot implemented"); }
+Token Lexer::readPlus() { // read '+' '++' '+='
+  tokenString = '+';
+  if (nextChar() == '=') {
+    appendAndNext();
+    return makeToken(Token::Type::PlusEq);
+  }
+  if (lastChar == '+') {
+    appendAndNext();
+    return makeToken(Token::Type::PlusPlus);
+  }
+  return makeToken(Token::Type::Plus);
+}
+
+Token Lexer::readMinus() { // read '-' '--' '-='
+  tokenString = '-';
+  if (nextChar() == '=') {
+    appendAndNext();
+    return makeToken(Token::Type::MinusEq);
+  }
+  if (lastChar == '-') {
+    appendAndNext();
+    return makeToken(Token::Type::MinusMinus);
+  }
+  return makeToken(Token::Type::Minus);
+}
 
 Token Lexer::readLT() { error("readLT not implemented"); }
 
