@@ -72,17 +72,18 @@ struct Token {
     Dot,
     Eq,
     EqEq,
-    Ge,
-    GeEq,
-    GeGe,
-    GeGeEq,
-    GeGeGe,
-    GeGeGeEq,
+    Gt,
+    GtEq,
+    GtGt,
+    GtGtEq,
+    GtGtGt,
+    GtGtGtEq,
     LBrace,
     LBracket,
     LParen,
     LtEq,
     LtLt,
+    Lt,
     LtLtEq,
     Minus,
     MinusEq,
@@ -233,12 +234,12 @@ private:
   inline Token readMinus();
   inline Token readLT();
   inline Token readGT();
+  inline Token readEq();
+  inline Token readBang();
   inline Token readAnd();
   inline Token readOr();
   //  inline Token readTilde(); // seems to not exist as '~=' variant
   inline Token readCarret();
-  inline Token readEq();
-  inline Token readBang();
 };
 
 #endif // LEXER_H

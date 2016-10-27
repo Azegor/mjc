@@ -374,9 +374,65 @@ Token Lexer::readMinus() { // read '-' '--' '-='
   return makeToken(Token::Type::Minus);
 }
 
-Token Lexer::readLT() { error("readLT not implemented"); }
+Token Lexer::readLT() { // read '<' '<=' '<<' '<<='
+  tokenString = '<';
+  if (nextChar() == '=') {
+    appendAndNext();
+    return makeToken(Token::Type::LtEq);
+  }
+  if (lastChar == '<') {
+    appendAndNext();
+    if (lastChar == '=') {
+      appendAndNext();
+      return makeToken(Token::Type::LtLtEq);
+    }
+    return makeToken(Token::Type::LtLt);
+  }
+  return makeToken(Token::Type::Lt);
+}
 
-Token Lexer::readGT() { error("readGT not implemented"); }
+Token Lexer::readGT() { // read '>' '>=' '>>' '>>=' '>>>' '>>>='
+  tokenString = '>';
+  if (nextChar() == '=') {
+    appendAndNext();
+    return makeToken(Token::Type::GtEq);
+  }
+  if (lastChar == '>') {
+    appendAndNext();
+    if (lastChar == '=') {
+      appendAndNext();
+      return makeToken(Token::Type::GtGtEq);
+    }
+    if (lastChar == '>') {
+      appendAndNext();
+      if (lastChar == '=') {
+        appendAndNext();
+        return makeToken(Token::Type::GtGtGtEq);
+      }
+      return makeToken(Token::Type::GtGtGt);
+    }
+    return makeToken(Token::Type::GtGt);
+  }
+  return makeToken(Token::Type::Gt);
+}
+
+Token Lexer::readEq() { // read '=' '=='
+  tokenString = '=';
+  if (nextChar() == '=') {
+    appendAndNext();
+    return makeToken(Token::Type::EqEq);
+  }
+  return makeToken(Token::Type::Eq);
+}
+
+Token Lexer::readBang() { // read '!' '!='
+  tokenString = '!';
+  if (nextChar() == '=') {
+    appendAndNext();
+    return makeToken(Token::Type::BangEq);
+  }
+  return makeToken(Token::Type::Bang);
+}
 
 Token Lexer::readAnd() { error("readAnd not implemented"); }
 
@@ -384,7 +440,3 @@ Token Lexer::readOr() { error("readOr not implemented"); }
 
 // Token Lexer::readTilde() { error("not implemented");}
 Token Lexer::readCarret() { error("readCarret not implemented"); }
-
-Token Lexer::readEq() { error("readEq not implemented"); }
-
-Token Lexer::readBang() { error("readBang not implemented"); }
