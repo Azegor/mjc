@@ -74,7 +74,7 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) try {
   CompilerOptions options = parseArguments(argc, argv);
-  Compiler compiler(options);
+  Compiler compiler(InputFile{options.inputFileName}, options);
   return compiler.run();
 } catch (CompilerError &e) {
   e.writeErrorMessage(std::cerr);

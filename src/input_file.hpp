@@ -35,7 +35,7 @@
 class InputFile {
 public:
   InputFile(std::string file, std::istream *is = nullptr)
-      : fileName(std::move(file)), istream(is) {}
+      : fileName(std::move(file)), istream(is), ownsStream(is != nullptr) {}
 
   InputFile(const InputFile &o) = delete;
   InputFile(InputFile &&o) {

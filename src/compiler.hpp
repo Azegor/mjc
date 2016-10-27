@@ -55,8 +55,8 @@ class Compiler {
   void checkOptions();
 
 public:
-  Compiler(const CompilerOptions &opt)
-      : options(opt), inputFile(options.inputFileName) {
+  Compiler(InputFile inputFile, CompilerOptions &opt)
+      : inputFile(std::move(inputFile)), options(std::move(opt)) {
     checkOptions();
   }
   int run();

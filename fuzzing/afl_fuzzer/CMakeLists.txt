@@ -22,8 +22,11 @@ ExternalProject_Add(AFL
   TEST_COMMAND :
 )
 
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-sanitize=all -fno-sanitize-coverage=edge,trace-cmp,indirect-calls,8bit-counters")
+find_package(Boost COMPONENTS program_options REQUIRED)
 
 # create instrumented binary for afl
-add_executable(mjc_instr ../../main.cpp)
+add_executable(mjc_instr ../../src/main.cpp ../../src/compiler.cpp ../../src/lexer.cpp)
+
+target_link_libraries(mjc_instr ${Boost_LIBRARIES})
+
 add_dependencies(mjc_instr AFL)
