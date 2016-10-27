@@ -263,8 +263,10 @@ Token Lexer::nextToken() {
 
   // -----------
   // end of file
-  if (input.eof())
+  if (input.eof()) {
+    tokenString = "EOF";
     return makeToken(Token::Type::Eof);
+  }
 
   // remaining single characters as tokens (i.e. operator symbols)
   tokenString = lastChar;
@@ -307,6 +309,7 @@ Token Lexer::readSlash() { // read '/' '/=' '//' '/*'
       if (!input.eof())
         return nextToken(); // recursive tail call?
     } else {
+      tokenString = "EOF";
       return makeToken(Token::Type::Eof);
     }
   } else if (lastChar == '*') { // multi line comment
