@@ -224,20 +224,20 @@ public:
 
 private:
   // Parser helper functions
-  Token readLeadingZeroNumber();
-  Token readDecNumber();
-  Token readSlash();
-  Token readStar();
-  Token readPlus();
-  Token readMinus();
-  Token readLT();
-  Token readGT();
-  Token readAnd();
-  Token readOr();
-  //   Token readTilde(); // seems to not exist as '~=' variant
-  Token readCarret();
-  Token readEq();
-  Token readBang();
+  inline Token readLeadingZeroNumber();
+  inline Token readDecNumber();
+  inline Token readSlash();
+  inline Token readStar();
+  inline Token readPlus();
+  inline Token readMinus();
+  inline Token readLT();
+  inline Token readGT();
+  inline Token readAnd();
+  inline Token readOr();
+  //  inline Token readTilde(); // seems to not exist as '~=' variant
+  inline Token readCarret();
+  inline Token readEq();
+  inline Token readBang();
 };
 
 #endif // LEXER_H
