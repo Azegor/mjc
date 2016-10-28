@@ -1,9 +1,18 @@
 language: c++
 
+compiler: 
+  - gcc
+
+env: COMPILER=g++-6
+
 addons:
   apt:
+    sources: 
+    - ubuntu-toolchain-r-test
     packages:
     - libboost-program-options-dev 
+    - gcc-6
+    - g++-6
 
 install: ./build
 script: (cd builddir && ctest)
