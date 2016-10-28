@@ -27,12 +27,12 @@
 #ifndef LEXER_H
 #define LEXER_H
 
+#include <cassert>
 #include <cstring> // for std::strerror
 #include <deque>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <cassert>
 using namespace std::string_literals;
 
 #include "error.hpp"
@@ -248,6 +248,13 @@ class Lexer {
   std::string filename;
 
   int lastChar;
+  // input stream buffer
+  std::vector<char> buffer;
+  static constexpr const int maxBufferSize = 4 * 1024;
+  int curBufferPos = 0;
+  int curBufferSize = 0;
+  bool streamIsEof = false;
+
   std::string tokenString;
   int line = 1, column = 0; // column is 0 since constructor calls nextChar()
   int tokenLine, tokenCol;
@@ -293,12 +300,27 @@ class Lexer {
   }
 
 public:
+  void readIntoBuffer() {
+    input.read(&buffer[0], maxBufferSize);
+    streamIsEof = input.eof();
+    curBufferSize = input.gcount();
+    curBufferPos = 0;
+    if (streamIsEof)
+    {
+      buffer[curBufferSize] = EOF; // TODO: can this write beyond the end of the buffer?
+    }
+  }
+
+  bool isEof() const { return streamIsEof && (curBufferPos >= curBufferSize); }
+
   Lexer(const InputFile &inputFile)
-      : input(*inputFile.getStream()), filename(inputFile.getFilename()) {
+      : input(*inputFile.getStream()), filename(inputFile.getFilename()),
+        buffer(maxBufferSize, '\0') {
     if (!input) {
       error(std::string("Broken input stream: ") + std::strerror(errno));
     }
     lineStartFileOffsets.push_back(0);
+    readIntoBuffer();
     nextChar();
   }
 

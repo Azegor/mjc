@@ -268,7 +268,12 @@ int Lexer::nextChar() {
     ++column; // add extra space after tab, since they are printes as two spaces
   }
 
-  lastChar = input.get();
+  if (curBufferPos == curBufferSize && !isEof())
+  {
+    readIntoBuffer();
+  }
+
+  lastChar = static_cast<int>(buffer[curBufferPos++]);
 
   // the following is to identify different line breaks correctly
   // (mixture of CR and LF)
@@ -449,7 +454,7 @@ Token Lexer::readNextToken() {
 
   // -----------
   // end of file
-  if (input.eof()) {
+  if (isEof()) {
     tokenString = "EOF";
     return makeToken(Token::Type::Eof);
   }
@@ -473,7 +478,7 @@ bool Lexer::skipCommentsAndWhitespaces() {
       initToken();             // in case we have a '/?' operator
       if (nextChar() == '*') { // multi line comment
         nextChar();
-        while (likely(!input.eof())) {
+        while (likely(!isEof())) {
           if (unlikely(lastChar & 0b1000'0000)) {
             invalidCharError(lastChar);
           }
