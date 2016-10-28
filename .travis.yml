@@ -14,5 +14,5 @@ addons:
     - gcc-6
     - g++-6
 
-install: ./build
+install: if [ "$CXX" = "g++" ]; then export CXX="g++-6" CC="gcc-6"; fi ; ./build
 script: (cd builddir && ctest)
