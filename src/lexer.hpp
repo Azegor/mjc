@@ -40,7 +40,7 @@ struct Token {
     Eof,
 
     Identifier,
-    Integer,
+    IntLiteral,
 
     // -- keywords:
     Boolean,
@@ -60,13 +60,13 @@ struct Token {
     While,
 
     // -- operators:
-    And,
-    AndAnd,
-    AndEq,
+    Amp,
+    AmpAmp,
+    AmpEq,
     Bang,
     BangEq,
-    Carret,
-    CarretEq,
+    Caret,
+    CaretEq,
     Colon,
     Comma,
     Dot,
@@ -88,15 +88,15 @@ struct Token {
     Minus,
     MinusEq,
     MinusMinus,
-    Or,
-    OrEq,
-    OrOr,
+    VBar,
+    VBarEq,
+    VBarVBar,
     Percent,
     PercentEq,
     Plus,
     PlusEq,
     PlusPlus,
-    Questionmark,
+    QMark,
     RBrace,
     RBracket,
     RParen,
@@ -150,7 +150,7 @@ struct Token {
     case Type::Identifier:
       o << "identifier " << t.str;
       break;
-    case Type::Integer:
+    case Type::IntLiteral:
       o << "integer literal " << t.str;
       break;
     default:
@@ -243,10 +243,10 @@ private:
   inline Token readGT();
   inline Token readEq();
   inline Token readBang();
-  inline Token readAnd();
-  inline Token readOr();
+  inline Token readAmp();
+  inline Token readVBar();
   //  inline Token readTilde(); // seems to not exist as '~=' variant
-  inline Token readCarret();
+  inline Token readCaret();
 };
 
 #endif // LEXER_H

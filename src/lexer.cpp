@@ -103,7 +103,7 @@ Token::Type Lexer::getSingleCharOpToken(int c) {
   case '}':
     return Token::Type::RBrace;
   case '?':
-    return Token::Type::Questionmark;
+    return Token::Type::QMark;
   case ',':
     return Token::Type::Comma;
   case '.':
@@ -242,14 +242,14 @@ Token Lexer::nextToken() {
   case '>':
     return readGT();
   case '&':
-    return readAnd();
+    return readAmp();
   case '|':
-    return readOr();
+    return readVBar();
   // seems to not exist as '~=' variant
   // case '~':
   //   return readTilde();
   case '^':
-    return readCarret();
+    return readCaret();
   case '=':
     return readEq();
   case '!':
@@ -286,14 +286,14 @@ Token Lexer::readLeadingZeroNumber() { // read '0'
   if ('0' <= lastChar && lastChar <= '9') {
     errorAtTokenStart("Invalid number with leading zero");
   }
-  return makeToken(Token::Type::Integer);
+  return makeToken(Token::Type::IntLiteral);
 }
 
 Token Lexer::readDecNumber() { // read '[1-9][0-9]*'
   tokenString = lastChar;
   while (std::isdigit(nextChar()))
     tokenString += lastChar;
-  return makeToken(Token::Type::Integer);
+  return makeToken(Token::Type::IntLiteral);
 }
 
 Token Lexer::readSlash() { // read '/' '/=' '//' '/*'
@@ -439,39 +439,39 @@ Token Lexer::readBang() { // read '!' '!='
   return makeToken(Token::Type::Bang);
 }
 
-Token Lexer::readAnd() { // read '&' '&&' '&='
+Token Lexer::readAmp() { // read '&' '&&' '&='
   tokenString = '&';
   if (nextChar() == '&') {
     appendAndNext();
-    return makeToken(Token::Type::AndAnd);
+    return makeToken(Token::Type::AmpAmp);
   }
   if (lastChar == '=') {
     appendAndNext();
-    return makeToken(Token::Type::AndEq);
+    return makeToken(Token::Type::AmpEq);
   }
-  return makeToken(Token::Type::And);
+  return makeToken(Token::Type::Amp);
 }
 
-Token Lexer::readOr() { // read '|' '||' '|='
+Token Lexer::readVBar() { // read '|' '||' '|='
   tokenString = '|';
   if (nextChar() == '|') {
     appendAndNext();
-    return makeToken(Token::Type::OrOr);
+    return makeToken(Token::Type::VBarVBar);
   }
   if (lastChar == '=') {
     appendAndNext();
-    return makeToken(Token::Type::OrEq);
+    return makeToken(Token::Type::VBarEq);
   }
-  return makeToken(Token::Type::Or);
+  return makeToken(Token::Type::VBar);
 }
 
 // Token Lexer::readTilde() { error("not implemented");}
 
-Token Lexer::readCarret() { // read '^' '^='
+Token Lexer::readCaret() { // read '^' '^='
   tokenString = '^';
   if (nextChar() == '=') {
     appendAndNext();
-    return makeToken(Token::Type::CarretEq);
+    return makeToken(Token::Type::CaretEq);
   }
-  return makeToken(Token::Type::Carret);
+  return makeToken(Token::Type::Caret);
 }
