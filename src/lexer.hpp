@@ -27,7 +27,7 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#include <cstring> // for std::strerror
+#include <cstring>  // for std::strerror
 #include <iostream> // TODO remove
 #include <unordered_map>
 #include <vector>
@@ -167,12 +167,11 @@ class Lexer {
   std::istream &input;
   std::string filename;
 
-  int lastChar = ' '; // space will be immediately consumed
+  int lastChar;
   std::string tokenString;
-  int line = 1, column = 0;
+  int line = 1, column = 0; // column is 0 since constructor calls nextChar()
   int tokenLine, tokenCol;
-  std::vector<std::string> lines;
-  std::string *currentLine = nullptr; // pointer to current line in 'lines'
+  int currentLineFileOffset = 0;
 
   Token::Type getSingleCharOpToken(int c);
 
@@ -195,26 +194,34 @@ class Lexer {
 
   [[noreturn]] void error(std::string msg) {
     int _line = line, _column = column;
-    finishCurrentLine();
-    throw LexError(filename, _line, _column, std::move(msg), *currentLine);
+    throw LexError(filename, _line, _column, std::move(msg), getCurrentLineFromInput());
   }
   [[noreturn]] void errorAtTokenStart(std::string msg) {
-    finishCurrentLine();
-    throw LexError(filename, tokenLine, tokenCol, std::move(msg), *currentLine);
+    throw LexError(filename, tokenLine, tokenCol, std::move(msg), getCurrentLineFromInput());
   }
 
-  void finishCurrentLine() {
-    if (!input) // if file open failed, don't try to read!
-      return;
-    while (lastChar = nextChar(),
-           lastChar != '\r' && lastChar != '\n' && !input.eof()) {
+  std::string getCurrentLineFromInput() {
+    int oldPos = input.tellg();
+    input.seekg(currentLineFileOffset);
+    std::string res;
+    int c = input.get();
+    constexpr int maxLineLength = 1024;
+    int lineLength = 0;
+    while (c != '\r' && c != '\n' && ++lineLength < maxLineLength) {
+      res.push_back(c);
+      c = input.get();
     }
+    if (lineLength == maxLineLength) {
+      res += "...";
+    }
+    input.seekg(oldPos);
+    return res;
   }
 
 public:
   Lexer(const InputFile &inputFile)
-      : input(*inputFile.getStream()), filename(inputFile.getFilename()),
-        lines(1), currentLine(&lines.at(0)) {
+      : input(*inputFile.getStream()), filename(inputFile.getFilename())
+  {
     if (!input) {
       error(std::string("Broken input stream: ") + std::strerror(errno));
     }

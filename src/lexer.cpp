@@ -184,17 +184,14 @@ int Lexer::nextChar() {
     break;
   }
   newline:
-    lines.emplace_back();
-    currentLine = &lines.back();
-    if (lastChar != '\r' && lastChar != '\n' && !input.eof())
-      *currentLine += lastChar;
     column = 1;
     ++line;
+
+    currentLineFileOffset = input.tellg() - static_cast<std::streamoff>(1);
+
     return lastChar;
   } // switch end
 
-  if (lastChar != '\r' && lastChar != '\n' && !input.eof())
-    currentLine->push_back(lastChar);
   ++column;
   return lastChar;
 }
@@ -270,17 +267,16 @@ Token Lexer::nextToken() {
 
   // remaining single characters as tokens (i.e. operator symbols)
   tokenString = lastChar;
-  int thisChar = lastChar;
-  nextChar(); // eat
-  Token::Type type = getSingleCharOpToken(thisChar);
+  Token::Type type = getSingleCharOpToken(lastChar);
   if (type == Token::Type::none) { // illegal character
-    if (std::isspace(thisChar) || std::isprint(thisChar)) {
-      errorAtTokenStart("Invalid input character: '"s + (char)thisChar + "'");
+    if (std::isspace(lastChar) || std::isprint(lastChar)) {
+      errorAtTokenStart("Invalid input character: '"s + (char)lastChar + "'");
     }
     std::stringstream invalidChar;
-    invalidChar << "\\0x" << std::hex << thisChar;
+    invalidChar << "\\0x" << std::hex << lastChar;
     errorAtTokenStart("Invalid input character: '"s + invalidChar.str() + "'");
   }
+  nextChar(); // eat
   return makeToken(type);
 }
 

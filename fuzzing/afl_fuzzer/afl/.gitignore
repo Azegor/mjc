@@ -9,3 +9,5 @@ afl-fuzz
 afl-tmin
 afl-analyze
 afl-as
+afl-clang-fast
+afl-clang-fast++
