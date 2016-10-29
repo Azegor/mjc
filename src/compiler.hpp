@@ -53,11 +53,15 @@ class Compiler {
   int lexTest();
 
   void checkOptions();
+  bool sanityChecks();
 
 public:
   Compiler(InputFile inputFile, CompilerOptions &opt)
-      : inputFile(std::move(inputFile)), options(std::move(opt)) {
+      : options(std::move(opt)), inputFile(std::move(inputFile)) {
     checkOptions();
+    if (!sanityChecks()) {
+      exit(EXIT_FAILURE);
+    }
   }
   int run();
 };

@@ -28,6 +28,8 @@
 
 #include <fstream>
 
+#include <fcntl.h>
+
 #include "error.hpp"
 #include "input_file.hpp"
 #include "lexer.hpp"
@@ -45,11 +47,12 @@ int Compiler::lexTest() {
   try {
     while (true) {
       Token t = lexer.nextToken();
-      std::cout << t << std::endl;
+      std::cout << t << '\n';
       // if EOF print eof-Token, then break
       if (t.type == Token::Type::Eof)
         break;
     }
+    std::cout << std::flush;
   } catch (LexError &e) {
     e.writeErrorMessage(std::cerr);
     return EXIT_FAILURE;
@@ -71,3 +74,5 @@ int Compiler::run() {
   }
   return EXIT_FAILURE;
 }
+
+bool Compiler::sanityChecks() { return std::cout.good() && std::cerr.good(); }
