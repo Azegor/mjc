@@ -29,6 +29,7 @@
 
 #include <fstream>
 #include <istream>
+#include <memory>
 
 #include "error.hpp"
 
@@ -48,8 +49,9 @@ public:
   };
 
   ~InputFile() {
-    if (ownsStream)
+    if (ownsStream) {
       delete istream;
+    }
   }
 
   const std::string &getFilename() const { return fileName; }
@@ -57,12 +59,12 @@ public:
   std::istream *getStream() const {
     if (!istream) {
       ownsStream = true;
-      std::ifstream *inputFileStream =
-          new std::ifstream(fileName, std::ios::binary);
+      auto inputFileStream =
+          std::make_unique<std::ifstream>(fileName, std::ios::binary);
       if (!inputFileStream->is_open()) {
         throw ArgumentError("Cannot open File '" + fileName + "'");
       }
-      istream = inputFileStream;
+      istream = inputFileStream.release();
     }
     return istream;
   }
