@@ -38,6 +38,7 @@ struct CompilerOptions {
   bool help = false;
   bool echoFile = false;
   bool testLexer = false;
+  bool fuzzLexer = false;
   bool testParser = false;
   // ...
 };
@@ -51,6 +52,7 @@ class Compiler {
 
   int echoFile();
   int lexTest();
+  int lexFuzz();
 
   void checkOptions();
   bool sanityChecks();

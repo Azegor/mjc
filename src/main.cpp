@@ -29,7 +29,9 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
       ("input-file", bpo::value<std::string>(&compilerOptions.inputFileName),
        "input file")
       // test lexer
-      ("lextest", "test the lexer by printing out tokens on per line");
+      ("lextest", "test the lexer by printing out tokens on per line")
+      // fuzz lexer
+      ("lexfuzz", "fuzz lexer, no output");
 
   bpo::variables_map var_map;
   try {
@@ -59,6 +61,9 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
     }
     if (var_map.count("lextest")) {
       compilerOptions.testLexer = true;
+    }
+    if (var_map.count("lexfuzz")) {
+      compilerOptions.fuzzLexer = true;
     }
   } catch (bpo::required_option &e) {
     cl_cerr << co::mode(co::bold) << co::color(co::red)

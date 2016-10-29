@@ -60,10 +60,27 @@ int Compiler::lexTest() {
   return EXIT_SUCCESS;
 }
 
+int Compiler::lexFuzz() {
+  Lexer lexer{inputFile};
+  try {
+    while (lexer.nextToken().type != Token::Type::Eof) {
+    }
+  } catch (LexError &e) {
+    return EXIT_FAILURE;
+  }
+  return EXIT_SUCCESS;
+}
+
+int exclusiveOptionsSum(bool b) { return b ? 1 : 0; }
+
+template <typename... Args> int exclusiveOptionsSum(bool b, Args... args) {
+  return exclusiveOptionsSum(args...) + (b ? 1 : 0);
+}
+
 void Compiler::checkOptions() {
-  if (options.echoFile == options.testLexer)
+  if (exclusiveOptionsSum(options.echoFile, options.testLexer, options.fuzzLexer) > 1)
     throw ArgumentError(
-        "Cannot have Options --echo and --lextext simultaneously");
+        "Cannot have Options --echo, --lextext or --lexfuzz simultaneously");
 }
 
 int Compiler::run() {
@@ -71,6 +88,8 @@ int Compiler::run() {
     return echoFile();
   } else if (options.testLexer) {
     return lexTest();
+  } else if (options.fuzzLexer) {
+    return lexFuzz();
   }
   return EXIT_FAILURE;
 }

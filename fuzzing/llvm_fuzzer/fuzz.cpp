@@ -16,7 +16,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
   std::istringstream input(std::string(char_data, size));
 
   CompilerOptions options;
-  options.testLexer = true; // Modify Options here by hand
+  options.fuzzLexer = true; // Modify Options here by hand
   options.inputFileName = "<internal>";
   Compiler compiler{InputFile{"<internal>", &input}, options};
 
