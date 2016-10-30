@@ -191,6 +191,7 @@ enum {
 "--"   { return TOK_OP; }
 "-"    { return TOK_OP; }
 "."    { return TOK_OP; }
+","    { return TOK_OP; }
 "/="   { return TOK_OP; }
 "/"    { return TOK_OP; }
 ":"    { return TOK_OP; }
@@ -270,9 +271,12 @@ int main(int argc, char **argv)
         printf ("identifier %s\n", t_str);
       } else if (t == TOK_ENDCOMMENT) {
         printf("*\n/\n");
-      }else if (t == TOK_EOF) {
+      } else if (t == TOK_EOF) {
         printf ("EOF\n");
         break;
+      } else if (t == TOK_OTHER) {
+        printf("error: %s\n", t_str);
+        return -1;
       } else {
         printf ("%s\n", t_str);
       }
