@@ -196,9 +196,21 @@ int Lexer::nextChar() {
   return lastChar;
 }
 
+static bool isSpace(int c) {
+  switch (c) {
+  case ' ':
+  case '\r':
+  case '\n':
+  case '\t':
+    return true;
+  default:
+    return false;
+  }
+}
+
 Token Lexer::nextToken() {
   // skip all whitespaces
-  while (std::isspace(lastChar)) {
+  while (isSpace(lastChar)) {
     nextChar();
   }
 
