@@ -21,7 +21,7 @@ if [[ ${compiler_retval} -ne 0 ]]; then
   fi
 
   if [[ ${lexer_retval} -eq 0 ]]; then
-    echo "ERROR: Compiler returned ${compiler_retval} but Lexer ${lexer_letval}"
+    echo "ERROR: Compiler returned ${compiler_retval} but Lexer returned ${lexer_retval}"
     err=true
   fi
 
