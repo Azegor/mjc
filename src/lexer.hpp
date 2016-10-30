@@ -206,7 +206,7 @@ class Lexer {
 
   [[noreturn]] void invalidCharError(char errorChar) {
     if (std::isspace(errorChar) || std::isprint(errorChar)) {
-      errorAtTokenStart("Invalid input character: '"s + (char)errorChar + "'");
+      errorAtTokenStart("Invalid input character: '"s + errorChar + "'");
     }
     std::stringstream invalidChar;
     invalidChar << "\\0x" << std::hex << errorChar;
