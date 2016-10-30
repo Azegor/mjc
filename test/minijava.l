@@ -268,25 +268,21 @@ int main(int argc, char **argv)
         printf ("integer literal %s\n", t_str);
       } else if (t == TOK_IDENT) {
         printf ("identifier %s\n", t_str);
-      } else if (t == TOK_EOF) {
+      } else if (t == TOK_ENDCOMMENT) {
+        printf("*\n/\n");
+      }else if (t == TOK_EOF) {
         printf ("EOF\n");
         break;
-      }else {
+      } else {
         printf ("%s\n", t_str);
       }
     } else {
       if (t == TOK_EOF) {
         printf ("error\n");
         return -1;
+      } else if (t == TOK_ENDCOMMENT) {
+        in_comment = 0;
       }
-    }
-
-    if (t == TOK_ENDCOMMENT) {
-      if (!in_comment) {
-        printf ("error\n");
-        return -1;
-      }
-      in_comment = 0;
     }
   }
 
