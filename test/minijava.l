@@ -225,7 +225,7 @@ enum {
 "|"    { return TOK_OP; }
 "/*"   { return TOK_STARTCOMMENT; }
 "*/"   { return TOK_ENDCOMMENT; }
-[a-zA-Z_]+   { return TOK_IDENT; }
+[a-zA-Z_][a-zA-Z_0-9]+   { return TOK_IDENT; }
 [0-9]+       { return TOK_NUMBER;}
 <<EOF>>      { return TOK_EOF; }
 [^\x00-\x7F] { return TOK_ERROR; } /* non-ascii characters */
