@@ -116,12 +116,14 @@ enum {
   /* */
   TOK_NUMBER,
   TOK_IDENT,
-  TOK_EOF
+  TOK_EOF,
+  TOK_OTHER,
+  TOK_ERROR,
 };
 
 %}
 %%
-[ \tn\n]   ;
+[ \t\r\n]   ;
 "abstract"     { return TOK_KEYWORD;}
 "assert"       { return TOK_KEYWORD;}
 "boolean"      { return TOK_KEYWORD;}
@@ -221,17 +223,22 @@ enum {
 "|="   { return TOK_OP; }
 "||"   { return TOK_OP; }
 "|"    { return TOK_OP; }
-
-[a-zA-Z_]+  { return TOK_IDENT; }
-[0-9]+      { return TOK_NUMBER;}
-<<EOF>> { return TOK_EOF; }
-[/][*][^*]*[*]+([^*/][^*]*[*]+)*[/]       { /* COMMENT, DO NOTHING */ }
+"/*"   { return TOK_STARTCOMMENT; }
+"*/"   { return TOK_ENDCOMMENT; }
+[a-zA-Z_]+   { return TOK_IDENT; }
+[0-9]+       { return TOK_NUMBER;}
+<<EOF>>      { return TOK_EOF; }
+[^\x00-\x7F] { return TOK_ERROR; } /* non-ascii characters */
+.|\n         { return TOK_OTHER; } /* Matches everything unmatched */
 %%
 
 int main(int argc, char **argv)
 {
   int in_comment = 0;
   int t;
+  int t_len;
+  const char *t_str;
+
 
   if (argc == 2) {
     yyin = fopen(argv[1], "r");
@@ -241,22 +248,45 @@ int main(int argc, char **argv)
   }
 
   while (t = yylex()) {
+    t_str = yytext;
+    t_len = yyleng;
+
     if (t == TOK_STARTCOMMENT)
       in_comment = 1;
-    else if (t == TOK_ENDCOMMENT)
-      in_comment = 0;
+
+    if (t == TOK_ERROR) {
+      printf("error\n");
+      return -1;
+    }
 
     if (!in_comment) {
       if (t == TOK_NUMBER) {
-        printf ("integer literal %s\n", yytext);
+        if (t_len >= 2 && t_str[0] == '0' && t_str[1] == '0') {
+          printf ("error\n");
+          return -1;
+        }
+        printf ("integer literal %s\n", t_str);
       } else if (t == TOK_IDENT) {
-        printf ("identifier %s\n", yytext);
+        printf ("identifier %s\n", t_str);
       } else if (t == TOK_EOF) {
         printf ("EOF\n");
         break;
       }else {
-        printf ("%s\n", yytext);
+        printf ("%s\n", t_str);
       }
+    } else {
+      if (t == TOK_EOF) {
+        printf ("error\n");
+        return -1;
+      }
+    }
+
+    if (t == TOK_ENDCOMMENT) {
+      if (!in_comment) {
+        printf ("error\n");
+        return -1;
+      }
+      in_comment = 0;
     }
   }
 
