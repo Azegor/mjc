@@ -22,7 +22,8 @@ ADD_CUSTOM_COMMAND(
 file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/lextest/*.java")
 foreach(file ${lexer_input_files})
   MESSAGE(STATUS "Lexer test file: ${file}")
-  add_test(NAME "Lex_${file}"
+  get_filename_component(filename "${file}" NAME)
+  add_test(NAME "Lex_${filename}"
            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/lexer_diff.sh" $<TARGET_FILE:mjc> $<TARGET_FILE:mj_lexer> "${file}"
            DEPENDS mj_lexer)
 endforeach()
