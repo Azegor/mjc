@@ -220,7 +220,8 @@ class Lexer {
     int c = input.get();
     constexpr int maxLineLength = 1024;
     int lineLength = 0;
-    while (c != '\r' && c != '\n' && ++lineLength < maxLineLength) {
+    while (c != '\r' && c != '\n' && input.good() &&
+           ++lineLength < maxLineLength) {
       res.push_back(c);
       c = input.get();
     }
@@ -228,7 +229,8 @@ class Lexer {
       res += "...";
     }
     input.seekg(oldPos);
-    return res;
+    return res.empty() ? co::color_output(co::cyan, co::normal)("\\empty-line")
+                       : res;
   }
 
 public:
