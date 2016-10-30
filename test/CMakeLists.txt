@@ -6,6 +6,10 @@ add_test(NAME lextest
 
 
 # Compile lexer using flex
+if(NOT EXISTS "/usr/bin/flex")
+  message(FATAL_ERROR "flex not found")
+endif()
+
 SET_SOURCE_FILES_PROPERTIES(minijava.c GENERATED)
 add_executable(mj_lexer minijava.c)
 target_link_libraries(mj_lexer fl)
@@ -15,7 +19,7 @@ ADD_CUSTOM_COMMAND(
        ${CMAKE_CURRENT_SOURCE_DIR}/minijava.l
   OUTPUT minijava.c)
 
-file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/*.java")
+file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/lextest/*.java")
 foreach(file ${lexer_input_files})
   MESSAGE(STATUS "Lexer test file: ${file}")
   add_test(NAME "Lex_${file}"
