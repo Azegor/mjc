@@ -261,7 +261,7 @@ int main(int argc, char **argv)
 
     if (!in_comment) {
       if (t == TOK_NUMBER) {
-        if (t_len >= 2 && t_str[0] == '0' && t_str[1] == '0') {
+        if (t_len >= 2 && t_str[0] == '0') {
           printf ("error\n");
           return -1;
         }
