@@ -1,0 +1,3 @@
+#!/bin/sh
+export CTEST_OUTPUT_ON_FAILURE=1
+make -C builddir -j5 test
