@@ -26,9 +26,6 @@
 
 #include "lexer.hpp"
 
-#include <string>
-using namespace std::string_literals;
-
 std::unordered_map<std::string, Token::Type> Lexer::identifierTokens{
     // keywords
     {"boolean", Token::Type::Boolean},
@@ -281,12 +278,7 @@ Token Lexer::nextToken() {
   tokenString = lastChar;
   Token::Type type = getSingleCharOpToken(lastChar);
   if (type == Token::Type::none) { // illegal character
-    if (std::isspace(lastChar) || std::isprint(lastChar)) {
-      errorAtTokenStart("Invalid input character: '"s + (char)lastChar + "'");
-    }
-    std::stringstream invalidChar;
-    invalidChar << "\\0x" << std::hex << lastChar;
-    errorAtTokenStart("Invalid input character: '"s + invalidChar.str() + "'");
+    invalidCharError(lastChar);
   }
   nextChar(); // eat
   return makeToken(type);
@@ -329,6 +321,9 @@ Token Lexer::readSlash() { // read '/' '/=' '//' '/*'
   } else if (lastChar == '*') { // multi line comment
     nextChar();
     while (!input.eof()) {
+      if (lastChar & 0b1000'0000) {
+        invalidCharError(lastChar);
+      }
       if (lastChar == '*') {
         if (nextChar() == '/') {
           nextChar();         // eat '/'

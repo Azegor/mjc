@@ -29,8 +29,10 @@
 
 #include <cstring>  // for std::strerror
 #include <iostream> // TODO remove
+#include <string>
 #include <unordered_map>
 #include <vector>
+using namespace std::string_literals;
 
 #include "input_file.hpp"
 
@@ -194,10 +196,21 @@ class Lexer {
 
   [[noreturn]] void error(std::string msg) {
     int _line = line, _column = column;
-    throw LexError(filename, _line, _column, std::move(msg), getCurrentLineFromInput());
+    throw LexError(filename, _line, _column, std::move(msg),
+                   getCurrentLineFromInput());
   }
   [[noreturn]] void errorAtTokenStart(std::string msg) {
-    throw LexError(filename, tokenLine, tokenCol, std::move(msg), getCurrentLineFromInput());
+    throw LexError(filename, tokenLine, tokenCol, std::move(msg),
+                   getCurrentLineFromInput());
+  }
+
+  [[noreturn]] void invalidCharError(char errorChar) {
+    if (std::isspace(errorChar) || std::isprint(errorChar)) {
+      errorAtTokenStart("Invalid input character: '"s + (char)errorChar + "'");
+    }
+    std::stringstream invalidChar;
+    invalidChar << "\\0x" << std::hex << errorChar;
+    errorAtTokenStart("Invalid input character: '"s + invalidChar.str() + "'");
   }
 
   std::string getCurrentLineFromInput() {
@@ -220,8 +233,7 @@ class Lexer {
 
 public:
   Lexer(const InputFile &inputFile)
-      : input(*inputFile.getStream()), filename(inputFile.getFilename())
-  {
+      : input(*inputFile.getStream()), filename(inputFile.getFilename()) {
     if (!input) {
       error(std::string("Broken input stream: ") + std::strerror(errno));
     }
