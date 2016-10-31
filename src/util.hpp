@@ -24,29 +24,31 @@
  * SOFTWARE.
  */
 
-#ifndef ERROR_H
-#define ERROR_H
+#ifndef UTIL_H
+#define UTIL_H
 
-#include <stdexcept>
+#include <sstream>
 
-#include "color_ostream.hpp"
-
-class CompilerError : public std::exception {
-public:
-  virtual void writeErrorMessage(std::ostream &out) const = 0;
+template <typename T> struct Identity
+{
+  T operator()(T &&t) { return t; }
 };
 
-class ArgumentError : public CompilerError {
-  std::string errorMessage;
-
-public:
-  ArgumentError(std::string errorMsg) : errorMessage(std::move(errorMsg)) {}
-  const char *what() const noexcept override { return errorMessage.c_str(); }
-  virtual void writeErrorMessage(std::ostream &out) const override {
-    co::color_ostream<std::ostream> cl_out(out);
-    cl_out << co::color(co::red) << co::mode(co::bold)
-           << "error: " << co::color(co::regular) << errorMessage << std::endl;
+template <typename L, typename Callback = Identity<decltype(*L().begin())>>
+std::string listToString(
+  L &list, Callback callback = Identity<decltype(*L().begin())>())
+{
+  std::stringstream res;
+  bool first = true;
+  for (auto &&e : list)
+  {
+    if (first)
+      first = false;
+    else
+      res << ", ";
+    res << callback(std::forward<decltype(e)>(e));
   }
-};
+  return res.str();
+}
 
-#endif // ERROR_H
+#endif // UTIL_H

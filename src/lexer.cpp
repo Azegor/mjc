@@ -85,6 +85,149 @@ std::unordered_map<std::string, Token::Type> Lexer::identifierTokens{
     {"volatile", Token::Type::ReservedKeyword},
 };
 
+const char *Lexer::getTokenName(Token::Type type) {
+  switch (type) {
+  case Token::Type::Eof:
+    return "End of File";
+
+  case Token::Type::Identifier:
+    return "identifier";
+  case Token::Type::IntLiteral:
+    return "integer literal";
+
+  // -- keywords:
+  case Token::Type::Boolean:
+    return "boolean";
+  case Token::Type::Class:
+    return "class";
+  case Token::Type::Else:
+    return "else";
+  case Token::Type::False:
+    return "false";
+  case Token::Type::If:
+    return "if";
+  case Token::Type::Int:
+    return "int";
+  case Token::Type::New:
+    return "new";
+  case Token::Type::Null:
+    return "null";
+  case Token::Type::Public:
+    return "public";
+  case Token::Type::Return:
+    return "return";
+  case Token::Type::Static:
+    return "static";
+  case Token::Type::This:
+    return "this";
+  case Token::Type::True:
+    return "true";
+  case Token::Type::Void:
+    return "void";
+  case Token::Type::While:
+    return "while";
+
+  // -- operators:
+  case Token::Type::Amp:
+    return "&";
+  case Token::Type::AmpAmp:
+    return "&&";
+  case Token::Type::AmpEq:
+    return "&=";
+  case Token::Type::Bang:
+    return "!";
+  case Token::Type::BangEq:
+    return "!=";
+  case Token::Type::Caret:
+    return "^";
+  case Token::Type::CaretEq:
+    return "^=";
+  case Token::Type::Colon:
+    return ":";
+  case Token::Type::Comma:
+    return ",";
+  case Token::Type::Dot:
+    return ".";
+  case Token::Type::Eq:
+    return "=";
+  case Token::Type::EqEq:
+    return "==";
+  case Token::Type::Gt:
+    return ">";
+  case Token::Type::GtEq:
+    return ">=";
+  case Token::Type::GtGt:
+    return ">>";
+  case Token::Type::GtGtEq:
+    return ">>=";
+  case Token::Type::GtGtGt:
+    return ">>>";
+  case Token::Type::GtGtGtEq:
+    return ">>>=";
+  case Token::Type::LBrace:
+    return "{";
+  case Token::Type::LBracket:
+    return "[";
+  case Token::Type::LParen:
+    return "(";
+  case Token::Type::LtEq:
+    return "<=";
+  case Token::Type::LtLt:
+    return "<<";
+  case Token::Type::Lt:
+    return "<";
+  case Token::Type::LtLtEq:
+    return "<<=";
+  case Token::Type::Minus:
+    return "-";
+  case Token::Type::MinusEq:
+    return "-=";
+  case Token::Type::MinusMinus:
+    return "--";
+  case Token::Type::VBar:
+    return "|";
+  case Token::Type::VBarEq:
+    return "|=";
+  case Token::Type::VBarVBar:
+    return "||";
+  case Token::Type::Percent:
+    return "%";
+  case Token::Type::PercentEq:
+    return "%=";
+  case Token::Type::Plus:
+    return "+";
+  case Token::Type::PlusEq:
+    return "+=";
+  case Token::Type::PlusPlus:
+    return "++";
+  case Token::Type::QMark:
+    return "?";
+  case Token::Type::RBrace:
+    return "}";
+  case Token::Type::RBracket:
+    return "]";
+  case Token::Type::RParen:
+    return ")";
+  case Token::Type::Semicolon:
+    return ";";
+  case Token::Type::Slash:
+    return "/";
+  case Token::Type::SlashEq:
+    return "/=";
+  case Token::Type::Star:
+    return "*";
+  case Token::Type::StarEq:
+    return "*=";
+  case Token::Type::Tilde:
+    return "~";
+
+  case Token::Type::ReservedKeyword:
+    return "reserved keyword"; // should never be used
+  default:
+    return "<unknown token type>";
+  }
+}
+
 Token::Type Lexer::getSingleCharOpToken(int c) {
   switch (c) {
   case '(':

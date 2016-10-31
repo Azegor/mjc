@@ -34,6 +34,7 @@
 #include <vector>
 using namespace std::string_literals;
 
+#include "error.hpp"
 #include "input_file.hpp"
 
 struct Token {
@@ -163,6 +164,73 @@ struct Token {
   }
 };
 
+struct TokenPos {
+  int line;
+  int col;
+  TokenPos() : line(-1), col(-1) {}
+  TokenPos(int l, int c) : line(l), col(c) {}
+  TokenPos(const Token &t, bool isEndToken) : line(t.line) {
+    col = t.col + (isEndToken ? t.str.size() - 1 : 0);
+  }
+
+  bool operator==(const TokenPos &o) const {
+    return line == o.line && col == o.col;
+  }
+
+  std::string toStr() const {
+    return std::to_string(line) + ':' + std::to_string(col);
+  }
+};
+
+struct SourceLocation {
+  const TokenPos startToken, endToken;
+  SourceLocation() = default;
+  SourceLocation(TokenPos start, TokenPos end)
+      : startToken(start), endToken(end) {}
+  SourceLocation(const Token &single)
+      : startToken(single, false), endToken(single, true) {}
+  SourceLocation(const SourceLocation &o)
+      : startToken(o.startToken), endToken(o.endToken) {}
+  SourceLocation(SourceLocation &&o)
+      : startToken(std::move(o.startToken)), endToken(std::move(o.endToken)) {}
+
+  std::string toStr() const {
+    if (startToken.col == -1)
+      return "at unknown location";
+    if (startToken == endToken)
+      return "at token " + startToken.toStr() + "->" + endToken.toStr();
+    return "between token " + startToken.toStr() + " and " + endToken.toStr();
+  }
+};
+
+class LexError : public CompilerError {
+public:
+  const int line, col;
+  const std::string filename, message, errorLine;
+  LexError(std::string file, int line, int col, std::string what,
+           std::string errorLine)
+      : filename(file), line(line), col(col), message(std::move(what)),
+        errorLine(std::move(errorLine)) {}
+  const char *what() const noexcept override { return message.c_str(); }
+
+  virtual void writeErrorMessage(std::ostream &out) const override {
+    co::color_ostream<std::ostream> cl_out(out);
+    cl_out << co::mode(co::bold) << filename << ':' << line << ':' << col
+           << ": " << co::color(co::red) << "error: " << co::color(co::regular)
+           << message << std::endl;
+    writeErrorLineHighlight(out);
+  }
+
+  void writeErrorLineHighlight(std::ostream &out) const {
+    co::color_ostream<std::ostream> cl_out(out);
+    cl_out << errorLine << std::endl;
+    cl_out << co::color(co::green);
+    for (int i = 1; i < col; ++i)
+      cl_out << '~';
+    cl_out << '^' << std::endl;
+  }
+};
+
 class Lexer {
   static std::unordered_map<std::string, Token::Type> identifierTokens;
 
@@ -213,6 +281,7 @@ class Lexer {
     errorAtTokenStart("Invalid input character: '"s + invalidChar.str() + "'");
   }
 
+public:
   std::string getCurrentLineFromInput() {
     int oldPos = input.tellg();
     input.seekg(currentLineFileOffset);
@@ -232,8 +301,6 @@ class Lexer {
     return res.empty() ? co::color_output(co::cyan, co::normal)("\\empty-line")
                        : res;
   }
-
-public:
   Lexer(const InputFile &inputFile)
       : input(*inputFile.getStream()), filename(inputFile.getFilename()) {
     if (!input) {
@@ -243,6 +310,8 @@ public:
   }
 
   Token nextToken();
+
+  static const char *getTokenName(Token::Type type);
 
 private:
   // Parser helper functions
