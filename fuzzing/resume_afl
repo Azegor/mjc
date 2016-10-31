@@ -1,2 +1,2 @@
 #!/bin/sh
-make -j5 -C afl_fuzzer/build && afl_fuzzer/afl/afl-fuzz -i - -o artifacts/afl -x afl_fuzzer/mj.dict -M fuzz_1 ./afl_fuzzer/build/mjc_instr --lextest @@
+make -j5 -C afl_fuzzer/build && afl_fuzzer/afl/afl-fuzz -i - -o artifacts/afl -x afl_fuzzer/mj.dict -M fuzz_1 ./afl_fuzzer/build/mjc_instr --parserfuzz @@

@@ -23,6 +23,6 @@ add_subdirectory(Fuzzer)
 find_package(Boost COMPONENTS program_options REQUIRED)
 
 # create fuzzer binary
-add_executable(fuzzmjc fuzz.cpp ../../src/compiler.cpp ../../src/lexer.cpp)
+add_executable(fuzzmjc fuzz.cpp ../../src/compiler.cpp ../../src/lexer.cpp  ../../src/parser.cpp)
 
 target_link_libraries(fuzzmjc LLVMFuzzer ${Boost_LIBRARIES})

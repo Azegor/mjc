@@ -33,6 +33,7 @@
 #include "error.hpp"
 #include "input_file.hpp"
 #include "lexer.hpp"
+#include "parser.hpp"
 
 co::color_ostream<std::ostream> Compiler::cl_cout{std::cout};
 co::color_ostream<std::ostream> Compiler::cl_cerr{std::cerr};
@@ -53,34 +54,61 @@ int Compiler::lexTest() {
         break;
     }
     std::cout << std::flush;
+    return EXIT_SUCCESS;
   } catch (LexError &e) {
     e.writeErrorMessage(std::cerr);
     return EXIT_FAILURE;
   }
-  return EXIT_SUCCESS;
 }
 
 int Compiler::lexFuzz() {
   Lexer lexer{inputFile};
   try {
     while (lexer.nextToken().type != Token::Type::Eof) {
+      // do nothing
     }
+    return EXIT_SUCCESS;
   } catch (LexError &e) {
+    // don't print error message
     return EXIT_FAILURE;
   }
-  return EXIT_SUCCESS;
 }
 
-int exclusiveOptionsSum(bool b) { return b ? 1 : 0; }
+int Compiler::parserTest() {
+  Parser parser{inputFile};
+  try {
+    parser.parseFileOnly();
+    return EXIT_SUCCESS;
+  } catch (CompilerError &e) {
+    e.writeErrorMessage(std::cerr);
+    return EXIT_FAILURE;
+  }
+}
 
-template <typename... Args> int exclusiveOptionsSum(bool b, Args... args) {
+int Compiler::parserFuzz() {
+  Parser parser{inputFile};
+  try {
+    parser.parseFileOnly();
+    return EXIT_SUCCESS;
+  } catch (CompilerError &e) {
+    // don't print error message
+    return EXIT_FAILURE;
+  }
+}
+
+static int exclusiveOptionsSum(bool b) { return b ? 1 : 0; }
+
+template <typename... Args>
+static int exclusiveOptionsSum(bool b, Args... args) {
   return exclusiveOptionsSum(args...) + (b ? 1 : 0);
 }
 
 void Compiler::checkOptions() {
-  if (exclusiveOptionsSum(options.echoFile, options.testLexer, options.fuzzLexer) > 1)
-    throw ArgumentError(
-        "Cannot have Options --echo, --lextext or --lexfuzz simultaneously");
+  if (exclusiveOptionsSum(options.echoFile, options.testLexer,
+                          options.fuzzLexer, options.testParser,
+                          options.fuzzParser) > 1)
+    throw ArgumentError("Cannot have Options --echo, --lextext, --lexfuzz, "
+                        "--parsertest or --parserfuzz simultaneously");
 }
 
 int Compiler::run() {
@@ -90,6 +118,10 @@ int Compiler::run() {
     return lexTest();
   } else if (options.fuzzLexer) {
     return lexFuzz();
+  } else if (options.testParser) {
+    return parserTest();
+  } else if (options.fuzzParser) {
+    return parserFuzz();
   }
   return EXIT_FAILURE;
 }

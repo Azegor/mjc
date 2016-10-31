@@ -20,10 +20,6 @@ ExternalProject_Add(AFL
   TEST_COMMAND :
 )
 
-execute_process(COMMAND /usr/bin/llvm-config --includedir OUTPUT_VARIABLE LLVM_INCLUDE_DIR)
-
-message(STATUS ${LLVM_INCLUDE_DIR})
-
 if(EXISTS "/usr/bin/llvm-config")
   message(STATUS "using afl-clang-fast")
   #build afl-clang-fast binaries
@@ -43,7 +39,7 @@ endif()
 find_package(Boost COMPONENTS program_options REQUIRED)
 
 # create instrumented binary for afl
-add_executable(mjc_instr ../../src/main.cpp ../../src/compiler.cpp ../../src/lexer.cpp)
+add_executable(mjc_instr ../../src/main.cpp ../../src/compiler.cpp ../../src/lexer.cpp ../../src/parser.cpp)
 
 target_link_libraries(mjc_instr ${Boost_LIBRARIES})
 

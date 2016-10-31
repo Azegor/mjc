@@ -24,51 +24,18 @@
  * SOFTWARE.
  */
 
-#ifndef COMPILER_H
-#define COMPILER_H
+#ifndef PARSER_H
+#define PARSER_H
 
-#include <iostream>
-#include <string>
-
-#include "color_ostream.hpp"
 #include "input_file.hpp"
 
-struct CompilerOptions {
-  std::string inputFileName;
-  bool help = false;
-  bool echoFile = false;
-  bool testLexer = false;
-  bool fuzzLexer = false;
-  bool testParser = false;
-  bool fuzzParser = false;
-  // ...
-};
-
-class Compiler {
-  static co::color_ostream<std::ostream> cl_cout;
-  static co::color_ostream<std::ostream> cl_cerr;
-
-  CompilerOptions options;
-  InputFile inputFile;
-
-  int echoFile();
-  int lexTest();
-  int lexFuzz();
-  int parserTest();
-  int parserFuzz();
-
-  void checkOptions();
-  bool sanityChecks();
+class Parser {
+  const InputFile &inputFile;
 
 public:
-  Compiler(InputFile inputFile, CompilerOptions &opt)
-      : options(std::move(opt)), inputFile(std::move(inputFile)) {
-    checkOptions();
-    if (!sanityChecks()) {
-      exit(EXIT_FAILURE);
-    }
-  }
-  int run();
+  Parser(const InputFile &inputFile) : inputFile(inputFile) {}
+
+  void parseFileOnly() {}
 };
 
-#endif // COMPILER_H
+#endif // PARSER_H
