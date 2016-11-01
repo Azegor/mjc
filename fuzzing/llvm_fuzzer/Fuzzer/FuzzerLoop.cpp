@@ -17,6 +17,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <set>
 #include <memory>
 
 #if defined(__has_include)
@@ -160,15 +161,14 @@ Fuzzer::Fuzzer(UserCallback CB, InputCorpus &Corpus, MutationDispatcher &MD,
   InitializeTraceState();
   assert(!F);
   F = this;
-  TPC.ResetTotalPCCoverage();
   TPC.ResetMaps();
-  TPC.ResetGuards();
   ResetCoverage();
   IsMyThread = true;
   if (Options.DetectLeaks && EF->__sanitizer_install_malloc_and_free_hooks)
     EF->__sanitizer_install_malloc_and_free_hooks(MallocHook, FreeHook);
   TPC.SetUseCounters(Options.UseCounters);
   TPC.SetUseValueProfile(Options.UseValueProfile);
+  TPC.SetPrintNewPCs(Options.PrintNewCovPcs);
 
   if (Options.Verbosity)
     TPC.PrintModuleInfo();
@@ -332,7 +332,7 @@ void Fuzzer::PrintStats(const char *Where, const char *End, size_t Units) {
     Printf( " ft: %zd", N);
   if (MaxCoverage.CallerCalleeCoverage)
     Printf(" indir: %zd", MaxCoverage.CallerCalleeCoverage);
-  if (size_t N = Corpus.size()) {
+  if (!Corpus.empty()) {
     Printf(" corp: %zd", Corpus.NumActiveUnits());
     if (size_t N = Corpus.SizeInBytes()) {
       if (N < (1<<14))
@@ -379,28 +379,26 @@ void Fuzzer::SetMaxMutationLen(size_t MaxMutationLen) {
   this->MaxMutationLen = MaxMutationLen;
 }
 
-void Fuzzer::CheckExitOnItem() {
+void Fuzzer::CheckExitOnSrcPosOrItem() {
+  if (!Options.ExitOnSrcPos.empty()) {
+    static auto *PCsSet = new std::set<uintptr_t>;
+    for (size_t i = 1, N = TPC.GetNumPCs(); i < N; i++) {
+      uintptr_t PC = TPC.GetPC(i);
+      if (!PC) continue;
+      if (!PCsSet->insert(PC).second) continue;
+      std::string Descr = DescribePC("%L", PC);
+      if (Descr.find(Options.ExitOnSrcPos) != std::string::npos) {
+        Printf("INFO: found line matching '%s', exiting.\n",
+               Options.ExitOnSrcPos.c_str());
+        _Exit(0);
+      }
+    }
+  }
   if (!Options.ExitOnItem.empty()) {
     if (Corpus.HasUnit(Options.ExitOnItem)) {
       Printf("INFO: found item with checksum '%s', exiting.\n",
              Options.ExitOnItem.c_str());
       _Exit(0);
-    }
-  }
-}
-
-void Fuzzer::CheckExitOnSrcPos() {
-  if (!Options.ExitOnSrcPos.empty()) {
-    uintptr_t *PCIDs;
-    if (size_t NumNewPCIDs = TPC.GetNewPCIDs(&PCIDs)) {
-      for (size_t i = 0; i < NumNewPCIDs; i++) {
-        std::string Descr = DescribePC("%L", TPC.GetPCbyPCID(PCIDs[i]));
-        if (Descr.find(Options.ExitOnSrcPos) != std::string::npos) {
-          Printf("INFO: found line matching '%s', exiting.\n",
-                 Options.ExitOnSrcPos.c_str());
-          _Exit(0);
-        }
-      }
     }
   }
 }
@@ -419,6 +417,7 @@ void Fuzzer::RereadOutputCorpus(size_t MaxSize) {
       U.resize(MaxSize);
     if (!Corpus.HasUnit(U)) {
       if (size_t NumFeatures = RunOne(U)) {
+        CheckExitOnSrcPosOrItem();
         Corpus.AddToCorpus(U, NumFeatures);
         Reloaded = true;
       }
@@ -447,6 +446,7 @@ void Fuzzer::ShuffleAndMinimize(UnitVector *InitialCorpus) {
 
   for (const auto &U : *InitialCorpus) {
     if (size_t NumFeatures = RunOne(U)) {
+      CheckExitOnSrcPosOrItem();
       Corpus.AddToCorpus(U, NumFeatures);
       if (Options.Verbosity >= 2)
         Printf("NEW0: %zd L %zd\n", MaxCoverage.BlockCoverage, U.size());
@@ -479,10 +479,6 @@ size_t Fuzzer::RunOne(const uint8_t *Data, size_t Size) {
       Res = 1;
   }
 
-  if (Res && Options.UseCmp)
-    TPC.ProcessTORC(MD.GetTraceCmpDictionary(), CurrentUnitData, Size);
-
-  CheckExitOnSrcPos();
   auto TimeOfUnit =
       duration_cast<seconds>(UnitStopTime - UnitStartTime).count();
   if (!(TotalNumberOfRuns & (TotalNumberOfRuns - 1)) &&
@@ -516,10 +512,6 @@ void Fuzzer::ExecuteCallback(const uint8_t *Data, size_t Size) {
   UnitStartTime = system_clock::now();
   ResetCounters();  // Reset coverage right before the callback.
   TPC.ResetMaps();
-  if (Options.UseCmp)
-    TPC.ResetTORC();
-  if (Options.UseCounters)
-    TPC.ResetGuards();
   int Res = CB(DataCopy, Size);
   UnitStopTime = system_clock::now();
   (void)Res;
@@ -564,26 +556,13 @@ void Fuzzer::PrintStatusForNewUnit(const Unit &U) {
   }
 }
 
-void Fuzzer::PrintOneNewPC(uintptr_t PC) {
-  PrintPC("\tNEW_PC: %p %F %L\n",
-          "\tNEW_PC: %p\n", PC);
-}
-
-void Fuzzer::PrintNewPCs() {
-  if (!Options.PrintNewCovPcs) return;
-  uintptr_t *PCIDs;
-  if (size_t NumNewPCIDs = TPC.GetNewPCIDs(&PCIDs))
-    for (size_t i = 0; i < NumNewPCIDs; i++)
-      PrintOneNewPC(TPC.GetPCbyPCID(PCIDs[i]));
-}
-
 void Fuzzer::ReportNewCoverage(InputInfo *II, const Unit &U) {
   II->NumSuccessfullMutations++;
   MD.RecordSuccessfulMutationSequence();
   PrintStatusForNewUnit(U);
   WriteToOutputCorpus(U);
   NumberOfNewUnitsAdded++;
-  PrintNewPCs();
+  TPC.PrintNewPCs();
 }
 
 // Finds minimal number of units in 'Extra' that add coverage to 'Initial'.
@@ -598,20 +577,17 @@ UnitVector Fuzzer::FindExtraUnits(const UnitVector &Initial,
   for (int Iter = 0; Iter < 10; Iter++) {
     ShuffleCorpus(&Res);
     TPC.ResetMaps();
-    TPC.ResetGuards();
     Corpus.ResetFeatureSet();
     ResetCoverage();
 
     for (auto &U : Initial) {
       TPC.ResetMaps();
-      TPC.ResetGuards();
       RunOne(U);
     }
 
     Tmp.clear();
     for (auto &U : Res) {
       TPC.ResetMaps();
-      TPC.ResetGuards();
       if (RunOne(U))
         Tmp.push_back(U);
     }
@@ -726,7 +702,7 @@ void Fuzzer::MutateAndTestOne() {
       Corpus.AddToCorpus({CurrentUnitData, CurrentUnitData + Size}, NumFeatures,
                          /*MayDeleteFile=*/true);
       ReportNewCoverage(&II, {CurrentUnitData, CurrentUnitData + Size});
-      CheckExitOnItem();
+      CheckExitOnSrcPosOrItem();
     }
     StopTraceRecording();
     TryDetectingAMemoryLeak(CurrentUnitData, Size,

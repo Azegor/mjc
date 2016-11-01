@@ -56,4 +56,5 @@ multiline_comment="/*\x0ax\x0ay\x0a*/"
 
 # more complex defs
 main_class_def="class X{public static void main(String[] args) {} public int method(int i, boolean b) { return i + b; } }"
-class_def="class _ident{ public void method(int[] i, CT[] b) { return; } public boolean[] XY(a[][][] x, b y) {if(y){a[1][2][3].b();}else{y.x();} return z;}"
+class_def="class _ident{ public void method(int[] i, CT[] b) { return; } }"
+method_def="public boolean[] XY(a[][][] x, b y) {if(y){a[1][2][3].b();}else{y.x();} return z;}"

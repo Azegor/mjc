@@ -101,6 +101,8 @@ public:
 
   bool InFuzzingThread() const { return IsMyThread; }
   size_t GetCurrentUnitInFuzzingThead(const uint8_t **Data) const;
+  void TryDetectingAMemoryLeak(const uint8_t *Data, size_t Size,
+                               bool DuringInitialCorpusExecution);
 
 private:
   void AlarmCallback();
@@ -108,19 +110,14 @@ private:
   void InterruptCallback();
   void MutateAndTestOne();
   void ReportNewCoverage(InputInfo *II, const Unit &U);
-  void PrintNewPCs();
-  void PrintOneNewPC(uintptr_t PC);
   size_t RunOne(const Unit &U) { return RunOne(U.data(), U.size()); }
   void WriteToOutputCorpus(const Unit &U);
   void WriteUnitToFileWithPrefix(const Unit &U, const char *Prefix);
   void PrintStats(const char *Where, const char *End = "\n", size_t Units = 0);
   void PrintStatusForNewUnit(const Unit &U);
   void ShuffleCorpus(UnitVector *V);
-  void TryDetectingAMemoryLeak(const uint8_t *Data, size_t Size,
-                               bool DuringInitialCorpusExecution);
   void AddToCorpus(const Unit &U);
-  void CheckExitOnSrcPos();
-  void CheckExitOnItem();
+  void CheckExitOnSrcPosOrItem();
 
   // Trace-based fuzzing: we run a unit with some kind of tracing
   // enabled and record potentially useful mutations. Then

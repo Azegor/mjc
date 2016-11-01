@@ -12,9 +12,14 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <map>
+#include <set>
+#include <sstream>
+
 #include "FuzzerCorpus.h"
 #include "FuzzerDefs.h"
 #include "FuzzerDictionary.h"
+#include "FuzzerExtFunctions.h"
 #include "FuzzerTracePC.h"
 #include "FuzzerValueBitMap.h"
 
@@ -25,24 +30,16 @@ TracePC TPC;
 void TracePC::HandleTrace(uint32_t *Guard, uintptr_t PC) {
   uint32_t Idx = *Guard;
   if (!Idx) return;
-  uint8_t *CounterPtr = &Counters[Idx % kNumCounters];
-  uint8_t Counter = *CounterPtr;
-  if (Counter == 0) {
-    if (!PCs[Idx % kNumPCs]) {
-      AddNewPCID(Idx);
-      TotalPCCoverage++;
-      PCs[Idx % kNumPCs] = PC;
-    }
-  }
-  if (UseCounters) {
-    if (Counter < 128)
-      *CounterPtr = Counter + 1;
-    else
-      *Guard = 0;
-  } else {
-    *CounterPtr = 1;
-    *Guard = 0;
-  }
+  PCs[Idx % kNumPCs] = PC;
+  Counters[Idx % kNumCounters]++;
+}
+
+size_t TracePC::GetTotalPCCoverage() {
+  size_t Res = 0;
+  for (size_t i = 1; i < GetNumPCs(); i++)
+    if (PCs[i])
+      Res++;
+  return Res;
 }
 
 void TracePC::HandleInit(uint32_t *Start, uint32_t *Stop) {
@@ -60,14 +57,6 @@ void TracePC::PrintModuleInfo() {
   for (size_t i = 0; i < NumModules; i++)
     Printf("[%p, %p), ", Modules[i].Start, Modules[i].Stop);
   Printf("\n");
-}
-
-void TracePC::ResetGuards() {
-  uint32_t N = 0;
-  for (size_t M = 0; M < NumModules; M++)
-    for (uint32_t *X = Modules[M].Start, *End = Modules[M].Stop; X < End; X++)
-      *X = ++N;
-  assert(N == NumGuards);
 }
 
 size_t TracePC::FinalizeTrace(InputCorpus *C, size_t InputSize, bool Shrink) {
@@ -112,11 +101,110 @@ void TracePC::HandleCallerCallee(uintptr_t Caller, uintptr_t Callee) {
   HandleValueProfile(Idx);
 }
 
+static bool IsInterestingCoverageFile(std::string &File) {
+  if (File.find("compiler-rt/lib/") != std::string::npos)
+    return false; // sanitizer internal.
+  if (File.find("/usr/lib/") != std::string::npos)
+    return false;
+  if (File.find("/usr/include/") != std::string::npos)
+    return false;
+  if (File == "<null>")
+    return false;
+  return true;
+}
+
+void TracePC::PrintNewPCs() {
+  if (DoPrintNewPCs) {
+    if (!PrintedPCs)
+      PrintedPCs = new std::set<uintptr_t>;
+    for (size_t i = 1; i < GetNumPCs(); i++)
+      if (PCs[i] && PrintedPCs->insert(PCs[i]).second)
+        PrintPC("\tNEW_PC: %p %F %L\n", "\tNEW_PC: %p\n", PCs[i]);
+  }
+}
+
 void TracePC::PrintCoverage() {
+  if (!EF->__sanitizer_symbolize_pc) {
+    Printf("INFO: __sanitizer_symbolize_pc is not available,"
+           " not printing coverage\n");
+    return;
+  }
+  std::map<std::string, std::vector<uintptr_t>> CoveredPCsPerModule;
+  std::map<std::string, uintptr_t> ModuleOffsets;
+  std::set<std::string> CoveredFiles, CoveredFunctions, CoveredLines;
   Printf("COVERAGE:\n");
-  for (size_t i = 0; i < Min(NumGuards + 1, kNumPCs); i++) {
-    if (PCs[i])
-      PrintPC("COVERED: %p %F %L\n", "COVERED: %p\n", PCs[i]);
+  for (size_t i = 1; i < GetNumPCs(); i++) {
+    if (!PCs[i]) continue;
+    std::string FileStr = DescribePC("%s", PCs[i]);
+    if (!IsInterestingCoverageFile(FileStr)) continue;
+    std::string FixedPCStr = DescribePC("%p", PCs[i]);
+    std::string FunctionStr = DescribePC("%F", PCs[i]);
+    std::string LineStr = DescribePC("%l", PCs[i]);
+    // TODO(kcc): get the module using some other way since this
+    // does not work with ASAN_OPTIONS=strip_path_prefix=something.
+    std::string Module = DescribePC("%m", PCs[i]);
+    std::string OffsetStr = DescribePC("%o", PCs[i]);
+    uintptr_t FixedPC = std::stol(FixedPCStr, 0, 16);
+    uintptr_t PcOffset = std::stol(OffsetStr, 0, 16);
+    ModuleOffsets[Module] = FixedPC - PcOffset;
+    CoveredPCsPerModule[Module].push_back(PcOffset);
+    CoveredFunctions.insert(FunctionStr);
+    CoveredFiles.insert(FileStr);
+    if (!CoveredLines.insert(FileStr + ":" + LineStr).second)
+      continue;
+    Printf("COVERED: %s %s:%s\n", FunctionStr.c_str(),
+           FileStr.c_str(), LineStr.c_str());
+  }
+
+  for (auto &M : CoveredPCsPerModule) {
+    std::set<std::string> UncoveredFiles, UncoveredFunctions;
+    std::map<std::string, std::set<int> > UncoveredLines;  // Func+File => lines
+    auto &ModuleName = M.first;
+    auto &CoveredOffsets = M.second;
+    uintptr_t ModuleOffset = ModuleOffsets[ModuleName];
+    std::sort(CoveredOffsets.begin(), CoveredOffsets.end());
+    Printf("MODULE_WITH_COVERAGE: %s\n", ModuleName.c_str());
+    // sancov does not yet fully support DSOs.
+    // std::string Cmd = "sancov -print-coverage-pcs " + ModuleName;
+    std::string Cmd = "objdump -d " + ModuleName +
+        " | grep 'call.*__sanitizer_cov_trace_pc_guard' | awk -F: '{print $1}'";
+    std::string SanCovOutput;
+    if (!ExecuteCommandAndReadOutput(Cmd, &SanCovOutput)) {
+      Printf("INFO: Command failed: %s\n", Cmd.c_str());
+      continue;
+    }
+    std::istringstream ISS(SanCovOutput);
+    std::string S;
+    while (std::getline(ISS, S, '\n')) {
+      uintptr_t PcOffset = std::stol(S, 0, 16);
+      if (!std::binary_search(CoveredOffsets.begin(), CoveredOffsets.end(),
+                              PcOffset)) {
+        uintptr_t PC = ModuleOffset + PcOffset;
+        auto FileStr = DescribePC("%s", PC);
+        if (!IsInterestingCoverageFile(FileStr)) continue;
+        if (CoveredFiles.count(FileStr) == 0) {
+          UncoveredFiles.insert(FileStr);
+          continue;
+        }
+        auto FunctionStr = DescribePC("%F", PC);
+        if (CoveredFunctions.count(FunctionStr) == 0) {
+          UncoveredFunctions.insert(FunctionStr);
+          continue;
+        }
+        std::string LineStr = DescribePC("%l", PC);
+        uintptr_t Line = std::stoi(LineStr);
+        std::string FileLineStr = FileStr + ":" + LineStr;
+        if (CoveredLines.count(FileLineStr) == 0)
+          UncoveredLines[FunctionStr + " " + FileStr].insert(Line);
+      }
+    }
+    for (auto &FileLine: UncoveredLines)
+      for (int Line : FileLine.second)
+        Printf("UNCOVERED_LINE: %s:%d\n", FileLine.first.c_str(), Line);
+    for (auto &Func : UncoveredFunctions)
+      Printf("UNCOVERED_FUNC: %s\n", Func.c_str());
+    for (auto &File : UncoveredFiles)
+      Printf("UNCOVERED_FILE: %s\n", File.c_str());
   }
 }
 
@@ -174,57 +262,11 @@ void TracePC::HandleCmp(void *PC, T Arg1, T Arg2) {
   uint64_t ArgXor = Arg1 ^ Arg2;
   uint64_t ArgDistance = __builtin_popcountl(ArgXor) + 1; // [1,65]
   uintptr_t Idx = ((PCuint & 4095) + 1) * ArgDistance;
-  TORCInsert(ArgXor, Arg1, Arg2);
+  if (sizeof(T) == 4)
+      TORC4.Insert(ArgXor, Arg1, Arg2);
+  else if (sizeof(T) == 8)
+      TORC8.Insert(ArgXor, Arg1, Arg2);
   HandleValueProfile(Idx);
-}
-
-void TracePC::ProcessTORC(Dictionary *Dict, const uint8_t *Data, size_t Size) {
-  TORCToDict(TORC8, Dict, Data, Size);
-  TORCToDict(TORC4, Dict, Data, Size);
-}
-
-template <class T>
-void TracePC::TORCToDict(const TableOfRecentCompares<T, kTORCSize> &TORC,
-                         Dictionary *Dict, const uint8_t *Data, size_t Size) {
-  ScopedDoingMyOwnMemmem scoped_doing_my_own_memmem;
-  for (size_t i = 0; i < TORC.kSize; i++) {
-    T A[2] = {TORC.Table[i][0], TORC.Table[i][1]};
-    if (!A[0] && !A[1]) continue;
-    for (int j = 0; j < 2; j++)
-      TORCToDict(Dict, A[j], A[!j], Data, Size);
-  }
-}
-
-template <class T>
-void TracePC::TORCToDict(Dictionary *Dict, T FindInData, T Substitute,
-                         const uint8_t *Data, size_t Size) {
-  if (FindInData == Substitute) return;
-  if (sizeof(T) == 4) {
-    uint16_t HigherBytes = Substitute >> sizeof(T) * 4;
-    if (HigherBytes == 0 || HigherBytes == 0xffff)
-      TORCToDict(Dict, static_cast<uint16_t>(FindInData),
-                 static_cast<uint16_t>(Substitute), Data, Size);
-  }
-  const size_t DataSize = sizeof(T);
-  const uint8_t *End = Data + Size;
-  int Attempts = 3;
-  for (int DoSwap = 0; DoSwap <= 1; DoSwap++) {
-    for (const uint8_t *Cur = Data; Cur < End && Attempts--; Cur++) {
-      Cur = (uint8_t *)memmem(Cur, End - Cur, &FindInData, DataSize);
-      if (!Cur)
-        break;
-      size_t Pos = Cur - Data;
-      Word W(reinterpret_cast<uint8_t *>(&Substitute), sizeof(Substitute));
-      DictionaryEntry DE(W, Pos);
-      // TODO: evict all entries from Dic if it's full.
-      Dict->push_back(DE);
-      // Printf("Dict[%zd] TORC%zd %llx => %llx pos %zd\n", Dict->size(),
-      // sizeof(T),
-      //       (uint64_t)FindInData, (uint64_t)Substitute, Pos);
-    }
-    FindInData = Bswap(FindInData);
-    Substitute = Bswap(Substitute);
-  }
 }
 
 } // namespace fuzzer

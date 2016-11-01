@@ -1,3 +1,3 @@
 #!/bin/sh
-# make -j5 -C llvm_fuzzer/build && ASAN_OPTIONS=coverage=1 ./llvm_fuzzer/build/fuzzmjc corpus/lexer/ -artifact_prefix=artifacts/llvm/ -jobs=8 -dict=mj_lexer.dict
-make -j5 -C llvm_fuzzer/build && ASAN_OPTIONS=coverage=1 ./llvm_fuzzer/build/fuzzmjc corpus/parser/ -artifact_prefix=artifacts/llvm/ -jobs=8 -dict=mj_parser.dict
+# make -j5 -C llvm_fuzzer/build && ASAN_OPTIONS=coverage=1 ./llvm_fuzzer/build/fuzzmjc corpus/lexer/ -artifact_prefix=artifacts/llvm/ -dict=mj_lexer.dict -jobs=8
+make -j5 -C llvm_fuzzer/build && ASAN_OPTIONS=coverage=1 ./llvm_fuzzer/build/fuzzmjc corpus/parser/ -artifact_prefix=artifacts/llvm/ -dict=mj_parser.dict -jobs=8
