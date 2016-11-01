@@ -25,7 +25,7 @@ _configure() {
 }
 
 _compile() {
-    edo make -C"${builddir}"
+    edo make -C"${builddir}" VERBOSE=1
 }
 
 _main() {
