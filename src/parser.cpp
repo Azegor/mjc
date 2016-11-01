@@ -337,44 +337,44 @@ enum class Assoc : int8_t {
   None,
 };
 
-static std::pair<int, Assoc> getOpInfo(Token::Type tt) {
+static int getOpPrec(Token::Type tt) {
   switch (tt) {
   case TT::Eq:
-    return {1, Assoc::Right};
+    return 1;
   case TT::VBarVBar:
-    return {2, Assoc::Left};
+    return 2;
   case TT::AmpAmp:
-    return {3, Assoc::Left};
+    return 3;
   case TT::EqEq:
   case TT::BangEq:
-    return {4, Assoc::Left};
+    return 4;
   case TT::Lt:
   case TT::LtEq:
   case TT::Gt:
   case TT::GtEq:
-    return {5, Assoc::Left};
+    return 5;
   case TT::Plus:
   case TT::Minus:
-    return {6, Assoc::Left};
+    return 6;
   case TT::Star:
   case TT::Slash:
   case TT::Percent:
-    return {7, Assoc::Left};
+    return 7;
   default:
-    return {-1, Assoc::None};
+    return -1;
   }
 }
 
 void Parser::precedenceParse(int minPrec) {
   // check precondition!
   parseUnary();
-  auto opInfo = getOpInfo(curTok.type);
-  while (opInfo.first >= minPrec) {
+  int opPrec;
+  while ((opPrec = getOpPrec(curTok.type)) >= minPrec) {
     readNextToken();
-    if (opInfo.second == Assoc::Left) {
-      opInfo.first += 1;
+    if (curTok.type != TT::Eq) { // only right assoc case
+      opPrec += 1;
     }
-    precedenceParse(opInfo.first);
+    precedenceParse(opPrec);
     // result = handle_operator(result, rhs);
   }
 }
