@@ -69,10 +69,10 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
     if (var_map.count("lexfuzz")) {
       compilerOptions.fuzzLexer = true;
     }
-    if (var_map.count("parsertest")) {
+    if (var_map.count("parsetest")) {
       compilerOptions.testParser = true;
     }
-    if (var_map.count("parserfuzz")) {
+    if (var_map.count("parsefuzz")) {
       compilerOptions.fuzzParser = true;
     }
   } catch (bpo::required_option &e) {

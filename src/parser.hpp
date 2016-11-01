@@ -36,9 +36,10 @@ class ParseError : public CompilerError {
 public:
   const SourceLocation srcLoc;
   const std::string filename, message, errorLine;
-  ParseError(SourceLocation srcLoc, std::string what, std::string errorLine)
-      : srcLoc(std::move(srcLoc)), message(std::move(what)),
-        errorLine(errorLine) {}
+  ParseError(SourceLocation srcLoc, std::string filename, std::string what,
+             std::string errorLine)
+      : srcLoc(std::move(srcLoc)), filename(std::move(filename)),
+        message(std::move(what)), errorLine(errorLine) {}
   const char *what() const noexcept override { return message.c_str(); }
 
   virtual void writeErrorMessage(std::ostream &out) const override {
@@ -61,6 +62,7 @@ public:
     } else {
       cl_out << '^';
     }
+    cl_out << std::endl;
   }
 };
 
@@ -68,14 +70,31 @@ class Parser {
   const InputFile &inputFile;
 
   Lexer lexer;
-  Token prevTok, curTok;
+  Token curTok, nextTok;
 
 public:
-  Parser(const InputFile &inputFile) : inputFile(inputFile), lexer(inputFile) {}
+  Parser(const InputFile &inputFile) : inputFile(inputFile), lexer(inputFile) {
+    readNextToken();
+  }
 
-  void parseFileOnly() {}
+  Token &readNextToken() {
+    curTok = std::move(nextTok);
+    nextTok = lexer.nextToken();
+    return curTok;
+  }
+
+  void parseFileOnly();
 
 private:
+  void readExpect(Token::Type ttype) {
+    readNextToken();
+    //     std::cout << curTok.toStr() << std::endl;
+    expect(ttype);
+  }
+  void expectAndNext(Token::Type ttype) {
+    expect(ttype);
+    readNextToken();
+  }
   void expect(Token::Type ttype) {
     if (curTok.type != ttype)
       error("Unexpected '" + curTok.str + "', expected '" +
@@ -95,8 +114,28 @@ private:
 
   [[noreturn]] void error(std::string msg) {
     //     currentLexer->finishCurrentLine();
-    throw ParseError(curTok, std::move(msg), lexer.getCurrentLineFromInput());
+    throw ParseError(curTok, inputFile.getFilename(), std::move(msg),
+                     lexer.getCurrentLineFromInput());
   }
+
+  void parseProgram();
+  void parseClassDeclaration();
+  void parseClassMember();
+  void parseMainMethod();
+  void parseFieldOrMethod();
+  void parseParameterList();
+  void parseParameter();
+  void parseType();
+  void parseBasicType();
+  void parseBlock();
+  void parseBlockStatement();
+  void parseLocalVarDeclStmt();
+  void parseStmt();
+  void parseIfStmt();
+  void parseReturnStmt();
+  void parseWhileStmt();
+  void parseExprStmt();
+  void parseExpr();
 };
 
 #endif // PARSER_H

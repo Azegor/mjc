@@ -209,7 +209,7 @@ public:
   const std::string filename, message, errorLine;
   LexError(std::string file, int line, int col, std::string what,
            std::string errorLine)
-      : filename(file), line(line), col(col), message(std::move(what)),
+      : line(line), col(col), filename(file), message(std::move(what)),
         errorLine(std::move(errorLine)) {}
   const char *what() const noexcept override { return message.c_str(); }
 
