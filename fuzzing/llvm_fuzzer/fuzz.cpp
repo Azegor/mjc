@@ -21,7 +21,16 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
   options.inputFileName = "<internal>";
   Compiler compiler{InputFile{"<internal>", &input}, options};
 
-  compiler.run(); // ignore returncode (valid from a fuzzing perspective)
+  try {
+    compiler.run(); // ignore returncode (valid from a fuzzing perspective)
+  }
+  catch(CompilerError &e){
+    // ignore all compiler-intern exceptions
+  }
+  catch (...) {
+    __builtin_trap();
+  }
+
 
   return 0; // Non-zero return values are reserved for future use.
 }

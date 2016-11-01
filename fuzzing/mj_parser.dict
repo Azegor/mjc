@@ -1,0 +1,59 @@
+# keywords
+keyword_boolean="boolean"
+keyword_class="class"
+keyword_else="else"
+keyword_if="if"
+keyword_int="int"
+keyword_new="new"
+keyword_null="null"
+keyword_public="public"
+keyword_return="return"
+keyword_static="static"
+keyword_this="this"
+keyword_true="true"
+keyword_void="void"
+keyword_while="while"
+
+# operators
+operator_neq="!="
+operator_not="!"
+operator_lparan="("
+operator_rparan=")"
+operator_mul="*"
+operator_add="+"
+operator_comma=","
+operator_sub"-"
+operator_dot="."
+operator_div="/"
+operator_semicolon=";"
+operator_le="<="
+operator_lt="<"
+operator_eq="=="
+operator_asn="="
+operator_gt=">="
+operator_gt=">"
+operator_mod="%"
+operator_logand="&&"
+operator_lbracket="["
+operator_rbracket="]"
+operator_lbrace="{"
+operator_rbrace="}"
+operator_logor="||"
+
+# literals (with leading space)
+literal_zero=" 0"
+literal_all_digits=" 1234567890"
+literal_too_long=" 1234567890987654321"
+
+# example identifiers (with leading space)
+ident_regurla=" ident"
+ident_underbar=" _test"
+ident_number=" i123"
+ident_all=" _0123test_42"
+
+# comments
+multiline_comment="/*\x0ax\x0ay\x0a*/"
+
+# more complex defs
+main_class_def="class X{public static void main(String[] args) {} public int method(int i, boolean b) { return i + b; } }"
+class_def="class _ident{ public void method(int[] i, CT[] b) { return; } public boolean[] XY(a[][][] x, b y) {if(y){a[1][2][3].b();}else{y.x();} return z;}"
