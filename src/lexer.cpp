@@ -331,7 +331,7 @@ int Lexer::nextChar() {
     column = 1;
     ++line;
 
-    currentLineFileOffset = input.tellg() - static_cast<std::streamoff>(1);
+    lineStartFileOffsets.push_back(input.tellg() - static_cast<std::streamoff>(1));
 
     return lastChar;
   } // switch end

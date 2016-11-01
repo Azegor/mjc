@@ -116,7 +116,7 @@ private:
 
   [[noreturn]] void error(std::string msg) {
     throw ParseError(curTok, inputFile.getFilename(), std::move(msg),
-                     lexer.getCurrentLineFromInput());
+                     lexer.getCurrentLineFromInput(curTok.line));
   }
 
   void parseProgram();

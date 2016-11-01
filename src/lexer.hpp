@@ -241,7 +241,7 @@ class Lexer {
   std::string tokenString;
   int line = 1, column = 0; // column is 0 since constructor calls nextChar()
   int tokenLine, tokenCol;
-  int currentLineFileOffset = 0;
+  std::vector<std::streamoff> lineStartFileOffsets;
 
   Token::Type getSingleCharOpToken(int c);
 
@@ -263,13 +263,12 @@ class Lexer {
   }
 
   [[noreturn]] void error(std::string msg) {
-    int _line = line, _column = column;
-    throw LexError(filename, _line, _column, std::move(msg),
-                   getCurrentLineFromInput());
+    throw LexError(filename, line, column, std::move(msg),
+                   getCurrentLineFromInput(line));
   }
   [[noreturn]] void errorAtTokenStart(std::string msg) {
     throw LexError(filename, tokenLine, tokenCol, std::move(msg),
-                   getCurrentLineFromInput());
+                   getCurrentLineFromInput(tokenLine));
   }
 
   [[noreturn]] void invalidCharError(char errorChar) {
@@ -282,9 +281,9 @@ class Lexer {
   }
 
 public:
-  std::string getCurrentLineFromInput() {
+  std::string getCurrentLineFromInput(int lineNr) {
     int oldPos = input.tellg();
-    input.seekg(currentLineFileOffset);
+    input.seekg(lineStartFileOffsets.at(lineNr - 1));
     std::string res;
     int c = input.get();
     constexpr int maxLineLength = 1024;
@@ -310,6 +309,7 @@ public:
     if (!input) {
       error(std::string("Broken input stream: ") + std::strerror(errno));
     }
+    lineStartFileOffsets.push_back(0);
     nextChar();
   }
 
