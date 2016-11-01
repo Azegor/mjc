@@ -17,6 +17,7 @@ ADD_CUSTOM_COMMAND(
   COMMAND flex
   ARGS -ominijava.c
        ${CMAKE_CURRENT_SOURCE_DIR}/minijava.l
+  DEPENDS minijava.l
   OUTPUT minijava.c)
 
 file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/lextest/*.java")
