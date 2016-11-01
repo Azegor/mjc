@@ -225,11 +225,7 @@ Token Lexer::nextToken() {
     return makeToken(Token::Type::Identifier);
   }
 
-  // leading 0:
-  if (lastChar == '0')
-    return readLeadingZeroNumber();
-
-  // leading 1-9:
+  // single 0 or leading 1-9:
   if (std::isdigit(lastChar))
     return readDecNumber();
 
@@ -284,41 +280,21 @@ Token Lexer::nextToken() {
   return makeToken(type);
 }
 
-Token Lexer::readLeadingZeroNumber() { // read '0'
-  tokenString = '0';
-  nextChar();
-  if ('0' <= lastChar && lastChar <= '9') {
-    errorAtTokenStart("Invalid number with leading zero");
-  }
-  return makeToken(Token::Type::IntLiteral);
-}
-
-Token Lexer::readDecNumber() { // read '[1-9][0-9]*'
+Token Lexer::readDecNumber() { // read '0|[1-9][0-9]*'
   tokenString = lastChar;
+  if ('0' == lastChar) {
+    nextChar();
+    return makeToken(Token::Type::IntLiteral);
+  }
   while (std::isdigit(nextChar()))
     tokenString += lastChar;
   return makeToken(Token::Type::IntLiteral);
 }
 
-Token Lexer::readSlash() { // read '/' '/=' '//' '/*'
+Token Lexer::readSlash() { // read '/' '/=' '/*'
   tokenString = '/';
-  if (nextChar() == '/') { // single line comment
-    // read until line break or EOF
-    do {
-      nextChar();
-    } while (lastChar != '\r' && lastChar != '\n' && !input.eof());
-    // eat line break
-    if (!input.eof()) {
-      if (lastChar == '\n' || (lastChar == '\r' && nextChar() == '\n')) {
-        nextChar(); // eat '\n'
-      }
-      if (!input.eof()) {
-        return nextToken(); // recursive tail call?
-      }
-    }
-    tokenString = "EOF";
-    return makeToken(Token::Type::Eof);
-  } else if (lastChar == '*') { // multi line comment
+  nextChar();
+  if (lastChar == '*') { // multi line comment
     nextChar();
     while (!input.eof()) {
       if (lastChar & 0b1000'0000) {
