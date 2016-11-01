@@ -41,6 +41,7 @@ void Parser::parseProgram() {
       return;
     default:
       expectAny({TT::Class, TT::Eof});
+      break;
     }
   }
 }
@@ -61,6 +62,7 @@ void Parser::parseClassDeclaration() {
       break;
     default:
       expectAny({TT::RBrace, TT::Public});
+      break;
     }
   }
 }
@@ -79,6 +81,7 @@ void Parser::parseClassMember() {
     return;
   default:
     expectAny({TT::Static, TT::Boolean, TT::Identifier, TT::Int, TT::Void});
+    break;
   }
 }
 
@@ -113,6 +116,7 @@ void Parser::parseFieldOrMethod() {
     return;
   default:
     expectAny({TT::Semicolon, TT::LParen});
+    break;
   }
 }
 
@@ -196,6 +200,7 @@ void Parser::parseBlock() {
                  TT::If, TT::Int, TT::IntLiteral, TT::New, TT::Null, TT::True,
                  TT::LBrace, TT::LParen, TT::Minus, TT::Return, TT::Semicolon,
                  TT::This, TT::Void, TT::While});
+      break;
     }
   }
 }
@@ -230,6 +235,7 @@ void Parser::parseBlockStatement() {
       return;
     default:
       parseStmt();
+      break;
     }
     break;
   default:
@@ -502,5 +508,6 @@ void Parser::parseNewExpr() {
     break;
   default:
     expectAny({TT::LParen, TT::LBracket});
+    break;
   }
 }
