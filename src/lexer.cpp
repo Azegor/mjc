@@ -262,6 +262,10 @@ Token::Type Lexer::getSingleCharOpToken(int c) {
 int Lexer::nextChar() {
   static enum { normal, cr, lf, crlf } lineState = normal;
 
+  if (lastChar == '\t') {
+    ++column; // add extra space after tab, since they are printes as two spaces
+  }
+
   lastChar = input.get();
 
   // the following is to identify different line breaks correctly

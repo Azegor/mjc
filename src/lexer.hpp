@@ -291,7 +291,11 @@ public:
     int lineLength = 0;
     while (c != '\r' && c != '\n' && input.good() &&
            ++lineLength < maxLineLength) {
-      res.push_back(c);
+      if (c == '\t') {
+        res += "  "; // use 2 spaces for tabs
+      } else {
+        res.push_back(c);
+      }
       c = input.get();
     }
     if (lineLength == maxLineLength) {
