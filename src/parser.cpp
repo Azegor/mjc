@@ -436,6 +436,7 @@ void Parser::parsePrimary() {
   case TT::Identifier:
     readNextToken();
     if (curTok.type == TT::LParen) {
+      readNextToken();
       parseArguments();
       expectAndNext(TT::RParen);
     }
