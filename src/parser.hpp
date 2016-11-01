@@ -138,6 +138,14 @@ private:
   void parseWhileStmt();
   void parseExprStmt();
   void parseExpr();
+  void precedenceParse(int minPrec);
+  void parseUnary();
+  void parsePostfixExpr();
+  void parsePrimary();
+  void parseMemberAccess();
+  void parseArrayAccess();
+  void parseArguments();
+  void parseNewExpr();
 };
 
 #endif // PARSER_H

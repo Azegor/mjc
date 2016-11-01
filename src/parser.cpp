@@ -29,9 +29,7 @@
 
 using TT = Token::Type;
 
-void Parser::parseFileOnly() {
-  parseProgram();
-}
+void Parser::parseFileOnly() { parseProgram(); }
 
 void Parser::parseProgram() {
   while (true) {
@@ -305,13 +303,204 @@ void Parser::parseIfStmt() {
 }
 
 void Parser::parseReturnStmt() {
-  readNextToken(); // TODO
+  expectAndNext(TT::Return);
+  switch (curTok.type) {
+  case TT::Semicolon:
+    readNextToken();
+    return;
+  default:
+    parseExpr();
+    expectAndNext(TT::Semicolon);
+    return;
+  }
 }
 
 void Parser::parseWhileStmt() {
-  readNextToken(); // TODO
+  expectAndNext(TT::While); // necessary?
+  expectAndNext(TT::LParen);
+  parseExpr();
+  expectAndNext(TT::RParen);
+  parseStmt();
 }
 
-void Parser::parseExpr() {
-  readNextToken(); // TODO
+void Parser::parseExpr() { precedenceParse(0); }
+
+enum class Assoc : int8_t {
+  Left = 0,
+  Right,
+  None,
+};
+
+static std::pair<int, Assoc> getOpInfo(Token::Type tt) {
+  switch (tt) {
+  case TT::Eq:
+    return {1, Assoc::Right};
+  case TT::VBarVBar:
+    return {2, Assoc::Left};
+  case TT::AmpAmp:
+    return {3, Assoc::Left};
+  case TT::EqEq:
+  case TT::BangEq:
+    return {4, Assoc::Left};
+  case TT::Lt:
+  case TT::LtEq:
+  case TT::Gt:
+  case TT::GtEq:
+    return {5, Assoc::Left};
+  case TT::Plus:
+  case TT::Minus:
+    return {6, Assoc::Left};
+  case TT::Star:
+  case TT::Slash:
+  case TT::Percent:
+    return {7, Assoc::Left};
+  default:
+    return {-1, Assoc::None};
+  }
+}
+
+void Parser::precedenceParse(int minPrec) {
+  // check precondition!
+  parseUnary();
+  auto opInfo = getOpInfo(curTok.type);
+  while (opInfo.first >= minPrec) {
+    readNextToken();
+    if (opInfo.second == Assoc::Left) {
+      opInfo.first += 1;
+    }
+    precedenceParse(opInfo.first);
+    // result = handle_operator(result, rhs);
+  }
+}
+
+void Parser::parseUnary() {
+  switch (curTok.type) {
+  case TT::Bang:
+    readNextToken();
+    parseUnary();
+    break;
+  case TT::Minus:
+    readNextToken();
+    parseUnary();
+    break;
+  default:
+    parsePostfixExpr();
+    break;
+  }
+}
+
+void Parser::parsePostfixExpr() {
+  parsePrimary();
+  while (true) {
+    switch (curTok.type) {
+    case TT::Dot:
+      parseMemberAccess();
+      break;
+    case TT::LBracket:
+      parseArrayAccess();
+      break;
+    default:
+      return;
+    }
+  }
+}
+
+void Parser::parsePrimary() {
+  switch (curTok.type) {
+  case TT::LParen:
+    readNextToken();
+    parseExpr();
+    expectAndNext(TT::RParen);
+    break;
+  case TT::False:
+    readNextToken();
+    break;
+  case TT::True:
+    readNextToken();
+    break;
+  case TT::Null:
+    readNextToken();
+    break;
+  case TT::This:
+    readNextToken();
+    break;
+  case TT::IntLiteral:
+    readNextToken();
+    break;
+  case TT::Identifier:
+    readNextToken();
+    if (curTok.type == TT::LParen) {
+      parseArguments();
+      expectAndNext(TT::RParen);
+    }
+    break;
+  case TT::New:
+    parseNewExpr();
+    break;
+  default:
+    break;
+  }
+}
+
+void Parser::parseMemberAccess() {
+  expectAndNext(TT::Dot);
+  expectAndNext(TT::Identifier);
+  if (curTok.type == TT::LParen) {
+    readNextToken();
+    parseArguments();
+    expectAndNext(TT::RParen);
+  }
+}
+
+void Parser::parseArrayAccess() {
+  expectAndNext(TT::LBracket);
+  parseExpr();
+  expectAndNext(TT::RBracket);
+}
+
+void Parser::parseArguments() {
+  while (true) {
+    switch (curTok.type) {
+    case TT::Bang:
+    case TT::False:
+    case TT::Identifier:
+    case TT::IntLiteral:
+    case TT::New:
+    case TT::Null:
+    case TT::True:
+    case TT::LParen:
+    case TT::Minus:
+    case TT::This:
+      parseExpr();
+      break;
+    default:
+      return;
+    }
+  }
+}
+
+void Parser::parseNewExpr() {
+  readNextToken(); // eat new
+  switch (nextTok.type) {
+  case TT::LParen:
+    expectAndNext(TT::Identifier);
+    // curTok is always LParen
+    readNextToken();
+    expectAndNext(TT::RParen);
+    break;
+  case TT::LBracket:
+    parseBasicType();
+    // curTok is always LBracket
+    readNextToken();
+    parseExpr();
+    expectAndNext(TT::RBracket);
+    while (curTok.type == TT::LBracket && nextTok.type == TT::RBracket) {
+      // eat 2x
+      readNextToken();
+      readNextToken();
+    }
+    break;
+  default:
+    expectAny({TT::LParen, TT::LBracket});
+  }
 }
