@@ -74,6 +74,8 @@ class Parser {
 
 public:
   Parser(const InputFile &inputFile) : inputFile(inputFile), lexer(inputFile) {
+    // 2x
+    readNextToken();
     readNextToken();
   }
 

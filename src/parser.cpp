@@ -29,10 +29,11 @@
 
 using TT = Token::Type;
 
-void Parser::parseFileOnly() { parseProgram(); }
+void Parser::parseFileOnly() {
+  parseProgram();
+}
 
 void Parser::parseProgram() {
-  readNextToken();
   while (true) {
     switch (curTok.type) {
     case TT::Class:
@@ -47,9 +48,10 @@ void Parser::parseProgram() {
 }
 
 void Parser::parseClassDeclaration() {
+  // eat class
   readExpect(TT::Identifier);
   readExpect(TT::LBrace);
-  // parse class members
+  // parse class members:
   readNextToken();
   while (true) {
     switch (curTok.type) {
@@ -66,6 +68,7 @@ void Parser::parseClassDeclaration() {
 }
 
 void Parser::parseClassMember() {
+  // eat public
   switch (readNextToken().type) {
   case TT::Static:
     parseMainMethod();
@@ -164,8 +167,7 @@ void Parser::parseBasicType() {
 }
 
 void Parser::parseBlock() {
-  expect(TT::LBrace);
-  readNextToken();
+  expectAndNext(TT::LBrace);
   while (true) {
     switch (curTok.type) {
     case TT::RBrace:
@@ -222,6 +224,7 @@ void Parser::parseBlockStatement() {
   case TT::This:
   case TT::While:
     parseStmt();
+    break;
   case TT::Identifier:
     switch (nextTok.type) {
     case TT::Identifier:
@@ -230,6 +233,7 @@ void Parser::parseBlockStatement() {
     default:
       parseStmt();
     }
+    break;
   default:
     break;
   }
