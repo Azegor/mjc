@@ -121,6 +121,14 @@ private:
                      lexer.getCurrentLineFromInput(curTok.line));
   }
 
+  [[noreturn]] void
+  errorExpectedAnyOf(std::initializer_list<Token::Type> tokens) {
+    error("Unexpected '" + curTok.str + "', expected one of " +
+          listToString(tokens, [](auto t) {
+            return "\'"s + Lexer::getTokenName(t) + '\'';
+          }));
+  }
+
   void parseProgram();
   void parseClassDeclaration();
   void parseClassMember();

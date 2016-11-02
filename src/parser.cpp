@@ -40,7 +40,7 @@ void Parser::parseProgram() {
     case TT::Eof:
       return;
     default:
-      expectAny({TT::Class, TT::Eof});
+      errorExpectedAnyOf({TT::Class, TT::Eof});
       break;
     }
   }
@@ -61,7 +61,7 @@ void Parser::parseClassDeclaration() {
       parseClassMember();
       break;
     default:
-      expectAny({TT::RBrace, TT::Public});
+      errorExpectedAnyOf({TT::RBrace, TT::Public});
       break;
     }
   }
@@ -80,7 +80,8 @@ void Parser::parseClassMember() {
     parseFieldOrMethod();
     return;
   default:
-    expectAny({TT::Static, TT::Boolean, TT::Identifier, TT::Int, TT::Void});
+    errorExpectedAnyOf(
+        {TT::Static, TT::Boolean, TT::Identifier, TT::Int, TT::Void});
     break;
   }
 }
@@ -115,7 +116,7 @@ void Parser::parseFieldOrMethod() {
     parseBlock();
     return;
   default:
-    expectAny({TT::Semicolon, TT::LParen});
+    errorExpectedAnyOf({TT::Semicolon, TT::LParen});
     break;
   }
 }
@@ -196,10 +197,11 @@ void Parser::parseBlock() {
       parseBlockStatement();
       break;
     default:
-      expectAny({TT::RBrace, TT::Bang, TT::Boolean, TT::False, TT::Identifier,
-                 TT::If, TT::Int, TT::IntLiteral, TT::New, TT::Null, TT::True,
-                 TT::LBrace, TT::LParen, TT::Minus, TT::Return, TT::Semicolon,
-                 TT::This, TT::Void, TT::While});
+      errorExpectedAnyOf({TT::RBrace, TT::Bang, TT::Boolean, TT::False,
+                        TT::Identifier, TT::If, TT::Int, TT::IntLiteral,
+                        TT::New, TT::Null, TT::True, TT::LBrace, TT::LParen,
+                        TT::Minus, TT::Return, TT::Semicolon, TT::This,
+                        TT::Void, TT::While});
       break;
     }
   }
@@ -284,9 +286,10 @@ void Parser::parseStmt() {
     parseExprStmt();
     break;
   default:
-    expectAny({TT::LBrace, TT::Semicolon, TT::If, TT::Return, TT::While,
-               TT::Bang, TT::False, TT::IntLiteral, TT::New, TT::Null, TT::True,
-               TT::LParen, TT::Minus, TT::This, TT::Identifier});
+    errorExpectedAnyOf({TT::LBrace, TT::Semicolon, TT::If, TT::Return, TT::While,
+                      TT::Bang, TT::False, TT::IntLiteral, TT::New, TT::Null,
+                      TT::True, TT::LParen, TT::Minus, TT::This,
+                      TT::Identifier});
     break;
   }
 }
@@ -445,7 +448,8 @@ void Parser::parsePrimary() {
     parseNewExpr();
     break;
   default:
-    error("Unexpected '" + curTok.str + "', expected PrimaryExpression");
+    errorExpectedAnyOf({TT::LParen, TT::False, TT::True, TT::Null, TT::This,
+                      TT::IntLiteral, TT::Identifier, TT::New});
   }
 }
 
