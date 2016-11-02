@@ -228,14 +228,14 @@ void Parser::parseBlockStatement() {
   case TT::While:
     parseStmt();
     break;
-  case TT::Identifier:
-    switch (nextTok.type) {
-    case TT::Identifier:
+   case TT::Identifier:
+    if (nextTok.type == TT::Identifier || 
+        (nextTok.type == TT::LBracket && afternextTok.type == TT::RBracket)) {
       parseLocalVarDeclStmt();
       return;
-    default:
+    } else {
       parseStmt();
-      break;
+      return;
     }
     break;
   default:
