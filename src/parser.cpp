@@ -492,6 +492,7 @@ void Parser::parseArguments() {
 
 void Parser::parseNewExpr() {
   readNextToken(); // eat new
+  // check next token instead of current
   switch (nextTok.type) {
   case TT::LParen:
     expectAndNext(TT::Identifier);
@@ -502,13 +503,12 @@ void Parser::parseNewExpr() {
   case TT::LBracket:
     parseBasicType();
     // curTok is always LBracket
-    readNextToken();
+    readNextToken(); // eat '['
     parseExpr();
     expectAndNext(TT::RBracket);
     while (curTok.type == TT::LBracket && nextTok.type == TT::RBracket) {
-      // eat 2x
-      readNextToken();
-      readNextToken();
+      readNextToken(); // eat '['
+      readNextToken(); // eat ']'
     }
     break;
   default:
