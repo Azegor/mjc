@@ -47,11 +47,10 @@ void Parser::parseProgram() {
 }
 
 void Parser::parseClassDeclaration() {
-  // eat class
-  readExpect(TT::Identifier);
-  readExpect(TT::LBrace);
+  expectAndNext(TT::Class);
+  expectAndNext(TT::Identifier);
+  expectAndNext(TT::LBrace);
   // parse class members:
-  readNextToken();
   while (true) {
     switch (curTok.type) {
     case TT::RBrace:
@@ -68,8 +67,7 @@ void Parser::parseClassDeclaration() {
 }
 
 void Parser::parseClassMember() {
-  // eat public
-  switch (readNextToken().type) {
+  switch (nextTok.type) {
   case TT::Static:
     parseMainMethod();
     return;
@@ -87,22 +85,25 @@ void Parser::parseClassMember() {
 }
 
 void Parser::parseMainMethod() {
-  readExpect(TT::Void);
-  readExpect(TT::Identifier); // name doesn't matter here
-  readExpect(TT::LParen);
-  readExpect(TT::Identifier);
+  expectAndNext(TT::Public);
+  expectAndNext(TT::Static);
+  expectAndNext(TT::Void);
+  expectAndNext(TT::Identifier); // name doesn't matter here
+  expectAndNext(TT::LParen);
+  expect(TT::Identifier);
   if (curTok.str != "String") {
     error("Unexpected '" + curTok.str + "', expected 'String'");
   }
-  readExpect(TT::LBracket);
-  readExpect(TT::RBracket);
-  readExpect(TT::Identifier);
-  readExpect(TT::RParen);
   readNextToken();
+  expectAndNext(TT::LBracket);
+  expectAndNext(TT::RBracket);
+  expectAndNext(TT::Identifier);
+  expectAndNext(TT::RParen);
   parseBlock();
 }
 
 void Parser::parseFieldOrMethod() {
+  expectAndNext(TT::Public);
   parseType();
   expectAndNext(TT::Identifier);
   switch (curTok.type) {
@@ -146,8 +147,7 @@ void Parser::parseParameterList() {
 
 void Parser::parseParameter() {
   parseType();
-  expect(TT::Identifier);
-  readNextToken();
+  expectAndNext(TT::Identifier);
 }
 
 void Parser::parseType() {
@@ -155,8 +155,8 @@ void Parser::parseType() {
   while (true) {
     switch (curTok.type) {
     case TT::LBracket:
-      readExpect(TT::RBracket);
       readNextToken();
+      expectAndNext(TT::RBracket);
       break;
     default:
       return;
@@ -247,13 +247,12 @@ void Parser::parseBlockStatement() {
 
 void Parser::parseLocalVarDeclStmt() {
   parseType();
-  expect(TT::Identifier);
-  if (readNextToken().type == TT::Eq) {
+  expectAndNext(TT::Identifier);
+  if (curTok.type == TT::Eq) {
     readNextToken();
     parseExpr();
   }
-  expect(TT::Semicolon);
-  readNextToken();
+  expectAndNext(TT::Semicolon);
 }
 
 void Parser::parseStmt() {
@@ -491,7 +490,7 @@ void Parser::parseArguments() {
 }
 
 void Parser::parseNewExpr() {
-  readNextToken(); // eat new
+  expectAndNext(TT::New);
   // check next token instead of current
   switch (nextTok.type) {
   case TT::LParen:
