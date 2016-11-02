@@ -28,3 +28,21 @@ foreach(file ${lexer_input_files})
            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/lexer_diff.sh" $<TARGET_FILE:mjc> $<TARGET_FILE:mj_lexer> "${file}"
            DEPENDS mj_lexer)
 endforeach()
+
+# parse valid programs
+file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/parsetest/valid/*.java")
+foreach(file ${lexer_input_files})
+  MESSAGE(STATUS "Parser test file: ${file}")
+  get_filename_component(filename "${file}" NAME)
+  add_test(NAME "Parse_valid_${filename}"
+           COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/parser_valid.sh" $<TARGET_FILE:mjc> "${file}")
+endforeach()
+
+# parse invalid programs
+file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/parsetest/invalid/*.java")
+foreach(file ${lexer_input_files})
+  MESSAGE(STATUS "Parser test file: ${file}")
+  get_filename_component(filename "${file}" NAME)
+  add_test(NAME "Parse_invalid_${filename}"
+           COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/parser_invalid.sh" $<TARGET_FILE:mjc> "${file}")
+endforeach()
