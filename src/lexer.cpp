@@ -376,7 +376,7 @@ static bool isSpace(int c) {
   }
 }
 
-Token Lexer::nextToken() {
+Token Lexer::readNextToken() {
   // skip all whitespaces
   while (isSpace(lastChar)) {
     nextChar();
@@ -474,7 +474,7 @@ Token Lexer::readSlash() { // read '/' '/=' '/*'
       if (lastChar == '*') {
         if (nextChar() == '/') {
           nextChar();         // eat '/'
-          return nextToken(); // recursive tail call?
+          return readNextToken(); // recursive tail call?
         } else
           continue; // skip call to nextChar() for cases like '**/'
       }

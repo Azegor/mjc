@@ -27,11 +27,12 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#include <cstring>  // for std::strerror
-#include <iostream> // TODO remove
+#include <cstring> // for std::strerror
+#include <deque>
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <cassert>
 using namespace std::string_literals;
 
 #include "error.hpp"
@@ -252,6 +253,8 @@ class Lexer {
   int tokenLine, tokenCol;
   std::vector<std::streamoff> lineStartFileOffsets;
 
+  std::deque<Token> tokenLookahead;
+
   Token::Type getSingleCharOpToken(int c);
 
   int nextChar();
@@ -301,11 +304,35 @@ public:
 
   std::string getCurrentLineFromInput(int lineNr);
 
-  Token nextToken();
+  Token nextToken() {
+    if (tokenLookahead.empty()) {
+      return readNextToken();
+    }
+    Token res = std::move(tokenLookahead.front());
+    tokenLookahead.pop_front();
+    return res;
+  }
+
+  Token &lookAhead(size_t numTokens) {
+    assert(numTokens > 0);
+    if (numTokens <= tokenLookahead.size()) {
+      return tokenLookahead[numTokens - 1];
+    } else {
+      return peekAhead(numTokens);
+    }
+  }
 
   static const char *getTokenName(Token::Type type);
 
 private:
+  Token &peekAhead(size_t numTokens) {
+    for (size_t i = tokenLookahead.size(); i <= numTokens; ++i) {
+      tokenLookahead.push_back(readNextToken());
+    }
+    return tokenLookahead[numTokens - 1];
+  }
+  Token readNextToken();
+
   // Parser helper functions
   inline Token readLeadingZeroNumber();
   inline Token readDecNumber();
