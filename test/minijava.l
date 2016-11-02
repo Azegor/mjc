@@ -226,8 +226,8 @@ enum {
 "|"    { return TOK_OP; }
 "/*"   { return TOK_STARTCOMMENT; }
 "*/"   { return TOK_ENDCOMMENT; }
-[a-zA-Z_][a-zA-Z_0-9]+   { return TOK_IDENT; }
-[0-9]+       { return TOK_NUMBER;}
+[a-zA-Z_][a-zA-Z_0-9]*   { return TOK_IDENT; }
+0|[1-9][0-9]*       { return TOK_NUMBER;}
 <<EOF>>      { return TOK_EOF; }
 [^\x00-\x7F] { return TOK_ERROR; } /* non-ascii characters */
 .|\n         { return TOK_OTHER; } /* Matches everything unmatched */
@@ -262,10 +262,6 @@ int main(int argc, char **argv)
 
     if (!in_comment) {
       if (t == TOK_NUMBER) {
-        if (t_len >= 2 && t_str[0] == '0') {
-          printf ("error\n");
-          return -1;
-        }
         printf ("integer literal %s\n", t_str);
       } else if (t == TOK_IDENT) {
         printf ("identifier %s\n", t_str);
