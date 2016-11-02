@@ -12,7 +12,7 @@ set(CMAKE_CXX_COMPILER /usr/bin/clang++)
 # set(CMAKE_C_COMPILER /usr/bin/clang-4.0)
 # set(CMAKE_CXX_COMPILER /usr/bin/clang++-4.0)
 
-# set(CMAKE_BUILD_TYPE "Release")
+set(CMAKE_BUILD_TYPE "Release")
 
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
