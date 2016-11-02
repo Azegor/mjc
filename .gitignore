@@ -34,4 +34,5 @@ builddir/
 *.kdev4
 
 fuzzing/*.sancov
+fuzzing/fuzz-*.log
 fuzzing/corpus
