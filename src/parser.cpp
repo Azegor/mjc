@@ -445,7 +445,7 @@ void Parser::parsePrimary() {
     parseNewExpr();
     break;
   default:
-    break;
+    error("Unexpected '" + curTok.str + "', expected PrimaryExpression");
   }
 }
 
