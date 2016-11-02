@@ -67,7 +67,7 @@ void Parser::parseClassDeclaration() {
 }
 
 void Parser::parseClassMember() {
-  switch (nextTok.type) {
+  switch (lookAhead(1).type) {
   case TT::Static:
     parseMainMethod();
     return;
@@ -230,9 +230,11 @@ void Parser::parseBlockStatement() {
   case TT::While:
     parseStmt();
     break;
-  case TT::Identifier:
+  case TT::Identifier: {
+    Token &nextTok = lookAhead(1);
+    Token &afterNextTok = lookAhead(2);
     if (nextTok.type == TT::Identifier ||
-        (nextTok.type == TT::LBracket && afternextTok.type == TT::RBracket)) {
+        (nextTok.type == TT::LBracket && afterNextTok.type == TT::RBracket)) {
       parseLocalVarDeclStmt();
       return;
     } else {
@@ -240,6 +242,7 @@ void Parser::parseBlockStatement() {
       return;
     }
     break;
+  }
   default:
     break;
   }
@@ -499,7 +502,7 @@ void Parser::parseArguments() {
 void Parser::parseNewExpr() {
   expectAndNext(TT::New);
   // check next token instead of current
-  switch (nextTok.type) {
+  switch (lookAhead(1).type) {
   case TT::LParen:
     expectAndNext(TT::Identifier);
     // curTok is always LParen
@@ -512,7 +515,7 @@ void Parser::parseNewExpr() {
     readNextToken(); // eat '['
     parseExpr();
     expectAndNext(TT::RBracket);
-    while (curTok.type == TT::LBracket && nextTok.type == TT::RBracket) {
+    while (curTok.type == TT::LBracket && lookAhead(1).type == TT::RBracket) {
       readNextToken(); // eat '['
       readNextToken(); // eat ']'
     }

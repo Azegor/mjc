@@ -90,22 +90,19 @@ class Parser {
   const InputFile &inputFile;
 
   Lexer lexer;
-  Token curTok, nextTok, afternextTok;
+  Token curTok;
 
 public:
   Parser(const InputFile &inputFile) : inputFile(inputFile), lexer(inputFile) {
-    // 2x
-    readNextToken();
-    readNextToken();
     readNextToken();
   }
 
   Token &readNextToken() {
-    curTok = std::move(nextTok);
-    nextTok = std::move(afternextTok);
-    afternextTok = lexer.nextToken();
+    curTok = lexer.nextToken();
     return curTok;
   }
+
+  Token &lookAhead(size_t numTokens) { return lexer.lookAhead(numTokens); }
 
   void parseFileOnly();
 
