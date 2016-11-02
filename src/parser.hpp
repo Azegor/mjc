@@ -117,7 +117,7 @@ private:
     readNextToken();
   }
   void expect(Token::Type ttype) {
-    if (curTok.type != ttype) {
+    if (unlikely(curTok.type != ttype)) {
       error("Unexpected '" + truncateString(curTok.str, 64) + "', expected '" +
             Lexer::getTokenName(ttype) + '\'');
     }
@@ -148,31 +148,31 @@ private:
   }
 
   void parseProgram();
-  void parseClassDeclaration();
-  void parseClassMember();
-  void parseMainMethod();
-  void parseFieldOrMethod();
-  void parseParameterList();
-  void parseParameter();
-  void parseType();
-  void parseBasicType();
-  void parseBlock();
-  void parseBlockStatement();
-  void parseLocalVarDeclStmt();
-  void parseStmt();
-  void parseIfStmt();
-  void parseReturnStmt();
-  void parseWhileStmt();
-  void parseExprStmt();
-  void parseExpr();
-  void precedenceParse(int minPrec);
-  void parseUnary();
-  void parsePostfixExpr();
-  void parsePrimary();
-  void parseMemberAccess();
-  void parseArrayAccess();
-  void parseArguments();
-  void parseNewExpr();
+  inline void parseClassDeclaration();
+  inline void parseClassMember();
+  inline void parseMainMethod();
+  inline void parseFieldOrMethod();
+  inline void parseParameterList();
+  inline void parseParameter();
+  inline void parseType();
+  inline void parseBasicType();
+  inline void parseBlock();
+  inline void parseBlockStatement();
+  inline void parseLocalVarDeclStmt();
+  inline void parseStmt();
+  inline void parseIfStmt();
+  inline void parseReturnStmt();
+  inline void parseWhileStmt();
+  inline void parseExprStmt();
+  inline void parseExpr();
+  inline void precedenceParse(int minPrec);
+  inline void parseUnary();
+  inline void parsePostfixExpr();
+  inline void parsePrimary();
+  inline void parseMemberAccess();
+  inline void parseArrayAccess();
+  inline void parseArguments();
+  inline void parseNewExpr();
 };
 
 #endif // PARSER_H

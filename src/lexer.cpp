@@ -26,6 +26,8 @@
 
 #include "lexer.hpp"
 
+#include "util.hpp"
+
 std::unordered_map<std::string, Token::Type> Lexer::identifierTokens{
     // keywords
     {"boolean", Token::Type::Boolean},
@@ -331,7 +333,8 @@ int Lexer::nextChar() {
     column = 1;
     ++line;
 
-    lineStartFileOffsets.push_back(input.tellg() - static_cast<std::streamoff>(1));
+    lineStartFileOffsets.push_back(input.tellg() -
+                                   static_cast<std::streamoff>(1));
 
     return lastChar;
   } // switch end
@@ -376,6 +379,17 @@ static bool isSpace(int c) {
   }
 }
 
+static bool isAlphaOrUnderscore(int c) {
+  return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || c == '_';
+}
+
+static bool isAlphaNumOrUnderscore(int c) {
+  return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') ||
+         ('0' <= c && c <= '9') || c == '_';
+}
+
+static bool isDigit(int c) { return ('0' <= c && c <= '9'); }
+
 Token Lexer::readNextToken() {
   // skip all whitespaces
   while (isSpace(lastChar)) {
@@ -385,9 +399,9 @@ Token Lexer::readNextToken() {
   initToken(); // clear tokenstring, sets line/col to current pos
 
   // identifiers [_a-zA-Z][_a-zA-Z0-9]*
-  if (std::isalpha(lastChar) || lastChar == '_') {
+  if (isAlphaOrUnderscore(lastChar)) {
     tokenString = lastChar;
-    while (std::isalnum(nextChar()) || lastChar == '_')
+    while (isAlphaNumOrUnderscore(nextChar()))
       tokenString += lastChar;
 
     auto res = identifierTokens.find(tokenString);
@@ -397,8 +411,9 @@ Token Lexer::readNextToken() {
   }
 
   // single 0 or leading 1-9:
-  if (std::isdigit(lastChar))
+  if (isDigit(lastChar)) {
     return readDecNumber();
+  }
 
   //-----------
   // operators (single or multiple characters)
@@ -444,7 +459,7 @@ Token Lexer::readNextToken() {
   // remaining single characters as tokens (i.e. operator symbols)
   tokenString = lastChar;
   Token::Type type = getSingleCharOpToken(lastChar);
-  if (type == Token::Type::none) { // illegal character
+  if (unlikely(type == Token::Type::none)) { // illegal character
     invalidCharError(lastChar);
   }
   nextChar(); // eat
@@ -457,7 +472,7 @@ Token Lexer::readDecNumber() { // read '0|[1-9][0-9]*'
     nextChar();
     return makeToken(Token::Type::IntLiteral);
   }
-  while (std::isdigit(nextChar()))
+  while (isDigit(nextChar()))
     tokenString += lastChar;
   return makeToken(Token::Type::IntLiteral);
 }
@@ -467,13 +482,13 @@ Token Lexer::readSlash() { // read '/' '/=' '/*'
   nextChar();
   if (lastChar == '*') { // multi line comment
     nextChar();
-    while (!input.eof()) {
-      if (lastChar & 0b1000'0000) {
+    while (likely(!input.eof())) {
+      if (unlikely(lastChar & 0b1000'0000)) {
         invalidCharError(lastChar);
       }
       if (lastChar == '*') {
         if (nextChar() == '/') {
-          nextChar();         // eat '/'
+          nextChar();             // eat '/'
           return readNextToken(); // recursive tail call?
         } else
           continue; // skip call to nextChar() for cases like '**/'

@@ -27,6 +27,8 @@
 #include "lexer.hpp"
 #include "parser.hpp"
 
+#include <deque>
+
 using TT = Token::Type;
 
 void Parser::parseFileOnly() { parseProgram(); }
@@ -165,8 +167,17 @@ void Parser::parseType() {
 }
 
 void Parser::parseBasicType() {
-  expectAny({TT::Boolean, TT::Identifier, TT::Int, TT::Void});
-  readNextToken();
+  switch (curTok.type) {
+  case TT::Boolean:
+  case TT::Identifier:
+  case TT::Int:
+  case TT::Void:
+    readNextToken();
+    break;
+  default:
+    errorExpectedAnyOf({TT::Boolean, TT::Identifier, TT::Int, TT::Void});
+    break;
+  }
 }
 
 void Parser::parseBlock() {
@@ -400,6 +411,38 @@ void Parser::parseUnary() {
     break;
   }
 }
+
+// TODO: use this implementation later when the AST is also constructed
+// (since then tail call elimination cannot be applied anymore)
+// void Parser::parseUnary() {
+//   std::deque<Token> unaries;
+//   while (true) {
+//     switch (curTok.type) {
+//     case TT::Bang:
+//       unaries.emplace_back(std::move(curTok));
+//       readNextToken();
+//       continue; // parseUnary();
+//     case TT::Minus:
+//       unaries.emplace_back(std::move(curTok));
+//       readNextToken();
+//       continue; // parseUnary();
+//       break;
+//     default:
+//       parsePostfixExpr();
+//       // result = ...
+//       // consume all unary prefixes in reverse order
+//       for (std::deque<Token>::reverse_iterator i = unaries.rbegin(),
+//                                                 end = unaries.rend();
+//            i != end; ++i) {
+//         Token t = std::move(*i);
+//         // consume token in some way
+//         // TODO implement function which handles unary operators
+//         // result = UnaryOp(t, result)
+//       }
+//       return;
+//     }
+//   }
+// }
 
 void Parser::parsePostfixExpr() {
   parsePrimary();
