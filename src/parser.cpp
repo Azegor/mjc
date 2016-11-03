@@ -463,23 +463,29 @@ void Parser::parseArrayAccess() {
 }
 
 void Parser::parseArguments() {
-  while (true) {
-    switch (curTok.type) {
-    case TT::Bang:
-    case TT::False:
-    case TT::Identifier:
-    case TT::IntLiteral:
-    case TT::New:
-    case TT::Null:
-    case TT::True:
-    case TT::LParen:
-    case TT::Minus:
-    case TT::This:
+  switch (curTok.type) {
+  case TT::Bang:
+  case TT::False:
+  case TT::Identifier:
+  case TT::IntLiteral:
+  case TT::New:
+  case TT::Null:
+  case TT::True:
+  case TT::LParen:
+  case TT::Minus:
+  case TT::This:
+    parseExpr();
+    while (curTok.type == TT::Comma) {
+      readNextToken();
       parseExpr();
-      break;
-    default:
-      return;
     }
+    break;
+  case TT::RParen:
+    return;
+  default:
+    errorExpectedAnyOf({TT::Bang, TT::False, TT::Identifier, TT::IntLiteral,
+                        TT::New, TT::Null, TT::True, TT::LParen, TT::Minus,
+                        TT::This, TT::RParen});
   }
 }
 
