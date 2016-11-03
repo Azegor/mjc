@@ -391,9 +391,9 @@ static bool isAlphaNumOrUnderscore(int c) {
 static bool isDigit(int c) { return ('0' <= c && c <= '9'); }
 
 Token Lexer::readNextToken() {
-  // skip all whitespaces
-  while (isSpace(lastChar)) {
-    nextChar();
+
+  if (skipCommentsAndWhitespaces()) {
+    return readSlashFromSecondCharOn();
   }
 
   initToken(); // clear tokenstring, sets line/col to current pos
@@ -418,8 +418,6 @@ Token Lexer::readNextToken() {
   //-----------
   // operators (single or multiple characters)
   switch (lastChar) {
-  case '/':
-    return readSlash();
   case '*':
     return readStar();
   case '%':
@@ -466,6 +464,60 @@ Token Lexer::readNextToken() {
   return makeToken(type);
 }
 
+/// returns true if char before last char was '/' (not from comment)
+bool Lexer::skipCommentsAndWhitespaces() {
+  while (true) {
+  loophead:
+    switch (lastChar) {
+    case '/':
+      initToken();             // in case we have a '/?' operator
+      if (nextChar() == '*') { // multi line comment
+        nextChar();
+        while (likely(!input.eof())) {
+          if (unlikely(lastChar & 0b1000'0000)) {
+            invalidCharError(lastChar);
+          }
+          if (lastChar == '*') {
+            if (nextChar() == '/') {
+              nextChar();    // eat '/'
+              goto loophead; // continue while (true) loop
+            } else {
+              continue; // skip call to nextChar() for cases like '**/'
+            }
+          }
+          nextChar();
+        }
+        error("unexpected end of file in multi line comment");
+      } else {
+        return true;
+      }
+      break;
+    case ' ':
+    case '\r':
+    case '\n':
+    case '\t':
+      // skip all whitespaces
+      do {
+        nextChar();
+      } while (isSpace(lastChar));
+      break;
+    default:
+      return false;
+    }
+  }
+}
+
+Token Lexer::readSlashFromSecondCharOn() { // read '/' '/=' '/*'
+  tokenString = '/';
+  // character '/' was already next and lastChar points to the next char
+  if (lastChar == '=') {
+    appendAndNext();
+    return makeToken(Token::Type::SlashEq);
+  } else {
+    return makeToken(Token::Type::Slash);
+  }
+}
+
 Token Lexer::readDecNumber() { // read '0|[1-9][0-9]*'
   tokenString = lastChar;
   if ('0' == lastChar) {
@@ -475,33 +527,6 @@ Token Lexer::readDecNumber() { // read '0|[1-9][0-9]*'
   while (isDigit(nextChar()))
     tokenString += lastChar;
   return makeToken(Token::Type::IntLiteral);
-}
-
-Token Lexer::readSlash() { // read '/' '/=' '/*'
-  tokenString = '/';
-  nextChar();
-  if (lastChar == '*') { // multi line comment
-    nextChar();
-    while (likely(!input.eof())) {
-      if (unlikely(lastChar & 0b1000'0000)) {
-        invalidCharError(lastChar);
-      }
-      if (lastChar == '*') {
-        if (nextChar() == '/') {
-          nextChar();             // eat '/'
-          return readNextToken(); // recursive tail call?
-        } else
-          continue; // skip call to nextChar() for cases like '**/'
-      }
-      nextChar();
-    }
-    error("unexpected end of file in multi line comment");
-  } else if (lastChar == '=') {
-    appendAndNext();
-    return makeToken(Token::Type::SlashEq);
-  } else {
-    return makeToken(Token::Type::Slash);
-  }
 }
 
 Token Lexer::readStar() { // read '*' '*='

@@ -334,9 +334,9 @@ private:
   Token readNextToken();
 
   // Parser helper functions
-  inline Token readLeadingZeroNumber();
+  inline bool skipCommentsAndWhitespaces();
+  inline Token readSlashFromSecondCharOn();
   inline Token readDecNumber();
-  inline Token readSlash();
   inline Token readStar();
   inline Token readPercent();
   inline Token readPlus();
