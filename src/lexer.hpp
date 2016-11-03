@@ -248,9 +248,10 @@ class Lexer {
   std::string filename;
 
   int lastChar;
+  // 1024 seems to be the sweet spot:
+  static constexpr const int maxBufferSize = 1024;
   // input stream buffer
-  std::vector<char> buffer;
-  static constexpr const int maxBufferSize = 4 * 1024;
+  char buffer[maxBufferSize];
   int curBufferPos = 0;
   int curBufferSize = 0;
   bool streamIsEof = false;
@@ -314,8 +315,7 @@ public:
   bool isEof() const { return streamIsEof && (curBufferPos >= curBufferSize); }
 
   Lexer(const InputFile &inputFile)
-      : input(*inputFile.getStream()), filename(inputFile.getFilename()),
-        buffer(maxBufferSize, '\0') {
+      : input(*inputFile.getStream()), filename(inputFile.getFilename()) {
     if (!input) {
       error(std::string("Broken input stream: ") + std::strerror(errno));
     }
@@ -374,3 +374,4 @@ private:
 };
 
 #endif // LEXER_H
+
