@@ -1,0 +1,48 @@
+class Some {
+  public static void main(String[] args) {
+    myFunc(
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,
+    a,c,d,f,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w);
+  }
+}
+
+
