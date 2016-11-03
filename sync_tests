@@ -1,0 +1,82 @@
+#!/bin/bash
+
+declare -A mappings
+mappings=(
+    [parsetest]='syntax'
+)
+declare -A suffixes
+suffixes=(
+    # order matters for import matching
+    [invalid]='.invalid'
+    [valid]=''
+)
+our_testpath='test'
+mjt_testpath='tests'
+
+edo() {
+    echo "${@}"
+    "${@}" || exit 100
+}
+
+_copy_if_different() {
+    local copied=1
+    if ! diff -q -N "${1}" "${2}" &> /dev/null; then
+        edo cp -f "${1}" "${2}"
+        copied=0
+    fi
+    
+    return ${copied}
+}
+
+_export_tests() {
+    local mjt=${1}
+    local mypath=${2}
+    local exported=0
+    for phase in "${!mappings[@]}"; do
+        for result in "${!suffixes[@]}"; do
+            for f in "${mypath}/${our_testpath}/${phase}/${result}/"*.java; do
+                base=${f##*/}
+                _copy_if_different "${f}" "${mjt}/${mjt_testpath}/${mappings[${phase}]}/${base%.java}${suffixes[${result}]}.mj" \
+                    && exported=1
+            done
+        done
+    done
+
+    [[ ${exported} -gt 0 ]] && echo -e "\e[1;31m!!!\e[0m Exported tests, please add, commit and submit in mjtests"
+}
+
+_import_tests() {
+    local mjt=${1}
+    local mypath=${2}
+    local imported=0
+    for phase in "${!mappings[@]}"; do
+        for f in "${mjt}/${mjt_testpath}/${mappings[${phase}]}/"*.mj; do
+            for result in "${!suffixes[@]}"; do
+                base=${f##*/}
+                if [[ ${base} =~ .*"${suffixes[${result}]}.mj" ]]; then
+                    _copy_if_different "${f}" "${mypath}/${our_testpath}/${phase}/${result}/${base%${suffixes[${result}]}.mj}.java" \
+                        && imported=1
+                    break;
+                fi
+            done
+        done
+    done
+
+    [[ ${imported} -gt 0 ]] && echo -e "\e[1;31m!!!\e[0m Imported tests, please add and commit"
+}
+
+_main() {
+    [[ ${#} -eq 1 && -d ${1} && -x ${1}/mjt.py ]] || { echo "Need to pass path to mjtest as the single argument"; exit 1; }
+
+    local dir=${1}
+    local mypath=${0%/*}
+
+    [[ -d ${mypath}/${our_testpath} ]] || { echo "Couldn't find our test dir. How did you run this script?"; exit 2; }
+
+    _export_tests "${dir}" "${mypath}"
+    _import_tests "${dir}" "${mypath}"
+
+    exit 0
+}
+
+_main "${@}"
