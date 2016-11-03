@@ -252,7 +252,7 @@ class Lexer {
   static constexpr const int maxBufferSize = 1024;
   // input stream buffer
   char buffer[maxBufferSize];
-  int curBufferPos = 0;
+  int nextCharPos = 0;
   int curBufferSize = 0;
   bool streamIsEof = false;
 
@@ -305,14 +305,15 @@ public:
     input.read(&buffer[0], maxBufferSize);
     streamIsEof = input.eof();
     curBufferSize = input.gcount();
-    curBufferPos = 0;
-    if (streamIsEof)
-    {
-      buffer[curBufferSize] = EOF; // TODO: can this write beyond the end of the buffer?
+    nextCharPos = 0;
+    if (streamIsEof) {
+      buffer[curBufferSize] = EOF;
     }
   }
 
-  bool isEof() const { return streamIsEof && (curBufferPos >= curBufferSize); }
+  bool isEof() const {
+    return streamIsEof && (nextCharPos - 1 >= curBufferSize);
+  }
 
   Lexer(const InputFile &inputFile)
       : input(*inputFile.getStream()), filename(inputFile.getFilename()) {
@@ -374,4 +375,3 @@ private:
 };
 
 #endif // LEXER_H
-

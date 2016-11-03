@@ -268,12 +268,12 @@ int Lexer::nextChar() {
     ++column; // add extra space after tab, since they are printes as two spaces
   }
 
-  if (curBufferPos == curBufferSize && !isEof())
+  if (nextCharPos == curBufferSize && !isEof())
   {
     readIntoBuffer();
   }
 
-  lastChar = static_cast<int>(buffer[curBufferPos++]);
+  lastChar = static_cast<int>(buffer[nextCharPos++]);
 
   // the following is to identify different line breaks correctly
   // (mixture of CR and LF)
