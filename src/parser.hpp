@@ -27,6 +27,8 @@
 #ifndef PARSER_H
 #define PARSER_H
 
+#include <algorithm> // for std::max
+
 #include "error.hpp"
 #include "input_file.hpp"
 #include "lexer.hpp"
@@ -51,14 +53,32 @@ public:
   }
   void writeErrorLineHighlight(std::ostream &out) const {
     co::color_ostream<std::ostream> cl_out(out);
-    cl_out << errorLine << std::endl;
+    size_t highlightStart = srcLoc.startToken.col - 1;
+    size_t highlightEnd = srcLoc.endToken.col - 1;
+    if (errorLine.length() > Consts::maxErrorLineLength) {
+      size_t offset = std::min(highlightStart,
+                               errorLine.length() - Consts::maxErrorLineLength);
+      // -1 because of leading ellipsis
+      if (offset > 0) {
+        highlightStart -= (offset - 1);
+      }
+      highlightEnd =
+          std::min(highlightEnd - (offset - 1), Consts::maxErrorLineLength - 2);
+      cl_out << truncatedErrorLine(errorLine, offset,
+                                   Consts::maxErrorLineLength)
+             << std::endl;
+    } else {
+      cl_out << errorLine << std::endl;
+    }
     cl_out << co::color(co::green);
 
-    for (int i = 1; i < srcLoc.startToken.col; ++i)
+    for (size_t i = 0; i < highlightStart; ++i) {
       cl_out << '~';
+    }
     if (srcLoc.startToken.line == srcLoc.endToken.line) {
-      for (int i = srcLoc.startToken.col; i <= srcLoc.endToken.col; ++i)
+      for (size_t i = highlightStart; i <= highlightEnd; ++i) {
         cl_out << '^';
+      }
     } else {
       cl_out << '^';
     }
@@ -100,9 +120,10 @@ private:
     readNextToken();
   }
   void expect(Token::Type ttype) {
-    if (curTok.type != ttype)
-      error("Unexpected '" + curTok.str + "', expected '" +
+    if (curTok.type != ttype) {
+      error("Unexpected '" + truncateString(curTok.str, 64) + "', expected '" +
             Lexer::getTokenName(ttype) + '\'');
+    }
   }
   void expectAny(std::initializer_list<Token::Type> tokens) {
     for (auto &&t : tokens) {
@@ -110,8 +131,8 @@ private:
         return;
       }
     }
-    error("Unexpected '" + curTok.str + "', expected one of " +
-          listToString(tokens, [](auto t) {
+    error("Unexpected '" + truncateString(curTok.str, 64) +
+          "', expected one of " + listToString(tokens, [](auto t) {
             return "\'"s + Lexer::getTokenName(t) + '\'';
           }));
   }
@@ -123,8 +144,8 @@ private:
 
   [[noreturn]] void
   errorExpectedAnyOf(std::initializer_list<Token::Type> tokens) {
-    error("Unexpected '" + curTok.str + "', expected one of " +
-          listToString(tokens, [](auto t) {
+    error("Unexpected '" + truncateString(curTok.str, 64) +
+          "', expected one of " + listToString(tokens, [](auto t) {
             return "\'"s + Lexer::getTokenName(t) + '\'';
           }));
   }

@@ -36,6 +36,7 @@ using namespace std::string_literals;
 
 #include "error.hpp"
 #include "input_file.hpp"
+#include "util.hpp"
 
 struct Token {
   enum class Type : int {
@@ -223,9 +224,17 @@ public:
 
   void writeErrorLineHighlight(std::ostream &out) const {
     co::color_ostream<std::ostream> cl_out(out);
-    cl_out << errorLine << std::endl;
+    size_t highlightPos = col;
+    if (highlightPos > Consts::maxErrorLineLength) {
+      highlightPos = Consts::maxErrorLineLength - 8;
+      cl_out << truncatedErrorLine(errorLine, col - highlightPos + 1,
+                                   Consts::maxErrorLineLength)
+             << std::endl;
+    } else {
+      cl_out << errorLine << std::endl;
+    }
     cl_out << co::color(co::green);
-    for (int i = 1; i < col; ++i)
+    for (size_t i = 1; i < highlightPos; ++i)
       cl_out << '~';
     cl_out << '^' << std::endl;
   }
@@ -281,29 +290,6 @@ class Lexer {
   }
 
 public:
-  std::string getCurrentLineFromInput(int lineNr) {
-    int oldPos = input.tellg();
-    input.seekg(lineStartFileOffsets.at(lineNr - 1));
-    std::string res;
-    int c = input.get();
-    constexpr int maxLineLength = 1024;
-    int lineLength = 0;
-    while (c != '\r' && c != '\n' && input.good() &&
-           ++lineLength < maxLineLength) {
-      if (c == '\t') {
-        res += "  "; // use 2 spaces for tabs
-      } else {
-        res.push_back(c);
-      }
-      c = input.get();
-    }
-    if (lineLength == maxLineLength) {
-      res += "...";
-    }
-    input.seekg(oldPos);
-    return res.empty() ? co::color_output(co::cyan, co::normal)("\\empty-line")
-                       : res;
-  }
   Lexer(const InputFile &inputFile)
       : input(*inputFile.getStream()), filename(inputFile.getFilename()) {
     if (!input) {
@@ -312,6 +298,8 @@ public:
     lineStartFileOffsets.push_back(0);
     nextChar();
   }
+
+  std::string getCurrentLineFromInput(int lineNr);
 
   Token nextToken();
 

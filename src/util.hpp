@@ -29,19 +29,16 @@
 
 #include <sstream>
 
-template <typename T> struct Identity
-{
+template <typename T> struct Identity {
   T operator()(T &&t) { return t; }
 };
 
 template <typename L, typename Callback = Identity<decltype(*L().begin())>>
-std::string listToString(
-  L &list, Callback callback = Identity<decltype(*L().begin())>())
-{
+std::string
+listToString(L &list, Callback callback = Identity<decltype(*L().begin())>()) {
   std::stringstream res;
   bool first = true;
-  for (auto &&e : list)
-  {
+  for (auto &&e : list) {
     if (first)
       first = false;
     else
@@ -49,6 +46,38 @@ std::string listToString(
     res << callback(std::forward<decltype(e)>(e));
   }
   return res.str();
+}
+
+constexpr const char *UTF8Ellipsis = "\xE2\x80\xA6";
+
+inline std::string truncateString(std::string str, unsigned maxLen) {
+  if (str.length() > maxLen) {
+    str.resize(maxLen - 1);
+    str += UTF8Ellipsis;
+    return str;
+  }
+  return str;
+}
+
+inline std::string truncatedErrorLine(const std::string &line,
+                                      unsigned lineOffset, unsigned maxLen) {
+  std::string res;
+  if (lineOffset > 0) {
+    res += UTF8Ellipsis;
+    maxLen -= 1;
+  }
+  if (maxLen + lineOffset < line.length()) {
+    res += line.substr(lineOffset, maxLen - 1);
+    res += UTF8Ellipsis;
+  } else {
+    res += line.substr(lineOffset, maxLen);
+  }
+  return res;
+}
+
+namespace Consts {
+constexpr size_t maxErrorIdentLength = 64;
+constexpr size_t maxErrorLineLength = 200;
 }
 
 #endif // UTIL_H

@@ -340,6 +340,30 @@ int Lexer::nextChar() {
   return lastChar;
 }
 
+std::string Lexer::getCurrentLineFromInput(int lineNr) {
+    int oldPos = input.tellg();
+    input.seekg(lineStartFileOffsets.at(lineNr - 1));
+    std::string res;
+    int c = input.get();
+    constexpr int maxLineLength = 1024;
+    int lineLength = 0;
+    while (c != '\r' && c != '\n' && input.good() &&
+           ++lineLength < maxLineLength) {
+      if (c == '\t') {
+        res += "  "; // use 2 spaces for tabs
+      } else {
+        res.push_back(c);
+      }
+      c = input.get();
+    }
+    if (lineLength == maxLineLength) {
+      res += "...";
+    }
+    input.seekg(oldPos);
+    return res.empty() ? co::color_output(co::cyan, co::normal)("\\empty-line")
+                       : res;
+  }
+
 static bool isSpace(int c) {
   switch (c) {
   case ' ':
