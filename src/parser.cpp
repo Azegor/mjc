@@ -198,10 +198,10 @@ void Parser::parseBlock() {
       break;
     default:
       errorExpectedAnyOf({TT::RBrace, TT::Bang, TT::Boolean, TT::False,
-                        TT::Identifier, TT::If, TT::Int, TT::IntLiteral,
-                        TT::New, TT::Null, TT::True, TT::LBrace, TT::LParen,
-                        TT::Minus, TT::Return, TT::Semicolon, TT::This,
-                        TT::Void, TT::While});
+                          TT::Identifier, TT::If, TT::Int, TT::IntLiteral,
+                          TT::New, TT::Null, TT::True, TT::LBrace, TT::LParen,
+                          TT::Minus, TT::Return, TT::Semicolon, TT::This,
+                          TT::Void, TT::While});
       break;
     }
   }
@@ -230,8 +230,8 @@ void Parser::parseBlockStatement() {
   case TT::While:
     parseStmt();
     break;
-   case TT::Identifier:
-    if (nextTok.type == TT::Identifier || 
+  case TT::Identifier:
+    if (nextTok.type == TT::Identifier ||
         (nextTok.type == TT::LBracket && afternextTok.type == TT::RBracket)) {
       parseLocalVarDeclStmt();
       return;
@@ -248,11 +248,18 @@ void Parser::parseBlockStatement() {
 void Parser::parseLocalVarDeclStmt() {
   parseType();
   expectAndNext(TT::Identifier);
-  if (curTok.type == TT::Eq) {
+  switch (curTok.type) {
+  case TT::Eq:
     readNextToken();
     parseExpr();
+    expectAndNext(TT::Semicolon);
+    break;
+  case TT::Semicolon:
+    readNextToken();
+    break;
+  default:
+    errorExpectedAnyOf({TT::Eq, TT::Semicolon});
   }
-  expectAndNext(TT::Semicolon);
 }
 
 void Parser::parseStmt() {
@@ -285,10 +292,10 @@ void Parser::parseStmt() {
     parseExprStmt();
     break;
   default:
-    errorExpectedAnyOf({TT::LBrace, TT::Semicolon, TT::If, TT::Return, TT::While,
-                      TT::Bang, TT::False, TT::IntLiteral, TT::New, TT::Null,
-                      TT::True, TT::LParen, TT::Minus, TT::This,
-                      TT::Identifier});
+    errorExpectedAnyOf({TT::LBrace, TT::Semicolon, TT::If, TT::Return,
+                        TT::While, TT::Bang, TT::False, TT::IntLiteral, TT::New,
+                        TT::Null, TT::True, TT::LParen, TT::Minus, TT::This,
+                        TT::Identifier});
     break;
   }
 }
@@ -442,7 +449,7 @@ void Parser::parsePrimary() {
     break;
   default:
     errorExpectedAnyOf({TT::LParen, TT::False, TT::True, TT::Null, TT::This,
-                      TT::IntLiteral, TT::Identifier, TT::New});
+                        TT::IntLiteral, TT::Identifier, TT::New});
   }
 }
 
