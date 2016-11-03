@@ -333,12 +333,6 @@ void Parser::parseWhileStmt() {
 
 void Parser::parseExpr() { precedenceParse(0); }
 
-enum class Assoc : int8_t {
-  Left = 0,
-  Right,
-  None,
-};
-
 static int getOpPrec(Token::Type tt) {
   switch (tt) {
   case TT::Eq:
