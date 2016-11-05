@@ -1,0 +1,12 @@
+#!/bin/bash
+n=001; while [ -f $(printf "gen%03d.java" $n) ]; do ((++n)); done; name=$(printf "gen%03d.java" $n)
+
+touch $name # generate file beforehand
+
+echo generating $name
+
+if [[ $(which pypy) != "" ]]; then
+  pypy ./random_program.py | fold -s >$name
+else
+  ./random_program.py | fold -s >$name
+fi

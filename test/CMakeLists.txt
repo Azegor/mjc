@@ -38,6 +38,15 @@ foreach(file ${lexer_input_files})
            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/parser_valid.sh" $<TARGET_FILE:mjc> "${file}")
 endforeach()
 
+#generated programs
+file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/parsetest/generated/*.java")
+foreach(file ${lexer_input_files})
+  MESSAGE(STATUS "Parser test file: ${file}")
+  get_filename_component(filename "${file}" NAME)
+  add_test(NAME "Parse_valid_generated_${filename}"
+           COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/parser_valid.sh" $<TARGET_FILE:mjc> "${file}")
+endforeach()
+
 # parse invalid programs
 file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/parsetest/invalid/*.java")
 foreach(file ${lexer_input_files})
