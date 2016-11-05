@@ -312,7 +312,7 @@ public:
   }
 
   bool isEof() const {
-    return streamIsEof && (nextCharPos - 1 >= curBufferSize);
+    return streamIsEof && (nextCharPos - 1 == curBufferSize);
   }
 
   Lexer(const InputFile &inputFile)

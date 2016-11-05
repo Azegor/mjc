@@ -268,8 +268,7 @@ int Lexer::nextChar() {
     ++column; // add extra space after tab, since they are printes as two spaces
   }
 
-  if (nextCharPos == curBufferSize && !isEof())
-  {
+  if (!streamIsEof && nextCharPos == curBufferSize) {
     readIntoBuffer();
   }
 
