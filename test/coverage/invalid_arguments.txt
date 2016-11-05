@@ -1,0 +1,7 @@
+bla
+--echo
+--echo /nonexisting/file
+--lextest /nonexisting/file
+--lexfuzz /nonexisting/file
+--parsetest /nonexisting/file
+--parsefuzz /nonexisting/file

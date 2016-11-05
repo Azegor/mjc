@@ -1,0 +1,7 @@
+--help
+--echo --input-file /dev/null
+--echo /dev/null
+--lextest /dev/null
+--lexfuzz /dev/null
+--parsetest /dev/null
+--parsefuzz /dev/null

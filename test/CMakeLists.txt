@@ -3,7 +3,25 @@ add_test(NAME echo
 add_test(NAME lextest
          COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/lex_test.sh" $<TARGET_FILE:mjc> "${CMAKE_CURRENT_SOURCE_DIR}/Prog1.java" "${CMAKE_CURRENT_SOURCE_DIR}/Prog1.java.lex")
 
+# Valid coverage tests
+set(I 1)
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/coverage/valid_arguments.txt" invalid_arguments)
+foreach(arg ${invalid_arguments})
+  MESSAGE(STATUS "Coverage valid test command: mjc ${arg}")
+  add_test(NAME "Coverage_valid_command_${I}"
+           COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/coverage_valid.sh" $<TARGET_FILE:mjc> "${arg}")
+  math(EXPR I "${I}+1")
+endforeach()
 
+# Invalid coverage tests
+set(I 1)
+file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/coverage/invalid_arguments.txt" invalid_arguments)
+foreach(arg ${invalid_arguments})
+  MESSAGE(STATUS "Coverage invalid test command: mjc ${arg}")
+  add_test(NAME "Coverage_invalid_command_${I}"
+           COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/coverage_invalid.sh" $<TARGET_FILE:mjc> "${arg}")
+  math(EXPR I "${I}+1")
+endforeach()
 
 # Compile lexer using flex
 if(NOT EXISTS "/usr/bin/flex")
