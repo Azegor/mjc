@@ -10,6 +10,8 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,undefined
 # works only with clang
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,undefined -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fno-common")
 
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -fprofile-arcs -ftest-coverage")
+
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")
 
 if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
@@ -31,3 +33,11 @@ find_package(Boost COMPONENTS program_options REQUIRED)
 add_executable(mjc src/main.cpp src/compiler.cpp src/lexer.cpp src/parser.cpp)
 
 target_link_libraries(mjc ${Boost_LIBRARIES})
+
+
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+  set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
+  include(CodeCoverage)
+  setup_target_for_coverage(coverage "make -C ${PROJECT_SOURCE_DIR}/builddir test" coverage)
+  add_dependencies(coverage mjc)
+endif()
