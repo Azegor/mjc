@@ -5,3 +5,8 @@ bla
 --lexfuzz /nonexisting/file
 --parsetest /nonexisting/file
 --parsefuzz /nonexisting/file
+--lextest --parsetest /dev/null
+--lextest ../test/lextest/nonascii.java
+--lexfuzz ../test/lextest/nonascii.java
+--parsetest ../test/parsetest/invalid/NotString.java
+--parsefuzz ../test/parsetest/invalid/NotString.java
