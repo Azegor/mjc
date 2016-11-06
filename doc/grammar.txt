@@ -1,0 +1,109 @@
+Program                               -> ClassDeclaration Program
+                                      ->
+ClassDeclaration                      -> class IDENT { ClassMembers }
+ClassMembers                          ->
+                                      -> ClassMember ClassMembers
+ClassMember                           -> public ClassMemberTail
+ClassMemberTail                       -> static MainMethod
+                                      -> Type IDENT FieldOrMethod
+FieldOrMethod                         -> ;
+                                      -> ( Parameters ) Block
+MainMethod                            -> void IDENT ( String [ ] IDENT ) Block
+Parameters                            ->
+                                      -> Parameter , Parameters
+Parameter                             -> Type IDENT
+Type                                  -> BasicType PostfixTypeAnnotation
+PostfixTypeAnnotation                 ->
+                                      -> [ ] PostfixTypeAnnotation
+BasicType                             -> boolean
+                                      -> int
+                                      -> void
+                                      -> IDENT
+Block                                 -> { BlockInner }
+BlockInner                            ->
+                                      -> BlockStatement BlockInner
+BlockStatement                        -> LocalVariableDeclarationStatement
+                                      -> Statement
+Statement                             -> Block
+                                      -> EmptyStatement
+                                      -> ExpressionStatement
+                                      -> IfStatement
+                                      -> ReturnStatement
+                                      -> WhileStatement
+LocalVariableDeclarationStatement     -> Type IDENT LocalVariableDeclarationStatementTail
+LocalVariableDeclarationStatementTail -> ;
+                                      -> = Expression ;
+EmptyStatement                        -> ;
+WhileStatement                        -> while ( Expression ) Statement
+IfStatement                           -> if ( Expression ) Statement IfStatementTail
+IfStatementTail                       ->
+                                      -> else Statement
+ExpressionStatement                   -> Expression ;
+ReturnStatement                       -> return ReturnStatementTail
+ReturnStatementTail                   -> ;
+                                      -> Expression ;
+Expression                            -> AssignmentExpression
+AssignmentExpression                  -> LogicalOrExpression AssignmentExpressionTail
+AssignmentExpressionTail              ->
+                                      -> = AssignmentExpression
+LogicalOrExpression                   -> LogicalAndExpression LogicalOrExpressionTail
+LogicalOrExpressionTail               ->
+                                      -> || LogicalOrExpression
+LogicalAndExpression                  -> EqualityExpression LogicalAndExpressionTail
+LogicalAndExpressionTail              ->
+                                      -> && LogicalAndExpression
+EqualityExpression                    -> RelationalExpression EqualityExpressionTail
+EqualityExpressionTail                ->
+                                      -> != EqualityExpression
+                                      -> == EqualityExpression
+RelationalExpression                  -> AdditiveExpression RelationalExpressionTail
+RelationalExpressionTail              ->
+                                      -> < RelationalExpression
+                                      -> <= RelationalExpression
+                                      -> > RelationalExpression
+                                      -> >= RelationalExpression
+AdditiveExpression                    -> MultiplicativeExpression AdditiveExpressionTail
+AdditiveExpressionTail                ->
+                                      -> - AdditiveExpression
+                                      -> + AdditiveExpression
+MultiplicativeExpression              -> UnaryExpression MultiplicativeExpressionTail
+MultiplicativeExpressionTail          ->
+                                      -> * MultiplicativeExpression
+                                      -> / MultiplicativeExpression
+                                      -> % MultiplicativeExpression
+UnaryExpression                       -> - UnaryExpression
+                                      -> ! UnaryExpression
+                                      -> PostfixExpression
+PostfixExpression                     -> PrimaryExpression PostfixExpressionTail
+PostfixExpressionTail                 ->
+                                      -> PostfixOp PostfixExpressionTail
+PostfixOp                             -> . IDENT MethodInvocationOrFieldAcccess
+                                      -> ArrayAccess
+MethodInvocationOrFieldAcccess        ->
+                                      -> ( Arguments )
+ArrayAccess                           -> [ Expression ]
+Arguments                             ->
+                                      -> Expression ArgumentsTail
+ArgumentsTail                         ->
+                                      -> , Expression ArgumentsTail
+PrimaryExpression                     -> ( Expression )
+                                      -> false
+                                      -> true
+                                      -> null
+                                      -> this
+                                      -> IDENT PrimaryExpressionIdentTail
+                                      -> INTEGER_LITERAL
+                                      -> NewObjectExpression
+                                      -> NewArrayExpression
+PrimaryExpressionIdentTail            ->
+                                      -> ( Arguments )
+NewObjectExpression                   -> new IDENT ( )
+NewArrayExpression                    -> new BasicType [ Expression ] NewArrayExpressionTail
+NewArrayExpressionTail                ->
+NewArrayExpressionTail                -> [ ] NewArrayExpressionTail
+
+
+
+
+
+
