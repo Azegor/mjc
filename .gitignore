@@ -33,6 +33,7 @@ build/
 builddir/
 *.kdev4
 
+*.profraw
 fuzzing/*.sancov
 fuzzing/fuzz-*.log
 fuzzing/corpus
