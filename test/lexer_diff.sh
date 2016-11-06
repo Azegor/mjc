@@ -49,6 +49,11 @@ if [[ ${lexer_retval} -ne 0 ]]; then
   fi
 fi
 
+# Strip profiling file output from first line if present.
+# e.g.  "LLVM Profile Note: Set profile file path to "default.profraw" via default setting." 
+compiler_out=${compiler_out#LLVM Profile Note*.
+}
+
 # Only compare outputs if both return values were 0
 if [ "${compiler_retval}" -eq 0 ] && [ "${lexer_retval}" -eq 0 ]; then
   if [[ "${compiler_out}" != "${lexer_out}" ]]; then
