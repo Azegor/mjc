@@ -24,8 +24,8 @@
  * SOFTWARE.
  */
 
-#include "parser.hpp"
 #include "lexer.hpp"
+#include "parser.hpp"
 
 #include <deque>
 
@@ -387,8 +387,9 @@ void Parser::precedenceParse(int minPrec) {
   parseUnary();
   int opPrec;
   while ((opPrec = getOpPrec(curTok.type)) >= minPrec) {
+    auto opTok = std::move(curTok);
     readNextToken();
-    if (curTok.type != TT::Eq) { // only right assoc case
+    if (opTok.type != TT::Eq) { // only right assoc case
       opPrec += 1;
     }
     precedenceParse(opPrec);
