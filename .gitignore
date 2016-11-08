@@ -31,7 +31,10 @@
 # Others
 build/
 builddir/
+
 *.kdev4
+*.swp
+*~
 
 *.profraw
 fuzzing/*.sancov
