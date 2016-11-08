@@ -7,3 +7,7 @@
 ### Required Libraries
 
 * Boost.Program_options
+
+#### optional
+
+* jemalloc library libjemalloc.so

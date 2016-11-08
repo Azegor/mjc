@@ -30,15 +30,18 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 
 find_package(Boost COMPONENTS program_options REQUIRED)
 
+set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/thirdparty/cmake)
+
+find_package(JeMalloc)
+
 add_executable(mjc src/main.cpp src/compiler.cpp src/lexer.cpp src/parser.cpp)
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")
 
-target_link_libraries(mjc ${Boost_LIBRARIES})
+target_link_libraries(mjc ${Boost_LIBRARIES} ${JEMALLOC_LIBRARIES})
 
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-  set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR})
   include(CodeCoverage)
   setup_target_for_coverage(coverage "make -C ${PROJECT_SOURCE_DIR}/builddir test" coverage)
   add_dependencies(coverage mjc)
