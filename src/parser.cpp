@@ -405,6 +405,7 @@ static int getOpPrec(Token::Type tt) {
 
 ast::ExprPtr Parser::precedenceParse(int minPrec) {
   // check precondition!
+  auto startPos = curTok.startPos(); // stays the same
   auto result = parseUnary();
   int opPrec;
   while ((opPrec = getOpPrec(curTok.type)) >= minPrec) {
@@ -414,9 +415,10 @@ ast::ExprPtr Parser::precedenceParse(int minPrec) {
       opPrec += 1;
     }
     auto rhs = precedenceParse(opPrec);
+    auto endPos = curTok.endPos();
     auto operation = ast::BinaryExpression::getOpForToken(opTok.type);
     result = ast::make_EPtr<ast::BinaryExpression>(
-        SourceLocation{}, std::move(result), std::move(rhs), operation);
+        {startPos, endPos}, std::move(result), std::move(rhs), operation);
   }
   return result;
 }
@@ -475,21 +477,31 @@ ast::ExprPtr Parser::parsePrimary() {
     expectAndNext(TT::RParen);
     return expr;
   }
-  case TT::False:
+  case TT::False: {
+    auto loc = curTok.singleTokenSrcLoc();
     readNextToken();
-    return std::make_unique<ast::BoolLiteral>(SourceLocation{}, false);
-  case TT::True:
+    return std::make_unique<ast::BoolLiteral>(loc, false);
+  }
+  case TT::True: {
+    auto loc = curTok.singleTokenSrcLoc();
     readNextToken();
-    return std::make_unique<ast::BoolLiteral>(SourceLocation{}, true);
-  case TT::Null:
+    return std::make_unique<ast::BoolLiteral>(loc, true);
+  }
+  case TT::Null: {
+    auto loc = curTok.singleTokenSrcLoc();
     readNextToken();
-    return std::make_unique<ast::NullLiteral>(SourceLocation{});
-  case TT::This:
+    return std::make_unique<ast::NullLiteral>(loc);
+  }
+  case TT::This: {
+    auto loc = curTok.singleTokenSrcLoc();
     readNextToken();
-    return std::make_unique<ast::ThisLiteral>(SourceLocation{});
-  case TT::IntLiteral:
+    return std::make_unique<ast::ThisLiteral>(loc);
+  }
+  case TT::IntLiteral: {
+    auto loc = curTok.singleTokenSrcLoc();
     readNextToken();
-    return std::make_unique<ast::ThisLiteral>(SourceLocation{});
+    return std::make_unique<ast::ThisLiteral>(loc);
+  }
   case TT::Identifier:
     readNextToken();
     if (curTok.type == TT::LParen) {

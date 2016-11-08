@@ -55,6 +55,25 @@ struct TokenPos {
   }
 };
 
+struct SourceLocation {
+  const TokenPos startToken, endToken;
+  SourceLocation() = default;
+  SourceLocation(TokenPos start, TokenPos end)
+      : startToken(start), endToken(end) {}
+  SourceLocation(const SourceLocation &o)
+      : startToken(o.startToken), endToken(o.endToken) {}
+  SourceLocation(SourceLocation &&o)
+      : startToken(std::move(o.startToken)), endToken(std::move(o.endToken)) {}
+
+  std::string toStr() const {
+    if (startToken.col == -1)
+      return "at unknown location";
+    if (startToken == endToken) // FIXME when does this happen?
+      return "at token " + startToken.toStr() + "->" + endToken.toStr();
+    return "between token " + startToken.toStr() + " and " + endToken.toStr();
+  }
+};
+
 struct Token {
   enum class Type : int {
     none = 0x0,
@@ -170,6 +189,8 @@ struct Token {
     tmp.col += str.length() - 1;
     return tmp;
   }
+  SourceLocation singleTokenSrcLoc() const { return {startPos(), endPos()}; }
+  operator SourceLocation() const {return singleTokenSrcLoc(); }
 
   friend std::ostream &operator<<(std::ostream &o, const Token &t) {
     switch (t.type) {
@@ -184,27 +205,6 @@ struct Token {
       break;
     }
     return o;
-  }
-};
-
-struct SourceLocation {
-  const TokenPos startToken, endToken;
-  SourceLocation() = default;
-  SourceLocation(TokenPos start, TokenPos end)
-      : startToken(start), endToken(end) {}
-  SourceLocation(const Token &single)
-      : startToken(single.startPos()), endToken(single.endPos()) {}
-  SourceLocation(const SourceLocation &o)
-      : startToken(o.startToken), endToken(o.endToken) {}
-  SourceLocation(SourceLocation &&o)
-      : startToken(std::move(o.startToken)), endToken(std::move(o.endToken)) {}
-
-  std::string toStr() const {
-    if (startToken.col == -1)
-      return "at unknown location";
-    if (startToken == endToken) // FIXME when does this happen?
-      return "at token " + startToken.toStr() + "->" + endToken.toStr();
-    return "between token " + startToken.toStr() + " and " + endToken.toStr();
   }
 };
 
