@@ -39,6 +39,22 @@ using namespace std::string_literals;
 #include "input_file.hpp"
 #include "util.hpp"
 
+struct TokenPos {
+  int line;
+  int col;
+  TokenPos() : line(-1), col(-1) {}
+  TokenPos(int line, int col) : line(line), col(col) {}
+  TokenPos(const TokenPos &) = default;
+
+  bool operator==(const TokenPos &o) const {
+    return line == o.line && col == o.col;
+  }
+
+  std::string toStr() const {
+    return std::to_string(line) + ':' + std::to_string(col);
+  }
+};
+
 struct Token {
   enum class Type : int {
     none = 0x0,
@@ -117,37 +133,42 @@ struct Token {
 
   // Members
   Type type;
-  int line, col;
+  TokenPos pos;
   std::string str;
 
   // Operations
-  Token() : Token(Type::none, 0, 0, "") {}
-  Token(Type type) : Token(type, 0, 0, "<?>") {}
+  Token() : Token(Type::none, {}, "") {}
+  Token(Type type) : Token(type, {}, "<?>") {}
 
-  Token(Type type, int line, int col, std::string tokenString)
-      : type(type), line(line), col(col), str(std::move(tokenString)) {}
+  Token(Type type, TokenPos pos, std::string tokenString)
+      : type(type), pos(pos), str(std::move(tokenString)) {}
 
-  Token(const Token &o) : type(o.type), line(o.line), col(o.col), str(o.str) {}
-  Token(Token &&o)
-      : type(o.type), line(o.line), col(o.col), str(std::move(o.str)) {}
+  Token(const Token &o) : type(o.type), pos(o.pos), str(o.str) {}
+  Token(Token &&o) : type(o.type), pos(o.pos), str(std::move(o.str)) {}
 
   Token &operator=(const Token &o) = default;
 
   Token &operator=(Token &&o) {
     type = o.type;
-    line = o.line;
-    col = o.col;
+    pos = o.pos;
     str = std::move(o.str);
     return *this;
   }
 
   bool operator==(const Token &o) const {
-    return type == o.type && line == o.line && col == o.col && str == o.str;
+    return type == o.type && pos == o.pos && str == o.str;
   }
 
   std::string toStr() const {
-    return '<' + str + " at " + std::to_string(line) + ':' +
-           std::to_string(col) + '>';
+    return '<' + str + " at " + std::to_string(pos.line) + ':' +
+           std::to_string(pos.col) + '>';
+  }
+
+  TokenPos startPos() const { return pos; }
+  TokenPos endPos() const {
+    TokenPos tmp = pos;
+    tmp.col += str.length() - 1;
+    return tmp;
   }
 
   friend std::ostream &operator<<(std::ostream &o, const Token &t) {
@@ -166,31 +187,13 @@ struct Token {
   }
 };
 
-struct TokenPos {
-  int line;
-  int col;
-  TokenPos() : line(-1), col(-1) {}
-  TokenPos(int l, int c) : line(l), col(c) {}
-  TokenPos(const Token &t, bool isEndToken) : line(t.line) {
-    col = t.col + (isEndToken ? t.str.size() - 1 : 0);
-  }
-
-  bool operator==(const TokenPos &o) const {
-    return line == o.line && col == o.col;
-  }
-
-  std::string toStr() const {
-    return std::to_string(line) + ':' + std::to_string(col);
-  }
-};
-
 struct SourceLocation {
   const TokenPos startToken, endToken;
   SourceLocation() = default;
   SourceLocation(TokenPos start, TokenPos end)
       : startToken(start), endToken(end) {}
   SourceLocation(const Token &single)
-      : startToken(single, false), endToken(single, true) {}
+      : startToken(single.startPos()), endToken(single.endPos()) {}
   SourceLocation(const SourceLocation &o)
       : startToken(o.startToken), endToken(o.endToken) {}
   SourceLocation(SourceLocation &&o)
@@ -199,7 +202,7 @@ struct SourceLocation {
   std::string toStr() const {
     if (startToken.col == -1)
       return "at unknown location";
-    if (startToken == endToken)
+    if (startToken == endToken) // FIXME when does this happen?
       return "at token " + startToken.toStr() + "->" + endToken.toStr();
     return "between token " + startToken.toStr() + " and " + endToken.toStr();
   }
@@ -279,7 +282,7 @@ class Lexer {
 
   Token makeToken(Token::Type type) {
     // implicit: make a copy of 'tokenString' to keep the string's buffer
-    return Token(type, tokenLine, tokenCol, tokenString);
+    return Token(type, {tokenLine, tokenCol}, tokenString);
   }
 
   [[noreturn]] void error(std::string msg) {
