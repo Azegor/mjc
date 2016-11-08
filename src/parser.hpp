@@ -32,6 +32,7 @@
 #include "error.hpp"
 #include "input_file.hpp"
 #include "lexer.hpp"
+#include "ast.hpp"
 #include "util.hpp"
 
 class ParseError : public CompilerError {
@@ -147,11 +148,11 @@ private:
           }));
   }
 
-  void parseProgram();
-  inline void parseClassDeclaration();
-  inline void parseClassMember();
-  inline void parseMainMethod();
-  inline void parseFieldOrMethod();
+  ast::Program parseProgram();
+  inline ast::Class parseClassDeclaration();
+  inline void parseClassMember(std::vector<ast::Field> &fields, std::vector<ast::Method> &methods, std::vector<ast::MainMethod> &mainMethods);
+  inline ast::MainMethod parseMainMethod();
+  inline void parseFieldOrMethod(std::vector<ast::Field> &fields, std::vector<ast::Method> &methods);
   inline void parseParameterList();
   inline void parseParameter();
   inline void parseType();

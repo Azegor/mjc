@@ -41,22 +41,30 @@ class Visitor {
 class Node {
   SourceLocation location;
 
-  Node(SourceLocation loc) : location(loc) {}
-  virtual ~Node() {}
-
-  virtual void accept(Visitor *visitor) = 0;
+  public:
+    Node(SourceLocation loc) : location(loc) {}
+    virtual ~Node() {}
+    virtual void accept(Visitor *visitor) {}
 };
 
 class Type : public Node {
+  public:
+    virtual ~Type() {}
 };
 
 class BlockStatement : public Node {
+  public:
+    virtual ~BlockStatement() {}
 };
 
 class Statement : public BlockStatement {
+  public:
+    virtual ~Statement() {}
 };
 
 class Expression : public Node {
+  public:
+    virtual ~Expression() {}
 };
 
 class Block : public Node {
@@ -64,13 +72,13 @@ class Block : public Node {
   bool containsNothingExceptOneSingleLonelyEmtpyExpression;
 };
 
-using NodePtr = std::unique_ptr<Node>;
-using TypePtr = std::unique_ptr<Type>;
-using StmtPtr = std::unique_ptr<Stmt>;
-using ExprPtr = std::unique_ptr<Expr>;
-using BlockPtr = std::unique_ptr<Block>;
+using NodePtr = std::shared_ptr<Node>;
+using TypePtr = std::shared_ptr<Type>;
+using StmtPtr = std::shared_ptr<Statement>;
+using ExprPtr = std::shared_ptr<Expression>;
+using BlockPtr = std::shared_ptr<Block>;
 
-⁠template <typename St, typename... Args>
+template <typename St, typename... Args>
 StmtPtr make_SPtr(SourceLocation loc, Args &&... args) {
   return StmtPtr{new St(loc, std::forward<Args>(args)...)};
 };
@@ -89,10 +97,12 @@ template <typename Ex> ExprPtr make_EPtr(const Ex &e) {
 };
 
 class NonArrayType : public Type {
+  public:
+    ~NonArrayType() {}
 };
 
 class PrimitiveType : public NonArrayType {
-  enum class {
+  enum class TypeType {
     Bool,
     Int,
     Void
@@ -160,14 +170,15 @@ class Class : public Node {
   std::vector<MainMethod> mainMethods;
 
   public:
-    Class(std::string name, std::vector<ast::Field> fields, std::vector<ast::Method> methods, std::vector<ast::MainMethod> mainMethods) : name(name), fields(fields), methods(methods), mainMethods(mainMethods) {}
+    Class(SourceLocation loc, std::string name, std::vector<Field> fields, std::vector<Method> methods, std::vector<MainMethod> mainMethods) : 
+    Node(loc), name(std::move(name)), fields(std::move(fields)), methods(std::move(methods)), mainMethods(std::move(mainMethods)) {}
 };
 
 class Program : public Node {
   std::vector<Class> classes;
   
   public:
-    Program(std::vector<Class> classes) : classes(classes) {}
+    Program(SourceLocation loc, std::vector<Class> classes) : Node(loc), classes(std::move(classes)) {}
 };
 
 class VariableDeclaration : public Expression {
@@ -223,7 +234,7 @@ class FieldAccess : public Expression {
 
 class ArrayAccess : public Expression {
   ExprPtr expr;
-  ExptrPtr index;
+  ExprPtr index;
 };
 
 class BinaryExpression : public Expression {

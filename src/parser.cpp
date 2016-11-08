@@ -42,13 +42,12 @@ ast::Program Parser::parseProgram() {
       classes.push_back(parseClassDeclaration());
       break;
     case TT::Eof:
-      return;
+      return ast::Program({}, std::move(classes));
     default:
       errorExpectedAnyOf({TT::Class, TT::Eof});
       break;
     }
   }
-  return ast::Program(classes);
 }
 
 ast::Class Parser::parseClassDeclaration() {
@@ -66,35 +65,27 @@ ast::Class Parser::parseClassDeclaration() {
     switch (curTok.type) {
     case TT::RBrace:
       readNextToken();
-      return;
+      return ast::Class({}, std::move(name), std::move(fields), std::move(methods), std::move(mainMethods));
     case TT::Public:
-      ast::Node member = parseClassMember();
-      if (ast::MainMethod m = dynamic_cast<ast::MainMethod>(member)) {
-        mainMethods.push_back(m);
-      } else if (ast::Method m = dynamic_cast<ast::Method>(member)) {
-        methods.push_back(m);
-      } else if (ast::Field m = dynamic_cast<ast::Field>(member)) {
-        fields.push_back(m);
-      }
+      parseClassMember(fields, methods, mainMethods);
       break;
     default:
       errorExpectedAnyOf({TT::RBrace, TT::Public});
       break;
     }
   }
-  return ast::Class(name, fields, methods, mainMethods);
 }
 
-void Parser::parseClassMember() {
+void Parser::parseClassMember(std::vector<ast::Field> &fields, std::vector<ast::Method> &methods, std::vector<ast::MainMethod> &mainMethods) {
   switch (lookAhead(1).type) {
   case TT::Static:
-    parseMainMethod();
+    mainMethods.push_back(parseMainMethod());
     return;
   case TT::Boolean:
   case TT::Identifier:
   case TT::Int:
   case TT::Void:
-    parseFieldOrMethod();
+    parseFieldOrMethod(fields, methods);
     return;
   default:
     errorExpectedAnyOf(
@@ -103,7 +94,7 @@ void Parser::parseClassMember() {
   }
 }
 
-void Parser::parseMainMethod() {
+ast::MainMethod Parser::parseMainMethod() {
   expectAndNext(TT::Public);
   expectAndNext(TT::Static);
   expectAndNext(TT::Void);
@@ -121,7 +112,7 @@ void Parser::parseMainMethod() {
   parseBlock();
 }
 
-void Parser::parseFieldOrMethod() {
+void Parser::parseFieldOrMethod(std::vector<ast::Field> &fields, std::vector<ast::Method> &methods) {
   expectAndNext(TT::Public);
   parseType();
   expectAndNext(TT::Identifier);

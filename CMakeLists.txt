@@ -36,7 +36,6 @@ find_package(JeMalloc)
 
 add_executable(mjc src/main.cpp src/compiler.cpp src/lexer.cpp src/parser.cpp)
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")
 
 target_link_libraries(mjc ${Boost_LIBRARIES} ${JEMALLOC_LIBRARIES})
 
