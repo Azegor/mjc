@@ -276,6 +276,7 @@ void Parser::parseLocalVarDeclStmt() {
   }
 }
 
+// might return nullptr if statement is empty
 void Parser::parseStmt() {
   switch (curTok.type) {
   case TT::LBrace:
@@ -486,6 +487,7 @@ void Parser::parsePrimary() {
   case TT::Identifier:
     readNextToken();
     if (curTok.type == TT::LParen) {
+      // return "this.methodinvocation(args)
       readNextToken();
       parseArguments();
       expectAndNext(TT::RParen);
