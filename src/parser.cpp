@@ -405,7 +405,7 @@ static int getOpPrec(Token::Type tt) {
 
 ast::ExprPtr Parser::precedenceParse(int minPrec) {
   // check precondition!
-  parseUnary();
+  auto result = parseUnary();
   int opPrec;
   while ((opPrec = getOpPrec(curTok.type)) >= minPrec) {
     auto opTok = std::move(curTok);
@@ -413,10 +413,12 @@ ast::ExprPtr Parser::precedenceParse(int minPrec) {
     if (opTok.type != TT::Eq) { // only right assoc case
       opPrec += 1;
     }
-    precedenceParse(opPrec);
-    // result = handle_operator(result, rhs);
+    auto rhs = precedenceParse(opPrec);
+    auto operation = ast::BinaryExpression::getOpForToken(opTok.type);
+    result = ast::make_EPtr<ast::BinaryExpression>(
+        SourceLocation{}, std::move(result), std::move(rhs), operation);
   }
-  return nullptr; // TODO
+  return result;
 }
 
 ast::ExprPtr Parser::parseUnary() {

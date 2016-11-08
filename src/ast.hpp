@@ -292,6 +292,7 @@ class BinaryExpression : public Expression {
   ExprPtr left;
   ExprPtr right;
   enum class Op {
+    None,
     Assign,
     Or,
     And,
@@ -309,7 +310,43 @@ class BinaryExpression : public Expression {
   } operation;
 
 public:
-  BinaryExpression(SourceLocation loc) : Expression(std::move(loc)) {}
+  BinaryExpression(SourceLocation loc, ExprPtr lhs, ExprPtr rhs, Op op)
+      : Expression(std::move(loc)), left(std::move(lhs)), right(std::move(rhs)),
+        operation(op) {}
+
+  static Op getOpForToken(Token::Type t) {
+    switch (t) {
+    case Token::Type::Eq:
+      return Op::Assign;
+    case Token::Type::VBarVBar:
+      return Op::Or;
+    case Token::Type::AmpAmp:
+      return Op::And;
+    case Token::Type::EqEq:
+      return Op::Equals;
+    case Token::Type::BangEq:
+      return Op::NotEquals;
+    case Token::Type::Lt:
+      return Op::Less;
+    case Token::Type::LtEq:
+      return Op::LessEquals;
+    case Token::Type::Gt:
+      return Op::Greater;
+    case Token::Type::GtEq:
+      return Op::GreaterEquals;
+    case Token::Type::Plus:
+      return Op::Plus;
+    case Token::Type::Minus:
+      return Op::Minus;
+    case Token::Type::Star:
+      return Op::Mul;
+    case Token::Type::Slash:
+      return Op::Div;
+    case Token::Type::Percent:
+      return Op::Mod;
+    default: return Op::None;
+    }
+  }
 };
 
 class UnaryExpression : public Expression {
