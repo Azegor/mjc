@@ -148,7 +148,7 @@ void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
   }
 }
 
-void Parser::parseParameterList() {
+ast::ParameterList Parser::parseParameterList() {
   switch (curTok.type) {
   case TT::Boolean:
   case TT::Identifier:
@@ -162,21 +162,22 @@ void Parser::parseParameterList() {
         parseParameter();
         break;
       default:
-        return;
+        return {}; // TODO
       }
     }
     break;
   default:
-    return;
+    return {}; // TODO
   }
 }
 
-void Parser::parseParameter() {
+ast::ParameterPtr Parser::parseParameter() {
   parseType();
   expectAndNext(TT::Identifier);
+  return nullptr; // TODO
 }
 
-void Parser::parseType() {
+ast::TypePtr Parser::parseType() {
   parseBasicType();
   while (true) {
     switch (curTok.type) {
@@ -185,19 +186,21 @@ void Parser::parseType() {
       expectAndNext(TT::RBracket);
       break;
     default:
-      return;
+      return nullptr; // TODO
     }
   }
 }
 
-void Parser::parseBasicType() {
+Token::Type Parser::parseBasicType() {
   switch (curTok.type) {
   case TT::Boolean:
   case TT::Identifier:
   case TT::Int:
-  case TT::Void:
+  case TT::Void: {
+    auto type = curTok.type;
     readNextToken();
-    break;
+    return type;
+  }
   default:
     errorExpectedAnyOf({TT::Boolean, TT::Identifier, TT::Int, TT::Void});
     break;
@@ -242,13 +245,12 @@ ast::BlockPtr Parser::parseBlock() {
   }
 }
 
-void Parser::parseBlockStatement() {
+ast::BlockStmtPtr Parser::parseBlockStatement() {
   switch (curTok.type) {
   case TT::Boolean:
   case TT::Int:
   case TT::Void:
-    parseLocalVarDeclStmt();
-    break;
+    return parseLocalVarDeclStmt();
   case TT::Bang:
   case TT::False:
   case TT::If:
@@ -263,27 +265,24 @@ void Parser::parseBlockStatement() {
   case TT::Semicolon:
   case TT::This:
   case TT::While:
-    parseStmt();
-    break;
+    return parseStmt();
   case TT::Identifier: {
     Token &nextTok = lookAhead(1);
     Token &afterNextTok = lookAhead(2);
     if (nextTok.type == TT::Identifier ||
         (nextTok.type == TT::LBracket && afterNextTok.type == TT::RBracket)) {
-      parseLocalVarDeclStmt();
-      return;
+      return parseLocalVarDeclStmt();
     } else {
-      parseStmt();
-      return;
+      return parseStmt();
     }
     break;
   }
   default:
-    break;
+    return nullptr; // return null if block is empty
   }
 }
 
-void Parser::parseLocalVarDeclStmt() {
+ast::StmtPtr Parser::parseLocalVarDeclStmt() {
   parseType();
   expectAndNext(TT::Identifier);
   switch (curTok.type) {
@@ -291,33 +290,29 @@ void Parser::parseLocalVarDeclStmt() {
     readNextToken();
     parseExpr();
     expectAndNext(TT::Semicolon);
-    break;
+    return nullptr; // TODO
   case TT::Semicolon:
     readNextToken();
-    break;
+    return nullptr; // TODO
   default:
     errorExpectedAnyOf({TT::Eq, TT::Semicolon});
   }
 }
 
 // might return nullptr if statement is empty
-void Parser::parseStmt() {
+ast::StmtPtr Parser::parseStmt() {
   switch (curTok.type) {
   case TT::LBrace:
-    parseBlock();
-    break;
+    return parseBlock();
   case TT::Semicolon:
     readNextToken(); // empty statement -> ignore
-    break;
+    return nullptr;  // return null for empty statements
   case TT::If:
-    parseIfStmt();
-    break;
+    return parseIfStmt();
   case TT::Return:
-    parseReturnStmt();
-    break;
+    return parseReturnStmt();
   case TT::While:
-    parseWhileStmt();
-    break;
+    return parseWhileStmt();
   case TT::Bang:
   case TT::False:
   case TT::IntLiteral:
@@ -328,23 +323,22 @@ void Parser::parseStmt() {
   case TT::Minus:
   case TT::This:
   case TT::Identifier:
-    parseExprStmt();
-    break;
+    return parseExprStmt();
   default:
     errorExpectedAnyOf({TT::LBrace, TT::Semicolon, TT::If, TT::Return,
                         TT::While, TT::Bang, TT::False, TT::IntLiteral, TT::New,
                         TT::Null, TT::True, TT::LParen, TT::Minus, TT::This,
                         TT::Identifier});
-    break;
   }
 }
 
-void Parser::parseExprStmt() {
+ast::StmtPtr Parser::parseExprStmt() {
   parseExpr();
   expectAndNext(TT::Semicolon);
+  return nullptr; // TODO
 }
 
-void Parser::parseIfStmt() {
+ast::StmtPtr Parser::parseIfStmt() {
   expectAndNext(TT::If); // necessary?
   expectAndNext(TT::LParen);
   parseExpr();
@@ -354,30 +348,32 @@ void Parser::parseIfStmt() {
     readNextToken();
     parseStmt();
   }
+  return nullptr; // TODO
 }
 
-void Parser::parseReturnStmt() {
+ast::StmtPtr Parser::parseReturnStmt() {
   expectAndNext(TT::Return);
   switch (curTok.type) {
   case TT::Semicolon:
     readNextToken();
-    return;
+    return nullptr; // TODO
   default:
     parseExpr();
     expectAndNext(TT::Semicolon);
-    return;
+    return nullptr; // TODO
   }
 }
 
-void Parser::parseWhileStmt() {
+ast::StmtPtr Parser::parseWhileStmt() {
   expectAndNext(TT::While); // necessary?
   expectAndNext(TT::LParen);
   parseExpr();
   expectAndNext(TT::RParen);
   parseStmt();
+  return nullptr; // TODO
 }
 
-void Parser::parseExpr() { precedenceParse(0); }
+ast::ExprPtr Parser::parseExpr() { return precedenceParse(0); }
 
 static int getOpPrec(Token::Type tt) {
   switch (tt) {
@@ -407,7 +403,7 @@ static int getOpPrec(Token::Type tt) {
   }
 }
 
-void Parser::precedenceParse(int minPrec) {
+ast::ExprPtr Parser::precedenceParse(int minPrec) {
   // check precondition!
   parseUnary();
   int opPrec;
@@ -420,57 +416,40 @@ void Parser::precedenceParse(int minPrec) {
     precedenceParse(opPrec);
     // result = handle_operator(result, rhs);
   }
+  return nullptr; // TODO
 }
 
-void Parser::parseUnary() {
-  switch (curTok.type) {
-  case TT::Bang:
-    readNextToken();
-    parseUnary();
-    break;
-  case TT::Minus:
-    readNextToken();
-    parseUnary();
-    break;
-  default:
-    parsePostfixExpr();
-    break;
+ast::ExprPtr Parser::parseUnary() {
+  std::deque<Token> unaries;
+  while (true) {
+    switch (curTok.type) {
+    case TT::Bang:
+      unaries.emplace_back(std::move(curTok));
+      readNextToken();
+      continue; // parseUnary();
+    case TT::Minus:
+      unaries.emplace_back(std::move(curTok));
+      readNextToken();
+      continue; // parseUnary();
+      break;
+    default:
+      parsePostfixExpr();
+      // result = ...
+      // consume all unary prefixes in reverse order
+      for (std::deque<Token>::reverse_iterator i = unaries.rbegin(),
+                                               end = unaries.rend();
+           i != end; ++i) {
+        Token t = std::move(*i);
+        // consume token in some way
+        // TODO implement function which handles unary operators
+        // result = UnaryOp(t, result)
+      }
+      return nullptr; // TODO
+    }
   }
 }
 
-// TODO: use this implementation later when the AST is also constructed
-// (since then tail call elimination cannot be applied anymore)
-// void Parser::parseUnary() {
-//   std::deque<Token> unaries;
-//   while (true) {
-//     switch (curTok.type) {
-//     case TT::Bang:
-//       unaries.emplace_back(std::move(curTok));
-//       readNextToken();
-//       continue; // parseUnary();
-//     case TT::Minus:
-//       unaries.emplace_back(std::move(curTok));
-//       readNextToken();
-//       continue; // parseUnary();
-//       break;
-//     default:
-//       parsePostfixExpr();
-//       // result = ...
-//       // consume all unary prefixes in reverse order
-//       for (std::deque<Token>::reverse_iterator i = unaries.rbegin(),
-//                                                 end = unaries.rend();
-//            i != end; ++i) {
-//         Token t = std::move(*i);
-//         // consume token in some way
-//         // TODO implement function which handles unary operators
-//         // result = UnaryOp(t, result)
-//       }
-//       return;
-//     }
-//   }
-// }
-
-void Parser::parsePostfixExpr() {
+ast::ExprPtr Parser::parsePostfixExpr() {
   parsePrimary();
   while (true) {
     switch (curTok.type) {
@@ -481,33 +460,34 @@ void Parser::parsePostfixExpr() {
       parseArrayAccess();
       break;
     default:
-      return;
+      return nullptr; // TODO
     }
   }
 }
 
-void Parser::parsePrimary() {
+ast::ExprPtr Parser::parsePrimary() {
   switch (curTok.type) {
-  case TT::LParen:
+  case TT::LParen: {
     readNextToken();
-    parseExpr();
+    auto expr = parseExpr();
     expectAndNext(TT::RParen);
-    break;
+    return expr;
+  }
   case TT::False:
     readNextToken();
-    break;
+    return std::make_unique<ast::BoolLiteral>(SourceLocation{}, false);
   case TT::True:
     readNextToken();
-    break;
+    return std::make_unique<ast::BoolLiteral>(SourceLocation{}, true);
   case TT::Null:
     readNextToken();
-    break;
+    return std::make_unique<ast::NullLiteral>(SourceLocation{});
   case TT::This:
     readNextToken();
-    break;
+    return std::make_unique<ast::ThisLiteral>(SourceLocation{});
   case TT::IntLiteral:
     readNextToken();
-    break;
+    return std::make_unique<ast::ThisLiteral>(SourceLocation{});
   case TT::Identifier:
     readNextToken();
     if (curTok.type == TT::LParen) {
@@ -516,17 +496,16 @@ void Parser::parsePrimary() {
       parseArguments();
       expectAndNext(TT::RParen);
     }
-    break;
+    return nullptr; // TODO
   case TT::New:
-    parseNewExpr();
-    break;
+    return parseNewExpr();
   default:
     errorExpectedAnyOf({TT::LParen, TT::False, TT::True, TT::Null, TT::This,
                         TT::IntLiteral, TT::Identifier, TT::New});
   }
 }
 
-void Parser::parseMemberAccess() {
+ast::ExprPtr Parser::parseMemberAccess() {
   expectAndNext(TT::Dot);
   expectAndNext(TT::Identifier);
   if (curTok.type == TT::LParen) {
@@ -534,15 +513,17 @@ void Parser::parseMemberAccess() {
     parseArguments();
     expectAndNext(TT::RParen);
   }
+  return nullptr; // TODO
 }
 
-void Parser::parseArrayAccess() {
+ast::ExprPtr Parser::parseArrayAccess() {
   expectAndNext(TT::LBracket);
   parseExpr();
   expectAndNext(TT::RBracket);
+  return nullptr; // TODO
 }
 
-void Parser::parseArguments() {
+ast::ExprList Parser::parseArguments() {
   switch (curTok.type) {
   case TT::Bang:
   case TT::False:
@@ -559,9 +540,9 @@ void Parser::parseArguments() {
       readNextToken();
       parseExpr();
     }
-    break;
+    return {}; // TODO
   case TT::RParen:
-    return;
+    return {}; // empty vector
   default:
     errorExpectedAnyOf({TT::Bang, TT::False, TT::Identifier, TT::IntLiteral,
                         TT::New, TT::Null, TT::True, TT::LParen, TT::Minus,
@@ -569,7 +550,7 @@ void Parser::parseArguments() {
   }
 }
 
-void Parser::parseNewExpr() {
+ast::ExprPtr Parser::parseNewExpr() {
   expectAndNext(TT::New);
   // check next token instead of current
   switch (lookAhead(1).type) {
@@ -578,7 +559,7 @@ void Parser::parseNewExpr() {
     // curTok is always LParen
     readNextToken();
     expectAndNext(TT::RParen);
-    break;
+    return nullptr; // TODO
   case TT::LBracket:
     parseBasicType();
     // curTok is always LBracket
@@ -589,9 +570,8 @@ void Parser::parseNewExpr() {
       readNextToken(); // eat '['
       readNextToken(); // eat ']'
     }
-    break;
+    return nullptr; // TODO
   default:
-    expectAny({TT::LParen, TT::LBracket});
-    break;
+    errorExpectedAnyOf({TT::LParen, TT::LBracket});
   }
 }
