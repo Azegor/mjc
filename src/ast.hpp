@@ -41,42 +41,35 @@ class Node {
 protected:
   SourceLocation location;
 
-public:
   Node(SourceLocation loc) : location(std::move(loc)) {}
-  virtual ~Node() {}
+
+public:
   virtual void accept(Visitor *visitor) { (void)visitor; }
+  virtual ~Node() = default;
 };
 using NodePtr = std::unique_ptr<Node>;
 
 class Type : public Node {
-public:
+protected:
   Type(SourceLocation loc) : Node(std::move(loc)) {}
-  virtual ~Type() = 0;
 };
 using TypePtr = std::unique_ptr<Type>;
 
 class BlockStatement : public Node {
-public:
-  virtual ~BlockStatement() {}
-
-public:
+protected:
   BlockStatement(SourceLocation loc) : Node(std::move(loc)) {}
 };
 using BlockStmtPtr = std::unique_ptr<BlockStatement>;
 
 class Statement : public BlockStatement {
-public:
-  virtual ~Statement() {}
-
-public:
+protected:
   Statement(SourceLocation loc) : BlockStatement(std::move(loc)) {}
 };
 using StmtPtr = std::unique_ptr<Statement>;
 
 class Expression : public Node {
-public:
+protected:
   Expression(SourceLocation loc) : Node(std::move(loc)) {}
-  virtual ~Expression() {}
 };
 using ExprPtr = std::unique_ptr<Expression>;
 using ExprList = std::vector<ExprPtr>;
@@ -91,15 +84,14 @@ public:
 using BlockPtr = std::unique_ptr<Block>;
 
 class NonArrayType : public Type {
-public:
-  ~NonArrayType() {}
+  friend class ArrayType;
 
-public:
+protected:
   NonArrayType(SourceLocation loc) : Type(std::move(loc)) {}
 };
 
 class PrimitiveType : public NonArrayType {
-  enum class TypeType { Bool, Int, Void };
+  enum class TypeType { Bool, Int, Void } type;
 
 public:
   PrimitiveType(SourceLocation loc) : NonArrayType(std::move(loc)) {}
@@ -209,7 +201,7 @@ class VariableDeclaration : public BlockStatement {
 };
 
 class PrimaryExpression : public Expression {
-public:
+protected:
   PrimaryExpression(SourceLocation loc) : Expression(std::move(loc)) {}
 };
 
@@ -353,7 +345,6 @@ class UnaryExpression : public Expression {
 protected:
   ExprPtr expression;
 
-public:
   UnaryExpression(SourceLocation loc) : Expression(std::move(loc)) {}
 };
 
