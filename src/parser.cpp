@@ -24,9 +24,9 @@
  * SOFTWARE.
  */
 
+#include "ast.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
-#include "ast.hpp"
 
 #include <deque>
 
@@ -34,15 +34,16 @@ using TT = Token::Type;
 
 void Parser::parseFileOnly() { parseProgram(); }
 
-ast::Program Parser::parseProgram() {
-  std::vector<ast::Class> classes;
+ast::ProgramPtr Parser::parseProgram() {
+  std::vector<ast::ClassPtr> classes;
   while (true) {
     switch (curTok.type) {
     case TT::Class:
-      classes.push_back(parseClassDeclaration());
+      classes.emplace_back(parseClassDeclaration());
       break;
     case TT::Eof:
-      return ast::Program({}, std::move(classes));
+      return std::make_unique<ast::Program>(
+          ast::Program({}, std::move(classes)));
     default:
       errorExpectedAnyOf({TT::Class, TT::Eof});
       break;
@@ -50,11 +51,11 @@ ast::Program Parser::parseProgram() {
   }
 }
 
-ast::Class Parser::parseClassDeclaration() {
+ast::ClassPtr Parser::parseClassDeclaration() {
   std::string name;
-  std::vector<ast::Field> fields;
-  std::vector<ast::Method> methods;
-  std::vector<ast::MainMethod> mainMethods;
+  std::vector<ast::FieldPtr> fields;
+  std::vector<ast::MethodPtr> methods;
+  std::vector<ast::MainMethodPtr> mainMethods;
 
   expectAndNext(TT::Class);
   name = curTok.str;
@@ -65,7 +66,9 @@ ast::Class Parser::parseClassDeclaration() {
     switch (curTok.type) {
     case TT::RBrace:
       readNextToken();
-      return ast::Class({}, std::move(name), std::move(fields), std::move(methods), std::move(mainMethods));
+      return std::make_unique<ast::Class>(SourceLocation{}, std::move(name),
+                                          std::move(fields), std::move(methods),
+                                          std::move(mainMethods));
     case TT::Public:
       parseClassMember(fields, methods, mainMethods);
       break;
@@ -76,10 +79,12 @@ ast::Class Parser::parseClassDeclaration() {
   }
 }
 
-void Parser::parseClassMember(std::vector<ast::Field> &fields, std::vector<ast::Method> &methods, std::vector<ast::MainMethod> &mainMethods) {
+void Parser::parseClassMember(std::vector<ast::FieldPtr> &fields,
+                              std::vector<ast::MethodPtr> &methods,
+                              std::vector<ast::MainMethodPtr> &mainMethods) {
   switch (lookAhead(1).type) {
   case TT::Static:
-    mainMethods.push_back(parseMainMethod());
+    mainMethods.emplace_back(parseMainMethod());
     return;
   case TT::Boolean:
   case TT::Identifier:
@@ -94,11 +99,13 @@ void Parser::parseClassMember(std::vector<ast::Field> &fields, std::vector<ast::
   }
 }
 
-ast::MainMethod Parser::parseMainMethod() {
+ast::MainMethodPtr Parser::parseMainMethod() {
   expectAndNext(TT::Public);
   expectAndNext(TT::Static);
   expectAndNext(TT::Void);
-  expectAndNext(TT::Identifier); // name doesn't matter here
+  // name must be main (check in semantic analysis):
+  auto methodName = std::move(curTok.str);
+  expectAndNext(TT::Identifier);
   expectAndNext(TT::LParen);
   expect(TT::Identifier);
   if (curTok.str != "String") {
@@ -107,12 +114,21 @@ ast::MainMethod Parser::parseMainMethod() {
   readNextToken();
   expectAndNext(TT::LBracket);
   expectAndNext(TT::RBracket);
+  // name doesn't matter here, but keep for pretty print:
+  auto paramName = std::move(curTok.str);
   expectAndNext(TT::Identifier);
   expectAndNext(TT::RParen);
-  parseBlock();
+  auto block = parseBlock();
+  return std::make_unique<ast::MainMethod>(
+      SourceLocation{}, std::move(methodName), std::move(paramName),
+      std::move(block));
 }
 
-void Parser::parseFieldOrMethod(std::vector<ast::Field> &fields, std::vector<ast::Method> &methods) {
+void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
+                                std::vector<ast::MethodPtr> &methods) {
+  // don't warn on unused
+  (void)fields;
+  (void)methods;
   expectAndNext(TT::Public);
   parseType();
   expectAndNext(TT::Identifier);
@@ -188,13 +204,13 @@ void Parser::parseBasicType() {
   }
 }
 
-void Parser::parseBlock() {
+ast::BlockPtr Parser::parseBlock() {
   expectAndNext(TT::LBrace);
   while (true) {
     switch (curTok.type) {
     case TT::RBrace:
       readNextToken();
-      return;
+      return nullptr; // TODO
     case TT::Bang:
     case TT::Boolean:
     case TT::False:

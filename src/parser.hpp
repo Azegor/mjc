@@ -148,16 +148,16 @@ private:
           }));
   }
 
-  ast::Program parseProgram();
-  inline ast::Class parseClassDeclaration();
-  inline void parseClassMember(std::vector<ast::Field> &fields, std::vector<ast::Method> &methods, std::vector<ast::MainMethod> &mainMethods);
-  inline ast::MainMethod parseMainMethod();
-  inline void parseFieldOrMethod(std::vector<ast::Field> &fields, std::vector<ast::Method> &methods);
+  ast::ProgramPtr parseProgram();
+  inline ast::ClassPtr parseClassDeclaration();
+  inline void parseClassMember(std::vector<ast::FieldPtr> &fields, std::vector<ast::MethodPtr> &methods, std::vector<ast::MainMethodPtr> &mainMethods);
+  inline ast::MainMethodPtr parseMainMethod();
+  inline void parseFieldOrMethod(std::vector<ast::FieldPtr> &fields, std::vector<ast::MethodPtr> &methods);
   inline void parseParameterList();
   inline void parseParameter();
   inline void parseType();
   inline void parseBasicType();
-  inline void parseBlock();
+  inline ast::BlockPtr parseBlock();
   inline void parseBlockStatement();
   inline void parseLocalVarDeclStmt();
   inline void parseStmt();

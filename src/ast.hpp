@@ -37,76 +37,54 @@ class Visitor {
   // Foobar
 };
 
-
 class Node {
+protected:
   SourceLocation location;
 
-  public:
-    Node(SourceLocation loc) : location(loc) {}
-    virtual ~Node() {}
-    virtual void accept(Visitor *visitor) {}
+public:
+  Node(SourceLocation loc) : location(std::move(loc)) {}
+  virtual ~Node() {}
+  virtual void accept(Visitor *visitor) { (void)visitor; }
 };
+using NodePtr = std::unique_ptr<Node>;
 
 class Type : public Node {
-  public:
-    virtual ~Type() {}
+public:
+  virtual ~Type() = 0;
 };
+using TypePtr = std::unique_ptr<Type>;
 
 class BlockStatement : public Node {
-  public:
-    virtual ~BlockStatement() {}
+public:
+  virtual ~BlockStatement() {}
 };
+using BlockStmtPtr = std::unique_ptr<BlockStatement>;
 
 class Statement : public BlockStatement {
-  public:
-    virtual ~Statement() {}
+public:
+  virtual ~Statement() {}
 };
+using StmtPtr = std::unique_ptr<Statement>;
 
 class Expression : public Node {
-  public:
-    virtual ~Expression() {}
+public:
+  virtual ~Expression() {}
 };
+using ExprPtr = std::unique_ptr<Expression>;
 
 class Block : public Node {
-  std::vector<BlockStatement> statements;
+  std::vector<BlockStmtPtr> statements;
   bool containsNothingExceptOneSingleLonelyEmtpyExpression;
 };
-
-using NodePtr = std::shared_ptr<Node>;
-using TypePtr = std::shared_ptr<Type>;
-using StmtPtr = std::shared_ptr<Statement>;
-using ExprPtr = std::shared_ptr<Expression>;
-using BlockPtr = std::shared_ptr<Block>;
-
-template <typename St, typename... Args>
-StmtPtr make_SPtr(SourceLocation loc, Args &&... args) {
-  return StmtPtr{new St(loc, std::forward<Args>(args)...)};
-};
-// for copy/move constructor
-template <typename St> StmtPtr make_SPtr(const St &s) {
-  return StmtPtr{new St(s)};
-};
-
-template <typename Ex, typename... Args>
-ExprPtr make_EPtr(SourceLocation loc, Args &&... args) {
-  return ExprPtr{new Ex(loc, std::forward<Args>(args)...)};
-};
-// for copy/move constructor
-template <typename Ex> ExprPtr make_EPtr(const Ex &e) {
-  return ExprPtr{new Ex(e)};
-};
+using BlockPtr = std::unique_ptr<Block>;
 
 class NonArrayType : public Type {
-  public:
-    ~NonArrayType() {}
+public:
+  ~NonArrayType() {}
 };
 
 class PrimitiveType : public NonArrayType {
-  enum class TypeType {
-    Bool,
-    Int,
-    Void
-  };
+  enum class TypeType { Bool, Int, Void };
 };
 
 class ClassType : public NonArrayType {
@@ -143,6 +121,7 @@ class Field : public Node {
   std::string name;
   TypePtr type;
 };
+using FieldPtr = std::unique_ptr<Field>;
 
 class Parameter : public Node {
   std::string name;
@@ -156,40 +135,52 @@ class Method : public Node {
   std::vector<Parameter> parameters;
   BlockPtr block;
 };
+using MethodPtr = std::unique_ptr<Method>;
 
 class MainMethod : public Node {
   std::string name;
   std::string argName;
   BlockPtr block;
+
+public:
+  MainMethod(SourceLocation loc, std::string name, std::string argName,
+             BlockPtr block)
+      : Node(std::move(loc)), name(std::move(name)),
+        argName(std::move(argName)), block(std::move(block)) {}
 };
+using MainMethodPtr = std::unique_ptr<MainMethod>;
 
 class Class : public Node {
   std::string name;
-  std::vector<Field> fields;
-  std::vector<Method> methods;
-  std::vector<MainMethod> mainMethods;
+  std::vector<FieldPtr> fields;
+  std::vector<MethodPtr> methods;
+  std::vector<MainMethodPtr> mainMethods;
 
-  public:
-    Class(SourceLocation loc, std::string name, std::vector<Field> fields, std::vector<Method> methods, std::vector<MainMethod> mainMethods) : 
-    Node(loc), name(std::move(name)), fields(std::move(fields)), methods(std::move(methods)), mainMethods(std::move(mainMethods)) {}
+public:
+  Class(SourceLocation loc, std::string name, std::vector<FieldPtr> fields,
+        std::vector<MethodPtr> methods, std::vector<MainMethodPtr> mainMethods)
+      : Node(loc), name(std::move(name)), fields(std::move(fields)),
+        methods(std::move(methods)), mainMethods(std::move(mainMethods)) {}
 };
+using ClassPtr = std::unique_ptr<Class>;
 
 class Program : public Node {
-  std::vector<Class> classes;
-  
-  public:
-    Program(SourceLocation loc, std::vector<Class> classes) : Node(loc), classes(std::move(classes)) {}
-};
+  std::vector<ClassPtr> classes;
 
-class VariableDeclaration : public Expression {
+public:
+  Program(SourceLocation loc, std::vector<ClassPtr> classes)
+      : Node(loc), classes(std::move(classes)) {}
+};
+using ProgramPtr = std::unique_ptr<Program>;
+
+class VariableDeclaration : public BlockStatement {
   TypePtr type;
   std::string name;
   // might be nullptr
   ExprPtr initializer;
 };
 
-class PrimaryExpression : public Expression {
-};
+class PrimaryExpression : public Expression {};
 
 class NewArrayExpression : public PrimaryExpression {
   ArrayType type;
@@ -208,12 +199,9 @@ class BoolLiteral : public PrimaryExpression {
   bool value;
 };
 
-class NullLiteral : public PrimaryExpression {
-  // ???
-};
+class NullLiteral : public PrimaryExpression {};
 
-class ThisLiteral : public PrimaryExpression {
-};
+class ThisLiteral : public PrimaryExpression {};
 
 class Ident : public PrimaryExpression {
   std::string name;
@@ -255,22 +243,35 @@ class BinaryExpression : public Expression {
     Mul,
     Div,
     Mod
-  };
+  } operation;
 };
 
 class UnaryExpression : public Expression {
+protected:
   ExprPtr expression;
 };
 
-class NegExpression : public UnaryExpression {
-};
+class NegExpression : public UnaryExpression {};
 
-class NotExpression : public UnaryExpression {
-};
+class NotExpression : public UnaryExpression {};
 
+template <typename St, typename... Args>
+StmtPtr make_SPtr(SourceLocation loc, Args &&... args) {
+  return StmtPtr{new St(loc, std::forward<Args>(args)...)};
+}
+// for copy/move constructor
+template <typename St> StmtPtr make_SPtr(const St &s) {
+  return StmtPtr{new St(s)};
+}
 
-
-};
-
+template <typename Ex, typename... Args>
+ExprPtr make_EPtr(SourceLocation loc, Args &&... args) {
+  return ExprPtr{new Ex(loc, std::forward<Args>(args)...)};
+}
+// for copy/move constructor
+template <typename Ex> ExprPtr make_EPtr(const Ex &e) {
+  return ExprPtr{new Ex(e)};
+}
+}
 
 #endif // AST_H
