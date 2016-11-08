@@ -157,11 +157,17 @@ class Class : public Node {
   std::string name;
   std::vector<Field> fields;
   std::vector<Method> methods;
-  std::vector<MainMethod> mainmethods;
+  std::vector<MainMethod> mainMethods;
+
+  public:
+    Class(std::string name, std::vector<ast::Field> fields, std::vector<ast::Method> methods, std::vector<ast::MainMethod> mainMethods) : name(name), fields(fields), methods(methods), mainMethods(mainMethods) {}
 };
 
 class Program : public Node {
   std::vector<Class> classes;
+  
+  public:
+    Program(std::vector<Class> classes) : classes(classes) {}
 };
 
 class VariableDeclaration : public Expression {

@@ -26,6 +26,7 @@
 
 #include "lexer.hpp"
 #include "parser.hpp"
+#include "ast.hpp"
 
 #include <deque>
 
@@ -33,11 +34,12 @@ using TT = Token::Type;
 
 void Parser::parseFileOnly() { parseProgram(); }
 
-void Parser::parseProgram() {
+ast::Program Parser::parseProgram() {
+  std::vector<ast::Class> classes;
   while (true) {
     switch (curTok.type) {
     case TT::Class:
-      parseClassDeclaration();
+      classes.push_back(parseClassDeclaration());
       break;
     case TT::Eof:
       return;
@@ -46,10 +48,17 @@ void Parser::parseProgram() {
       break;
     }
   }
+  return ast::Program(classes);
 }
 
-void Parser::parseClassDeclaration() {
+ast::Class Parser::parseClassDeclaration() {
+  std::string name;
+  std::vector<ast::Field> fields;
+  std::vector<ast::Method> methods;
+  std::vector<ast::MainMethod> mainMethods;
+
   expectAndNext(TT::Class);
+  name = curTok.str;
   expectAndNext(TT::Identifier);
   expectAndNext(TT::LBrace);
   // parse class members:
@@ -59,13 +68,21 @@ void Parser::parseClassDeclaration() {
       readNextToken();
       return;
     case TT::Public:
-      parseClassMember();
+      ast::Node member = parseClassMember();
+      if (ast::MainMethod m = dynamic_cast<ast::MainMethod>(member)) {
+        mainMethods.push_back(m);
+      } else if (ast::Method m = dynamic_cast<ast::Method>(member)) {
+        methods.push_back(m);
+      } else if (ast::Field m = dynamic_cast<ast::Field>(member)) {
+        fields.push_back(m);
+      }
       break;
     default:
       errorExpectedAnyOf({TT::RBrace, TT::Public});
       break;
     }
   }
+  return ast::Class(name, fields, methods, mainMethods);
 }
 
 void Parser::parseClassMember() {
