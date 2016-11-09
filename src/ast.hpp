@@ -84,11 +84,10 @@ public:
 using BlockPtr = std::unique_ptr<Block>;
 
 class NonArrayType : public Type {
-  friend class ArrayType;
-
 protected:
   NonArrayType(SourceLocation loc) : Type(std::move(loc)) {}
 };
+using NonArrayTypePtr = std::unique_ptr<NonArrayType>;
 
 class PrimitiveType : public NonArrayType {
   enum class TypeType { Bool, Int, Void } type;
@@ -105,11 +104,11 @@ public:
 };
 
 class ArrayType : public Type {
-  NonArrayType elementType;
+  NonArrayTypePtr elementType;
   int dimension;
 
 public:
-  ArrayType(SourceLocation loc, NonArrayType &elementType)
+  ArrayType(SourceLocation loc, NonArrayTypePtr elementType)
       : Type(std::move(loc)), elementType(std::move(elementType)) {}
 };
 
