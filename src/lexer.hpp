@@ -258,6 +258,7 @@ class Lexer {
   int nextCharPos = 0;
   int curBufferSize = 0;
   bool streamIsEof = false;
+  std::streamoff bufferStartOffset = 0;
 
   std::string tokenString;
   int line = 1, column = 0; // column is 0 since constructor calls nextChar()
@@ -305,6 +306,7 @@ class Lexer {
 
 public:
   void readIntoBuffer() {
+    bufferStartOffset = input.tellg();
     input.read(&buffer[0], maxBufferSize);
     streamIsEof = input.eof();
     curBufferSize = input.gcount();

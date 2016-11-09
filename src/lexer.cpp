@@ -337,7 +337,7 @@ int Lexer::nextChar() {
     column = 1;
     ++line;
 
-    lineStartFileOffsets.push_back(input.tellg() -
+    lineStartFileOffsets.push_back(bufferStartOffset + nextCharPos -
                                    static_cast<std::streamoff>(1));
 
     return lastChar;
@@ -349,6 +349,7 @@ int Lexer::nextChar() {
 
 std::string Lexer::getCurrentLineFromInput(int lineNr) {
   int oldPos = input.tellg();
+  input.clear(); // need to clear potential eof bit before seek
   input.seekg(lineStartFileOffsets.at(lineNr - 1));
   std::string res;
   int c = input.get();
