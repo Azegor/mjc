@@ -29,10 +29,10 @@
 
 #include <algorithm> // for std::max
 
+#include "ast.hpp"
 #include "error.hpp"
 #include "input_file.hpp"
 #include "lexer.hpp"
-#include "ast.hpp"
 #include "util.hpp"
 
 class ParseError : public CompilerError {
@@ -150,9 +150,12 @@ private:
 
   ast::ProgramPtr parseProgram();
   inline ast::ClassPtr parseClassDeclaration();
-  inline void parseClassMember(std::vector<ast::FieldPtr> &fields, std::vector<ast::MethodPtr> &methods, std::vector<ast::MainMethodPtr> &mainMethods);
+  inline void parseClassMember(std::vector<ast::FieldPtr> &fields,
+                               std::vector<ast::MethodPtr> &methods,
+                               std::vector<ast::MainMethodPtr> &mainMethods);
   inline ast::MainMethodPtr parseMainMethod();
-  inline void parseFieldOrMethod(std::vector<ast::FieldPtr> &fields, std::vector<ast::MethodPtr> &methods);
+  inline void parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
+                                 std::vector<ast::MethodPtr> &methods);
   inline ast::ParameterList parseParameterList();
   inline ast::ParameterPtr parseParameter();
   inline ast::TypePtr parseType();

@@ -190,7 +190,7 @@ struct Token {
     return tmp;
   }
   SourceLocation singleTokenSrcLoc() const { return {startPos(), endPos()}; }
-  operator SourceLocation() const {return singleTokenSrcLoc(); }
+  operator SourceLocation() const { return singleTokenSrcLoc(); }
 
   friend std::ostream &operator<<(std::ostream &o, const Token &t) {
     switch (t.type) {

@@ -24,9 +24,9 @@
  * SOFTWARE.
  */
 
+#include "parser.hpp"
 #include "ast.hpp"
 #include "lexer.hpp"
-#include "parser.hpp"
 
 #include <deque>
 
@@ -556,8 +556,8 @@ ast::ExprPtr Parser::parseArrayAccess(ast::ExprPtr lhs) {
   auto index = parseExpr();
   expectAndNext(TT::RBracket);
   auto endPos = curTok.endPos();
-  return ast::make_EPtr<ast::ArrayAccess>(
-        {startPos, endPos}, std::move(lhs), std::move(index));
+  return ast::make_EPtr<ast::ArrayAccess>({startPos, endPos}, std::move(lhs),
+                                          std::move(index));
 }
 
 ast::ExprList Parser::parseArguments() {
