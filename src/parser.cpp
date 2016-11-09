@@ -480,37 +480,49 @@ ast::ExprPtr Parser::parsePrimary() {
   case TT::False: {
     auto loc = curTok.singleTokenSrcLoc();
     readNextToken();
-    return std::make_unique<ast::BoolLiteral>(loc, false);
+    return ast::make_EPtr<ast::BoolLiteral>(loc, false);
   }
   case TT::True: {
     auto loc = curTok.singleTokenSrcLoc();
     readNextToken();
-    return std::make_unique<ast::BoolLiteral>(loc, true);
+    return ast::make_EPtr<ast::BoolLiteral>(loc, true);
   }
   case TT::Null: {
     auto loc = curTok.singleTokenSrcLoc();
     readNextToken();
-    return std::make_unique<ast::NullLiteral>(loc);
+    return ast::make_EPtr<ast::NullLiteral>(loc);
   }
   case TT::This: {
     auto loc = curTok.singleTokenSrcLoc();
     readNextToken();
-    return std::make_unique<ast::ThisLiteral>(loc);
+    return ast::make_EPtr<ast::ThisLiteral>(loc);
   }
   case TT::IntLiteral: {
     auto loc = curTok.singleTokenSrcLoc();
     readNextToken();
-    return std::make_unique<ast::ThisLiteral>(loc);
+    return ast::make_EPtr<ast::IntLiteral>(loc);
   }
-  case TT::Identifier:
+  case TT::Identifier: {
+    auto ident = std::move(curTok.str);
+    auto startPos = curTok.startPos();
+    auto fieldEndPos = curTok.endPos();
     readNextToken();
     if (curTok.type == TT::LParen) {
       // return "this.methodinvocation(args)
       readNextToken();
-      parseArguments();
+      auto args = parseArguments();
+      auto endPos = curTok.endPos();
       expectAndNext(TT::RParen);
+      SourceLocation loc{startPos, endPos};
+      return ast::make_EPtr<ast::MethodInvocation>(
+          loc, ast::make_EPtr<ast::ThisLiteral>(loc), std::move(ident),
+          std::move(args));
+    } else {
+      SourceLocation loc{startPos, fieldEndPos};
+      return ast::make_EPtr<ast::FieldAccess>(
+          loc, ast::make_EPtr<ast::ThisLiteral>(loc), std::move(ident));
     }
-    return nullptr; // TODO
+  }
   case TT::New:
     return parseNewExpr();
   default:
@@ -531,10 +543,11 @@ ast::ExprPtr Parser::parseMemberAccess(ast::ExprPtr lhs) {
     auto endPos = curTok.endPos();
     return ast::make_EPtr<ast::MethodInvocation>(
         {startPos, endPos}, std::move(lhs), std::move(ident), std::move(args));
+  } else {
+    auto endPos = curTok.endPos();
+    return ast::make_EPtr<ast::FieldAccess>({startPos, endPos}, std::move(lhs),
+                                            std::move(ident));
   }
-  auto endPos = curTok.endPos();
-  return ast::make_EPtr<ast::FieldAccess>({startPos, endPos}, std::move(lhs),
-                                          std::move(ident));
 }
 
 ast::ExprPtr Parser::parseArrayAccess(ast::ExprPtr lhs) {

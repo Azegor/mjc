@@ -253,7 +253,7 @@ public:
 };
 
 class MethodInvocation : public Expression {
-  ExprPtr left;
+  ExprPtr left; // set to this if call from within function
   std::string name;
   // might be empty
   std::vector<ExprPtr> arguments;
@@ -267,7 +267,7 @@ public:
 
 class FieldAccess : public Expression {
   // left.field_name
-  ExprPtr left;
+  ExprPtr left; // set to this if call from within function
   std::string name;
 
 public:
