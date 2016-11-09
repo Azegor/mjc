@@ -42,8 +42,8 @@ ast::ProgramPtr Parser::parseProgram() {
       classes.emplace_back(parseClassDeclaration());
       break;
     case TT::Eof:
-      return std::make_unique<ast::Program>(
-          ast::Program({}, std::move(classes)));
+      return ast::make_Ptr<ast::Program>(SourceLocation{},
+                                            std::move(classes));
     default:
       errorExpectedAnyOf({TT::Class, TT::Eof});
       break;
@@ -66,7 +66,7 @@ ast::ClassPtr Parser::parseClassDeclaration() {
     switch (curTok.type) {
     case TT::RBrace:
       readNextToken();
-      return std::make_unique<ast::Class>(SourceLocation{}, std::move(name),
+      return ast::make_Ptr<ast::Class>(SourceLocation{}, std::move(name),
                                           std::move(fields), std::move(methods),
                                           std::move(mainMethods));
     case TT::Public:
@@ -119,7 +119,7 @@ ast::MainMethodPtr Parser::parseMainMethod() {
   expectAndNext(TT::Identifier);
   expectAndNext(TT::RParen);
   auto block = parseBlock();
-  return std::make_unique<ast::MainMethod>(
+  return ast::make_Ptr<ast::MainMethod>(
       SourceLocation{}, std::move(methodName), std::move(paramName),
       std::move(block));
 }

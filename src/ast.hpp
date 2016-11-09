@@ -382,6 +382,12 @@ ExprPtr make_EPtr(SourceLocation loc, Args &&... args) {
 template <typename Ex> ExprPtr make_EPtr(const Ex &e) {
   return ExprPtr{new Ex(e)};
 }
+
+template <typename T, typename... Args>
+std::unique_ptr<T> make_Ptr(SourceLocation loc, Args &&... args) {
+  return std::unique_ptr<T>{new T(loc, std::forward<Args>(args)...)};
 }
+
+} // namespace ast
 
 #endif // AST_H
