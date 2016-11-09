@@ -170,8 +170,8 @@ private:
   inline ast::ExprPtr parseUnary();
   inline ast::ExprPtr parsePostfixExpr();
   inline ast::ExprPtr parsePrimary();
-  inline ast::ExprPtr parseMemberAccess();
-  inline ast::ExprPtr parseArrayAccess();
+  inline ast::ExprPtr parseMemberAccess(ast::ExprPtr lhs);
+  inline ast::ExprPtr parseArrayAccess(ast::ExprPtr lhs);
   inline ast::ExprList parseArguments();
   inline ast::ExprPtr parseNewExpr();
 };

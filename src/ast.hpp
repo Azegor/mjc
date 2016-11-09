@@ -259,7 +259,10 @@ class MethodInvocation : public Expression {
   std::vector<ExprPtr> arguments;
 
 public:
-  MethodInvocation(SourceLocation loc) : Expression(std::move(loc)) {}
+  MethodInvocation(SourceLocation loc, ExprPtr lhs, std::string methodName,
+                   ExprList methodArgs)
+      : Expression(std::move(loc)), left(std::move(lhs)),
+        name(std::move(methodName)), arguments(std::move(methodArgs)) {}
 };
 
 class FieldAccess : public Expression {
@@ -268,7 +271,9 @@ class FieldAccess : public Expression {
   std::string name;
 
 public:
-  FieldAccess(SourceLocation loc) : Expression(std::move(loc)) {}
+  FieldAccess(SourceLocation loc, ExprPtr lhs, std::string memberName)
+      : Expression(std::move(loc)), left(std::move(lhs)),
+        name(std::move(memberName)) {}
 };
 
 class ArrayAccess : public Expression {
@@ -335,7 +340,8 @@ public:
       return Op::Div;
     case Token::Type::Percent:
       return Op::Mod;
-    default: return Op::None;
+    default:
+      return Op::None;
     }
   }
 };

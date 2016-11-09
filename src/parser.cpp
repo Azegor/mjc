@@ -454,17 +454,17 @@ ast::ExprPtr Parser::parseUnary() {
 }
 
 ast::ExprPtr Parser::parsePostfixExpr() {
-  parsePrimary();
+  auto lhs = parsePrimary();
   while (true) {
     switch (curTok.type) {
     case TT::Dot:
-      parseMemberAccess();
+      lhs = parseMemberAccess(std::move(lhs));
       break;
     case TT::LBracket:
-      parseArrayAccess();
+      lhs = parseArrayAccess(std::move(lhs));
       break;
     default:
-      return nullptr; // TODO
+      return lhs;
     }
   }
 }
@@ -519,18 +519,25 @@ ast::ExprPtr Parser::parsePrimary() {
   }
 }
 
-ast::ExprPtr Parser::parseMemberAccess() {
+ast::ExprPtr Parser::parseMemberAccess(ast::ExprPtr lhs) {
+  auto startPos = curTok.startPos();
   expectAndNext(TT::Dot);
+  auto ident = std::move(curTok.str);
   expectAndNext(TT::Identifier);
   if (curTok.type == TT::LParen) {
     readNextToken();
-    parseArguments();
+    auto args = parseArguments();
     expectAndNext(TT::RParen);
+    auto endPos = curTok.endPos();
+    return ast::make_EPtr<ast::MethodInvocation>(
+        {startPos, endPos}, std::move(lhs), std::move(ident), std::move(args));
   }
-  return nullptr; // TODO
+  auto endPos = curTok.endPos();
+  return ast::make_EPtr<ast::FieldAccess>({startPos, endPos}, std::move(lhs),
+                                          std::move(ident));
 }
 
-ast::ExprPtr Parser::parseArrayAccess() {
+ast::ExprPtr Parser::parseArrayAccess(ast::ExprPtr lhs) {
   expectAndNext(TT::LBracket);
   parseExpr();
   expectAndNext(TT::RBracket);
