@@ -277,11 +277,11 @@ public:
 };
 
 class ArrayAccess : public Expression {
-  ExprPtr expr;
+  ExprPtr array;
   ExprPtr index;
 
 public:
-  ArrayAccess(SourceLocation loc) : Expression(std::move(loc)) {}
+  ArrayAccess(SourceLocation loc, ExprPtr lhs, ExprPtr index) : Expression(std::move(loc)), array(std::move(lhs)), index(std::move(index)) {}
 };
 
 class BinaryExpression : public Expression {

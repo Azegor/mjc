@@ -538,10 +538,13 @@ ast::ExprPtr Parser::parseMemberAccess(ast::ExprPtr lhs) {
 }
 
 ast::ExprPtr Parser::parseArrayAccess(ast::ExprPtr lhs) {
+  auto startPos = curTok.startPos();
   expectAndNext(TT::LBracket);
-  parseExpr();
+  auto index = parseExpr();
   expectAndNext(TT::RBracket);
-  return nullptr; // TODO
+  auto endPos = curTok.endPos();
+  return ast::make_EPtr<ast::ArrayAccess>(
+        {startPos, endPos}, std::move(lhs), std::move(index));
 }
 
 ast::ExprList Parser::parseArguments() {
