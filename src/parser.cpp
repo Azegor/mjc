@@ -149,25 +149,26 @@ void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
 }
 
 ast::ParameterList Parser::parseParameterList() {
+  ast::ParameterList params;
   switch (curTok.type) {
   case TT::Boolean:
   case TT::Identifier:
   case TT::Int:
   case TT::Void:
-    parseParameter();
+    params.emplace_back(parseParameter());
     while (true) {
       switch (curTok.type) {
       case TT::Comma:
         readNextToken();
-        parseParameter();
+        params.emplace_back(parseParameter());
         break;
       default:
-        return {}; // TODO
+        return params;
       }
     }
     break;
   default:
-    return {}; // TODO
+    return {}; // empty vector
   }
 }
 
