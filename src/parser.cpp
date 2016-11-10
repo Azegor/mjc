@@ -381,15 +381,20 @@ ast::StmtPtr Parser::parseIfStmt() {
 }
 
 ast::StmtPtr Parser::parseReturnStmt() {
+  auto startPos = curTok.startPos();
   expectAndNext(TT::Return);
   switch (curTok.type) {
-  case TT::Semicolon:
+  case TT::Semicolon: {
+    auto endPos = curTok.startPos();
     readNextToken();
-    return nullptr; // TODO
-  default:
-    parseExpr();
+    return ast::make_Ptr<ast::ReturnStatement>({startPos, endPos}, nullptr);
+    }
+  default: {
+    auto expr = parseExpr();
+    auto endPos = curTok.startPos();
     expectAndNext(TT::Semicolon);
-    return nullptr; // TODO
+    return ast::make_Ptr<ast::ReturnStatement>({startPos, endPos}, std::move(expr));
+    }
   }
 }
 

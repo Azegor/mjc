@@ -155,6 +155,8 @@ class WhileStatement : public Statement {
 class ReturnStatement : public Statement {
   // might be nullptr
   ExprPtr expr;
+public:
+  ReturnStatement(SourceLocation loc, ExprPtr expr) : Statement(std::move(loc)), expr(std::move(expr)) {}
 };
 
 class Field : public Node {
