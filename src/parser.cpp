@@ -257,7 +257,7 @@ ast::BlockPtr Parser::parseBlock() {
     case TT::This:
     case TT::Void:
     case TT::While:
-      statements.push_back(std::move(parseBlockStatement()));
+      statements.push_back(parseBlockStatement());
       break;
     default:
       errorExpectedAnyOf({TT::RBrace, TT::Bang, TT::Boolean, TT::False,
