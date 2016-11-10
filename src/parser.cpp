@@ -562,6 +562,7 @@ ast::ExprPtr Parser::parseArrayAccess(ast::ExprPtr lhs) {
 }
 
 ast::ExprList Parser::parseArguments() {
+  ast::ExprList arguments;
   switch (curTok.type) {
   case TT::Bang:
   case TT::False:
@@ -573,14 +574,14 @@ ast::ExprList Parser::parseArguments() {
   case TT::LParen:
   case TT::Minus:
   case TT::This:
-    parseExpr();
+    arguments.emplace_back(parseExpr());
     while (curTok.type == TT::Comma) {
       readNextToken();
-      parseExpr();
+      arguments.emplace_back(parseExpr());
     }
-    return {}; // TODO
+    return arguments;
   case TT::RParen:
-    return {}; // empty vector
+    return arguments; // empty vector
   default:
     errorExpectedAnyOf({TT::Bang, TT::False, TT::Identifier, TT::IntLiteral,
                         TT::New, TT::Null, TT::True, TT::LParen, TT::Minus,
