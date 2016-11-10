@@ -133,6 +133,9 @@ using ArrayTypePtr = std::unique_ptr<ArrayType>;
 
 class ExpressionStatement : public Statement {
   ExprPtr expr;
+
+public:
+  ExpressionStatement(SourceLocation loc, ExprPtr expr) : Statement(std::move(loc)), expr(std::move(expr)) {}
 };
 
 // IfStatement/WhileStatement/... oder nur If/While/...? ist ja schon im Ast

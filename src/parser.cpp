@@ -356,9 +356,11 @@ ast::StmtPtr Parser::parseStmt() {
 }
 
 ast::StmtPtr Parser::parseExprStmt() {
-  parseExpr();
+  auto startPos = curTok.startPos();
+  auto expr = parseExpr();
+  auto endPos = curTok.endPos();
   expectAndNext(TT::Semicolon);
-  return nullptr; // TODO
+  return ast::make_Ptr<ast::ExpressionStatement>({startPos, endPos}, std::move(expr));
 }
 
 ast::StmtPtr Parser::parseIfStmt() {
