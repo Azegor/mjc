@@ -27,14 +27,29 @@
 #ifndef AST_H
 #define AST_H
 
+#include <iostream>
 #include <memory>
 
 #include "lexer.hpp"
 
 namespace ast {
 
+class Program;
+class Block;
+class BlockStatement;
+class Class;
+class Method;
+class Field;
+using ClassPtr = std::unique_ptr<Class>;
 class Visitor {
-  // Foobar
+public:
+  virtual ~Visitor() {}
+  virtual void visitProgram(Program &program) { (void)program; }
+  // virtual void visitBlock(Block &block) { (void)block; }
+  // virtual void visitBlockStatement(BlockStatement &stmt) { (void)stmt; }
+  virtual void visitClass(Class &klass) { (void)klass; }
+  virtual void visitField(Field &field) { (void)field; }
+  virtual void visitMethod(Method &method) { (void)method; }
 };
 
 class Node {
@@ -179,6 +194,8 @@ class Field : public Node {
 public:
   Field(SourceLocation loc, TypePtr type, std::string name)
       : Node(std::move(loc)), type(std::move(type)), name(std::move(name)) {}
+
+  const std::string &getName() { return name; }
 };
 using FieldPtr = std::unique_ptr<Field>;
 
@@ -233,8 +250,19 @@ public:
         std::vector<MethodPtr> methods, std::vector<MainMethodPtr> mainMethods)
       : Node(loc), name(std::move(name)), fields(std::move(fields)),
         methods(std::move(methods)), mainMethods(std::move(mainMethods)) {}
+
+  void accept(Visitor *visitor) override {
+    for (auto &mp : methods) {
+      visitor->visitMethod(*mp);
+    }
+
+    for (auto &fp : fields) {
+      visitor->visitField(*fp);
+    }
+  }
+
+  const std::string &getName() { return name; }
 };
-using ClassPtr = std::unique_ptr<Class>;
 
 class Program : public Node {
   std::vector<ClassPtr> classes;
@@ -242,6 +270,12 @@ class Program : public Node {
 public:
   Program(SourceLocation loc, std::vector<ClassPtr> classes)
       : Node(loc), classes(std::move(classes)) {}
+
+  void accept(Visitor *visitor) override {
+    for (auto &cp : classes) {
+      visitor->visitClass(*cp);
+    }
+  }
 };
 using ProgramPtr = std::unique_ptr<Program>;
 
@@ -457,6 +491,19 @@ template <typename T, typename... Args>
 std::unique_ptr<T> make_Ptr(SourceLocation loc, Args &&... args) {
   return std::unique_ptr<T>{new T(loc, std::forward<Args>(args)...)};
 }
+
+class TestVisitor : public Visitor {
+
+  void visitProgram(Program &program) override { (void)program; }
+
+  void visitClass(Class &klass) override {
+    std::cout << "Class " << klass.getName() << std::endl;
+  }
+
+  void visitField(Field &field) override {
+    std::cout << "Field: " << field.getName() << std::endl;
+  }
+};
 
 } // namespace ast
 

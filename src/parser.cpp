@@ -34,8 +34,13 @@ using TT = Token::Type;
 
 void Parser::parseFileOnly() { parseProgram(); }
 void Parser::parseAndPrintAst() {
-  auto res = parseProgram();
-  (void)res; // TODO
+  auto program = parseProgram();
+
+  auto v = new ast::TestVisitor();
+  std::cout << "accepting" << std::endl;
+  program->accept(v);
+
+  delete v;
 }
 
 ast::ProgramPtr Parser::parseProgram() {
