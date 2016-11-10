@@ -75,12 +75,13 @@ protected:
 using ExprPtr = std::unique_ptr<Expression>;
 using ExprList = std::vector<ExprPtr>;
 
+using BlockStmtList = std::vector<BlockStmtPtr>;
 class Block : public Statement {
-  std::vector<BlockStmtPtr> statements;
+  BlockStmtList statements;
   bool containsNothingExceptOneSingleLonelyEmtpyExpression;
 
 public:
-  Block(SourceLocation loc) : Statement(std::move(loc)) {}
+  Block(SourceLocation loc, BlockStmtList statements, bool flag) : Statement(std::move(loc)), statements(std::move(statements)), containsNothingExceptOneSingleLonelyEmtpyExpression(flag) {}
 };
 using BlockPtr = std::unique_ptr<Block>;
 

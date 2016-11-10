@@ -225,12 +225,18 @@ ast::BasicTypePtr Parser::parseBasicType() {
 }
 
 ast::BlockPtr Parser::parseBlock() {
+  auto startPos = curTok.startPos();
+  ast::BlockStmtList statements;
+
   expectAndNext(TT::LBrace);
   while (true) {
     switch (curTok.type) {
-    case TT::RBrace:
+    case TT::RBrace: {
+      auto endPos = curTok.endPos();
       readNextToken();
-      return nullptr; // TODO
+      // TODO containsNothingExceptOneSingleLonelyEmtpyExpression
+      return ast::make_Ptr<ast::Block>({startPos, endPos}, std::move(statements), false);
+    }
     case TT::Bang:
     case TT::Boolean:
     case TT::False:
@@ -249,7 +255,7 @@ ast::BlockPtr Parser::parseBlock() {
     case TT::This:
     case TT::Void:
     case TT::While:
-      parseBlockStatement();
+      statements.push_back(std::move(parseBlockStatement()));
       break;
     default:
       errorExpectedAnyOf({TT::RBrace, TT::Bang, TT::Boolean, TT::False,
