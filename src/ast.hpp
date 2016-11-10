@@ -280,7 +280,7 @@ class Ident : public PrimaryExpression {
   std::string name;
 
 public:
-  Ident(SourceLocation loc) : PrimaryExpression(std::move(loc)) {}
+  Ident(SourceLocation loc, std::string name) : PrimaryExpression(std::move(loc)), name(std::move(name)) {}
 };
 
 class MethodInvocation : public Expression {
