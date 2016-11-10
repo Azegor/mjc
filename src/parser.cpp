@@ -399,12 +399,15 @@ ast::StmtPtr Parser::parseReturnStmt() {
 }
 
 ast::StmtPtr Parser::parseWhileStmt() {
+  auto startPos = curTok.startPos();
   expectAndNext(TT::While); // necessary?
   expectAndNext(TT::LParen);
-  parseExpr();
+  auto condition = parseExpr();
   expectAndNext(TT::RParen);
-  parseStmt();
-  return nullptr; // TODO
+  auto stmt = parseStmt();
+  auto endPos = curTok.endPos();
+
+  return ast::make_Ptr<ast::WhileStatement>({startPos, endPos}, std::move(condition), std::move(stmt));
 }
 
 ast::ExprPtr Parser::parseExpr() { return precedenceParse(0); }

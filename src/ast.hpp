@@ -150,6 +150,8 @@ public:
 class WhileStatement : public Statement {
   ExprPtr condition;
   StmtPtr statement;
+public:
+  WhileStatement(SourceLocation loc, ExprPtr condition, StmtPtr statement) : Statement(std::move(loc)), condition(std::move(condition)), statement(std::move(statement)) {}
 };
 
 class ReturnStatement : public Statement {
