@@ -124,22 +124,24 @@ ast::MainMethodPtr Parser::parseMainMethod() {
 
 void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
                                 std::vector<ast::MethodPtr> &methods) {
-  // don't warn on unused
-  (void)fields;
-  (void)methods;
+  auto startPos = curTok.startPos();
   expectAndNext(TT::Public);
-  parseType();
+  auto type = parseType();
+  auto name = curTok.str;
   expectAndNext(TT::Identifier);
   switch (curTok.type) {
   case TT::Semicolon: // field
+    fields.emplace_back(ast::make_Ptr<ast::Field>({startPos, curTok.endPos()}, std::move(type), std::move(name)));
     readNextToken();
     return;
-  case TT::LParen: // method
+  case TT::LParen: { // method
     readNextToken();
-    parseParameterList();
+    auto params = parseParameterList();
     expectAndNext(TT::RParen);
-    parseBlock();
+    auto block = parseBlock();
+    methods.emplace_back(ast::make_Ptr<ast::Method>({startPos, curTok.endPos()}, std::move(type), std::move(name), std::move(params), std::move(block)));
     return;
+  }
   default:
     errorExpectedAnyOf({TT::Semicolon, TT::LParen});
     break;

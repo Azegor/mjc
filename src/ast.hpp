@@ -162,8 +162,10 @@ public:
 };
 
 class Field : public Node {
-  std::string name;
   TypePtr type;
+  std::string name;
+public:
+  Field(SourceLocation loc, TypePtr type, std::string name) : Node(std::move(loc)), type(std::move(type)), name(std::move(name)) {}
 };
 using FieldPtr = std::unique_ptr<Field>;
 
@@ -178,11 +180,13 @@ using ParameterPtr = std::unique_ptr<Parameter>;
 using ParameterList = std::vector<ParameterPtr>;
 
 class Method : public Node {
-  std::string name;
   TypePtr returnType;
+  std::string name;
   // might be empty
   ParameterList parameters;
   BlockPtr block;
+public:
+  Method(SourceLocation loc, TypePtr returnType, std::string name, ParameterList parameters, BlockPtr block) : Node(std::move(loc)), returnType(std::move(returnType)), name(std::move(name)), parameters(std::move(parameters)), block(std::move(block)) {}
 };
 using MethodPtr = std::unique_ptr<Method>;
 
