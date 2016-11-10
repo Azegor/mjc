@@ -83,34 +83,51 @@ public:
 };
 using BlockPtr = std::unique_ptr<Block>;
 
-class NonArrayType : public Type {
+class BasicType : public Type {
 protected:
-  NonArrayType(SourceLocation loc) : Type(std::move(loc)) {}
+  BasicType(SourceLocation loc) : Type(std::move(loc)) {}
 };
-using NonArrayTypePtr = std::unique_ptr<NonArrayType>;
+using BasicTypePtr = std::unique_ptr<BasicType>;
 
-class PrimitiveType : public NonArrayType {
-  enum class TypeType { Bool, Int, Void } type;
+class PrimitiveType : public BasicType {
+  enum class TypeType { Boolean, Int, Void, None } type;
 
 public:
-  PrimitiveType(SourceLocation loc) : NonArrayType(std::move(loc)) {}
+  PrimitiveType(SourceLocation loc, TypeType type)
+      : BasicType(std::move(loc)), type(type) {}
+
+  static TypeType getTypeForToken(Token::Type t) {
+    switch (t) {
+    case Token::Type::Boolean:
+      return TypeType::Boolean;
+    case Token::Type::Int:
+      return TypeType::Int;
+    case Token::Type::Void:
+      return TypeType::Void;
+    default:
+      return TypeType::None;
+    }
+  }
 };
 
-class ClassType : public NonArrayType {
+class ClassType : public BasicType {
   std::string name;
 
 public:
-  ClassType(SourceLocation loc) : NonArrayType(std::move(loc)) {}
+  ClassType(SourceLocation loc, std::string name)
+      : BasicType(std::move(loc)), name(std::move(name)) {}
 };
 
 class ArrayType : public Type {
-  NonArrayTypePtr elementType;
+  BasicTypePtr elementType;
   int dimension;
 
 public:
-  ArrayType(SourceLocation loc, NonArrayTypePtr elementType)
-      : Type(std::move(loc)), elementType(std::move(elementType)) {}
+  ArrayType(SourceLocation loc, BasicTypePtr elementType, int dimension)
+      : Type(std::move(loc)), elementType(std::move(elementType)),
+        dimension(dimension) {}
 };
+using ArrayTypePtr = std::unique_ptr<ArrayType>;
 
 class ExpressionStatement : public Statement {
   ExprPtr expr;
@@ -205,21 +222,22 @@ protected:
 };
 
 class NewArrayExpression : public PrimaryExpression {
-  ArrayType type;
+  ArrayTypePtr arrayType;
   ExprPtr size;
 
 public:
-  NewArrayExpression(SourceLocation loc, ArrayType arrayType)
-      : PrimaryExpression(std::move(loc)), type(std::move(arrayType)) {}
+  NewArrayExpression(SourceLocation loc, ArrayTypePtr arrayType, ExprPtr size)
+      : PrimaryExpression(std::move(loc)), arrayType(std::move(arrayType)),
+        size(std::move(size)) {}
 };
 
 class NewObjectExpression : public PrimaryExpression {
   std::string name;
 
 public:
-  NewObjectExpression(SourceLocation loc) : PrimaryExpression(std::move(loc)) {}
+  NewObjectExpression(SourceLocation loc, std::string name)
+      : PrimaryExpression(std::move(loc)), name(std::move(name)) {}
 };
-
 class IntLiteral : public PrimaryExpression {
   int32_t value;
 

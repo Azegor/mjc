@@ -159,7 +159,7 @@ private:
   inline ast::ParameterList parseParameterList();
   inline ast::ParameterPtr parseParameter();
   inline ast::TypePtr parseType();
-  inline Token::Type parseBasicType();
+  inline ast::BasicTypePtr parseBasicType();
   inline ast::BlockPtr parseBlock();
   inline ast::BlockStmtPtr parseBlockStatement();
   inline ast::StmtPtr parseLocalVarDeclStmt();

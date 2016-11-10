@@ -42,8 +42,7 @@ ast::ProgramPtr Parser::parseProgram() {
       classes.emplace_back(parseClassDeclaration());
       break;
     case TT::Eof:
-      return ast::make_Ptr<ast::Program>(SourceLocation{},
-                                            std::move(classes));
+      return ast::make_Ptr<ast::Program>(SourceLocation{}, std::move(classes));
     default:
       errorExpectedAnyOf({TT::Class, TT::Eof});
       break;
@@ -67,8 +66,8 @@ ast::ClassPtr Parser::parseClassDeclaration() {
     case TT::RBrace:
       readNextToken();
       return ast::make_Ptr<ast::Class>(SourceLocation{}, std::move(name),
-                                          std::move(fields), std::move(methods),
-                                          std::move(mainMethods));
+                                       std::move(fields), std::move(methods),
+                                       std::move(mainMethods));
     case TT::Public:
       parseClassMember(fields, methods, mainMethods);
       break;
@@ -119,9 +118,8 @@ ast::MainMethodPtr Parser::parseMainMethod() {
   expectAndNext(TT::Identifier);
   expectAndNext(TT::RParen);
   auto block = parseBlock();
-  return ast::make_Ptr<ast::MainMethod>(
-      SourceLocation{}, std::move(methodName), std::move(paramName),
-      std::move(block));
+  return ast::make_Ptr<ast::MainMethod>(SourceLocation{}, std::move(methodName),
+                                        std::move(paramName), std::move(block));
 }
 
 void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
@@ -192,15 +190,21 @@ ast::TypePtr Parser::parseType() {
   }
 }
 
-Token::Type Parser::parseBasicType() {
+ast::BasicTypePtr Parser::parseBasicType() {
+  auto loc = curTok.singleTokenSrcLoc();
   switch (curTok.type) {
   case TT::Boolean:
-  case TT::Identifier:
   case TT::Int:
   case TT::Void: {
     auto type = curTok.type;
     readNextToken();
-    return type;
+    auto typeType = ast::PrimitiveType::getTypeForToken(type);
+    return ast::make_Ptr<ast::PrimitiveType>(loc, typeType);
+  }
+  case TT::Identifier: {
+    auto ident = std::move(curTok.str);
+    readNextToken();
+    return ast::make_Ptr<ast::ClassType>(loc, std::move(ident));
   }
   default:
     errorExpectedAnyOf({TT::Boolean, TT::Identifier, TT::Int, TT::Void});
@@ -590,26 +594,39 @@ ast::ExprList Parser::parseArguments() {
 }
 
 ast::ExprPtr Parser::parseNewExpr() {
+  auto startPos = curTok.startPos();
   expectAndNext(TT::New);
   // check next token instead of current
   switch (lookAhead(1).type) {
-  case TT::LParen:
+  case TT::LParen: {
+    auto ident = std::move(curTok.str);
     expectAndNext(TT::Identifier);
     // curTok is always LParen
     readNextToken();
+    auto endPos = curTok.startPos();
     expectAndNext(TT::RParen);
-    return nullptr; // TODO
-  case TT::LBracket:
-    parseBasicType();
+    return ast::make_EPtr<ast::NewObjectExpression>({startPos, endPos}, ident);
+  }
+  case TT::LBracket: {
+    auto elementType = parseBasicType();
     // curTok is always LBracket
     readNextToken(); // eat '['
-    parseExpr();
+    auto size = parseExpr();
+    auto endPos = curTok.endPos();
     expectAndNext(TT::RBracket);
+    int dimension = 1;
     while (curTok.type == TT::LBracket && lookAhead(1).type == TT::RBracket) {
+      dimension += 1;
       readNextToken(); // eat '['
+      endPos = curTok.endPos();
       readNextToken(); // eat ']'
     }
-    return nullptr; // TODO
+    SourceLocation loc{startPos, endPos};
+    auto arrayType =
+        ast::make_Ptr<ast::ArrayType>(loc, std::move(elementType), dimension);
+    return ast::make_EPtr<ast::NewArrayExpression>(loc, std::move(arrayType),
+                                                   std::move(size));
+  }
   default:
     errorExpectedAnyOf({TT::LParen, TT::LBracket});
   }
