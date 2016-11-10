@@ -177,15 +177,24 @@ ast::ParameterPtr Parser::parseParameter() {
 }
 
 ast::TypePtr Parser::parseType() {
-  parseBasicType();
+  auto startPos = curTok.startPos();
+  auto endPos = curTok.endPos();
+  auto basicType = parseBasicType();
+  int numDimensions = 0;
   while (true) {
     switch (curTok.type) {
     case TT::LBracket:
       readNextToken();
+      endPos = curTok.endPos();
       expectAndNext(TT::RBracket);
+      numDimensions ++;
       break;
     default:
-      return nullptr; // TODO
+      if (numDimensions == 0) {
+        return std::move(basicType);
+      } else {
+        return ast::make_Ptr<ast::ArrayType>({startPos, endPos}, std::move(basicType), numDimensions);
+      }
     }
   }
 }

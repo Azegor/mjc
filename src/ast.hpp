@@ -169,7 +169,7 @@ class Method : public Node {
   std::string name;
   TypePtr returnType;
   // might be empty
-  std::vector<Parameter> parameters;
+  ParameterList parameters;
   BlockPtr block;
 };
 using MethodPtr = std::unique_ptr<Method>;
