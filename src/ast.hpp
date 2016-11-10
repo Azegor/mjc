@@ -159,8 +159,11 @@ class Field : public Node {
 using FieldPtr = std::unique_ptr<Field>;
 
 class Parameter : public Node {
-  std::string name;
   TypePtr type;
+  std::string name;
+public:
+  Parameter(SourceLocation loc, TypePtr type, std::string name)
+      : Node(std::move(loc)), type(std::move(type)), name(std::move(name)) {}
 };
 using ParameterPtr = std::unique_ptr<Parameter>;
 using ParameterList = std::vector<ParameterPtr>;

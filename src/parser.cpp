@@ -171,9 +171,12 @@ ast::ParameterList Parser::parseParameterList() {
 }
 
 ast::ParameterPtr Parser::parseParameter() {
-  parseType();
+  auto startPos = curTok.startPos();
+  auto type = parseType();
+  auto endPos = curTok.endPos();
+  auto ident = curTok.str;
   expectAndNext(TT::Identifier);
-  return nullptr; // TODO
+  return ast::make_Ptr<ast::Parameter>({startPos, endPos}, std::move(type), std::move(ident));
 }
 
 ast::TypePtr Parser::parseType() {
