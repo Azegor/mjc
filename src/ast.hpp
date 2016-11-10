@@ -138,12 +138,13 @@ public:
   ExpressionStatement(SourceLocation loc, ExprPtr expr) : Statement(std::move(loc)), expr(std::move(expr)) {}
 };
 
-// IfStatement/WhileStatement/... oder nur If/While/...? ist ja schon im Ast
-// namespace
 class IfStatement : public Statement {
   ExprPtr condition;
-  StmtPtr then_statement;
-  StmtPtr else_statement;
+  StmtPtr thenStmt;
+  StmtPtr elseStmt;
+
+public:
+  IfStatement(SourceLocation loc, ExprPtr condition, StmtPtr thenStmt, StmtPtr elseStmt) : Statement(std::move(loc)), condition(std::move(condition)), thenStmt(std::move(thenStmt)), elseStmt(std::move(elseStmt)) {}
 };
 
 class WhileStatement : public Statement {

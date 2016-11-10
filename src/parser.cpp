@@ -364,16 +364,20 @@ ast::StmtPtr Parser::parseExprStmt() {
 }
 
 ast::StmtPtr Parser::parseIfStmt() {
+  auto startPos = curTok.startPos();
+  ast::StmtPtr elseStmt = nullptr;
+
   expectAndNext(TT::If); // necessary?
   expectAndNext(TT::LParen);
-  parseExpr();
+  auto condition = parseExpr();
+  auto endPos = curTok.endPos();
   expectAndNext(TT::RParen);
-  parseStmt();
+  auto thenStmt = parseStmt();
   if (curTok.type == TT::Else) {
     readNextToken();
-    parseStmt();
+    elseStmt = parseStmt();
   }
-  return nullptr; // TODO
+  return ast::make_Ptr<ast::IfStatement>({startPos, endPos}, std::move(condition), std::move(thenStmt), elseStmt ? std::move(elseStmt) : nullptr);
 }
 
 ast::StmtPtr Parser::parseReturnStmt() {
