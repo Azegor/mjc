@@ -227,6 +227,9 @@ class VariableDeclaration : public BlockStatement {
   std::string name;
   // might be nullptr
   ExprPtr initializer;
+
+public:
+  VariableDeclaration(SourceLocation loc, TypePtr type, std::string name, ExprPtr initializer) : BlockStatement(std::move(loc)), type(std::move(type)), name(std::move(name)), initializer(std::move(initializer)) {}
 };
 
 class PrimaryExpression : public Expression {

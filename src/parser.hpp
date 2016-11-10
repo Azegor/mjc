@@ -162,7 +162,7 @@ private:
   inline ast::BasicTypePtr parseBasicType();
   inline ast::BlockPtr parseBlock();
   inline ast::BlockStmtPtr parseBlockStatement();
-  inline ast::StmtPtr parseLocalVarDeclStmt();
+  inline ast::BlockStmtPtr parseLocalVarDeclStmt();
   inline ast::StmtPtr parseStmt();
   inline ast::StmtPtr parseIfStmt();
   inline ast::StmtPtr parseReturnStmt();

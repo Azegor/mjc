@@ -305,18 +305,24 @@ ast::BlockStmtPtr Parser::parseBlockStatement() {
   }
 }
 
-ast::StmtPtr Parser::parseLocalVarDeclStmt() {
-  parseType();
+ast::BlockStmtPtr Parser::parseLocalVarDeclStmt() {
+  auto startPos = curTok.startPos();
+  auto type = parseType();
+  auto ident = curTok.str;
   expectAndNext(TT::Identifier);
   switch (curTok.type) {
-  case TT::Eq:
+  case TT::Eq: {
     readNextToken();
-    parseExpr();
+    auto initializer = parseExpr();
+    auto endPos = curTok.endPos();
     expectAndNext(TT::Semicolon);
-    return nullptr; // TODO
-  case TT::Semicolon:
+    return ast::make_Ptr<ast::VariableDeclaration>({startPos, endPos}, std::move(type), std::move(ident), std::move(initializer));
+}
+  case TT::Semicolon: {
+    auto endPos = curTok.endPos();
     readNextToken();
-    return nullptr; // TODO
+    return ast::make_Ptr<ast::VariableDeclaration>({startPos, endPos}, std::move(type), std::move(ident), nullptr);
+}
   default:
     errorExpectedAnyOf({TT::Eq, TT::Semicolon});
   }
