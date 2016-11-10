@@ -46,6 +46,7 @@ protected:
 public:
   virtual void accept(Visitor *visitor) { (void)visitor; }
   virtual ~Node() = default;
+  const SourceLocation &getLoc() const { return location; }
 };
 using NodePtr = std::unique_ptr<Node>;
 
@@ -367,20 +368,29 @@ public:
 };
 
 class UnaryExpression : public Expression {
-protected:
   ExprPtr expression;
+  enum class Op {
+    Not,
+    Neg,
+    None
 
-  UnaryExpression(SourceLocation loc) : Expression(std::move(loc)) {}
-};
+  } operation;
 
-class NegExpression : public UnaryExpression {
 public:
-  NegExpression(SourceLocation loc) : UnaryExpression(std::move(loc)) {}
-};
+  UnaryExpression(SourceLocation loc, ExprPtr expression, Op operation)
+      : Expression(std::move(loc)), expression(std::move(expression)),
+        operation(operation) {}
 
-class NotExpression : public UnaryExpression {
-public:
-  NotExpression(SourceLocation loc) : UnaryExpression(std::move(loc)) {}
+  static Op getOpForToken(Token::Type t) {
+    switch (t) {
+    case Token::Type::Minus:
+      return Op::Neg;
+    case Token::Type::Bang:
+      return Op::Not;
+    default:
+      return Op::None;
+    }
+  }
 };
 
 template <typename St, typename... Args>

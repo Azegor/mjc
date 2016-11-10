@@ -442,18 +442,21 @@ ast::ExprPtr Parser::parseUnary() {
       continue; // parseUnary();
       break;
     default:
-      parsePostfixExpr();
+      auto expression = parsePostfixExpr();
+      auto endPos = expression->getLoc().endToken;
       // result = ...
       // consume all unary prefixes in reverse order
+
       for (std::deque<Token>::reverse_iterator i = unaries.rbegin(),
                                                end = unaries.rend();
            i != end; ++i) {
+
         Token t = std::move(*i);
-        // consume token in some way
-        // TODO implement function which handles unary operators
-        // result = UnaryOp(t, result)
+        auto startPos = t.startPos();
+        auto op = ast::UnaryExpression::getOpForToken(t.type);
+        expression = ast::make_EPtr<ast::UnaryExpression>({startPos, endPos}, std::move(expression), op);
       }
-      return nullptr; // TODO
+      return expression;
     }
   }
 }
