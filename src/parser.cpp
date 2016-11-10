@@ -131,7 +131,8 @@ void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
   expectAndNext(TT::Identifier);
   switch (curTok.type) {
   case TT::Semicolon: // field
-    fields.emplace_back(ast::make_Ptr<ast::Field>({startPos, curTok.endPos()}, std::move(type), std::move(name)));
+    fields.emplace_back(ast::make_Ptr<ast::Field>(
+        {startPos, curTok.endPos()}, std::move(type), std::move(name)));
     readNextToken();
     return;
   case TT::LParen: { // method
@@ -139,7 +140,9 @@ void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
     auto params = parseParameterList();
     expectAndNext(TT::RParen);
     auto block = parseBlock();
-    methods.emplace_back(ast::make_Ptr<ast::Method>({startPos, curTok.endPos()}, std::move(type), std::move(name), std::move(params), std::move(block)));
+    methods.emplace_back(ast::make_Ptr<ast::Method>(
+        {startPos, curTok.endPos()}, std::move(type), std::move(name),
+        std::move(params), std::move(block)));
     return;
   }
   default:
@@ -178,7 +181,8 @@ ast::ParameterPtr Parser::parseParameter() {
   auto endPos = curTok.endPos();
   auto ident = curTok.str;
   expectAndNext(TT::Identifier);
-  return ast::make_Ptr<ast::Parameter>({startPos, endPos}, std::move(type), std::move(ident));
+  return ast::make_Ptr<ast::Parameter>({startPos, endPos}, std::move(type),
+                                       std::move(ident));
 }
 
 ast::TypePtr Parser::parseType() {
@@ -192,13 +196,14 @@ ast::TypePtr Parser::parseType() {
       readNextToken();
       endPos = curTok.endPos();
       expectAndNext(TT::RBracket);
-      numDimensions ++;
+      numDimensions++;
       break;
     default:
       if (numDimensions == 0) {
         return std::move(basicType);
       } else {
-        return ast::make_Ptr<ast::ArrayType>({startPos, endPos}, std::move(basicType), numDimensions);
+        return ast::make_Ptr<ast::ArrayType>(
+            {startPos, endPos}, std::move(basicType), numDimensions);
       }
     }
   }
@@ -237,7 +242,8 @@ ast::BlockPtr Parser::parseBlock() {
       auto endPos = curTok.endPos();
       readNextToken();
       // TODO containsNothingExceptOneSingleLonelyEmtpyExpression
-      return ast::make_Ptr<ast::Block>({startPos, endPos}, std::move(statements), false);
+      return ast::make_Ptr<ast::Block>({startPos, endPos},
+                                       std::move(statements), false);
     }
     case TT::Bang:
     case TT::Boolean:
@@ -318,13 +324,16 @@ ast::BlockStmtPtr Parser::parseLocalVarDeclStmt() {
     auto initializer = parseExpr();
     auto endPos = curTok.endPos();
     expectAndNext(TT::Semicolon);
-    return ast::make_Ptr<ast::VariableDeclaration>({startPos, endPos}, std::move(type), std::move(ident), std::move(initializer));
-}
+    return ast::make_Ptr<ast::VariableDeclaration>(
+        {startPos, endPos}, std::move(type), std::move(ident),
+        std::move(initializer));
+  }
   case TT::Semicolon: {
     auto endPos = curTok.endPos();
     readNextToken();
-    return ast::make_Ptr<ast::VariableDeclaration>({startPos, endPos}, std::move(type), std::move(ident), nullptr);
-}
+    return ast::make_Ptr<ast::VariableDeclaration>(
+        {startPos, endPos}, std::move(type), std::move(ident), nullptr);
+  }
   default:
     errorExpectedAnyOf({TT::Eq, TT::Semicolon});
   }
@@ -368,7 +377,8 @@ ast::StmtPtr Parser::parseExprStmt() {
   auto expr = parseExpr();
   auto endPos = curTok.endPos();
   expectAndNext(TT::Semicolon);
-  return ast::make_Ptr<ast::ExpressionStatement>({startPos, endPos}, std::move(expr));
+  return ast::make_Ptr<ast::ExpressionStatement>({startPos, endPos},
+                                                 std::move(expr));
 }
 
 ast::StmtPtr Parser::parseIfStmt() {
@@ -385,7 +395,9 @@ ast::StmtPtr Parser::parseIfStmt() {
     readNextToken();
     elseStmt = parseStmt();
   }
-  return ast::make_Ptr<ast::IfStatement>({startPos, endPos}, std::move(condition), std::move(thenStmt), elseStmt ? std::move(elseStmt) : nullptr);
+  return ast::make_Ptr<ast::IfStatement>(
+      {startPos, endPos}, std::move(condition), std::move(thenStmt),
+      elseStmt ? std::move(elseStmt) : nullptr);
 }
 
 ast::StmtPtr Parser::parseReturnStmt() {
@@ -396,13 +408,14 @@ ast::StmtPtr Parser::parseReturnStmt() {
     auto endPos = curTok.startPos();
     readNextToken();
     return ast::make_Ptr<ast::ReturnStatement>({startPos, endPos}, nullptr);
-    }
+  }
   default: {
     auto expr = parseExpr();
     auto endPos = curTok.startPos();
     expectAndNext(TT::Semicolon);
-    return ast::make_Ptr<ast::ReturnStatement>({startPos, endPos}, std::move(expr));
-    }
+    return ast::make_Ptr<ast::ReturnStatement>({startPos, endPos},
+                                               std::move(expr));
+  }
   }
 }
 
@@ -415,7 +428,8 @@ ast::StmtPtr Parser::parseWhileStmt() {
   auto stmt = parseStmt();
   auto endPos = curTok.endPos();
 
-  return ast::make_Ptr<ast::WhileStatement>({startPos, endPos}, std::move(condition), std::move(stmt));
+  return ast::make_Ptr<ast::WhileStatement>(
+      {startPos, endPos}, std::move(condition), std::move(stmt));
 }
 
 ast::ExprPtr Parser::parseExpr() { return precedenceParse(0); }
@@ -494,7 +508,8 @@ ast::ExprPtr Parser::parseUnary() {
         Token t = std::move(*i);
         auto startPos = t.startPos();
         auto op = ast::UnaryExpression::getOpForToken(t.type);
-        expression = ast::make_EPtr<ast::UnaryExpression>({startPos, endPos}, std::move(expression), op);
+        expression = ast::make_EPtr<ast::UnaryExpression>(
+            {startPos, endPos}, std::move(expression), op);
       }
       return expression;
     }

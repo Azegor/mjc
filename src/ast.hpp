@@ -81,7 +81,9 @@ class Block : public Statement {
   bool containsNothingExceptOneSingleLonelyEmtpyExpression;
 
 public:
-  Block(SourceLocation loc, BlockStmtList statements, bool flag) : Statement(std::move(loc)), statements(std::move(statements)), containsNothingExceptOneSingleLonelyEmtpyExpression(flag) {}
+  Block(SourceLocation loc, BlockStmtList statements, bool flag)
+      : Statement(std::move(loc)), statements(std::move(statements)),
+        containsNothingExceptOneSingleLonelyEmtpyExpression(flag) {}
 };
 using BlockPtr = std::unique_ptr<Block>;
 
@@ -135,7 +137,8 @@ class ExpressionStatement : public Statement {
   ExprPtr expr;
 
 public:
-  ExpressionStatement(SourceLocation loc, ExprPtr expr) : Statement(std::move(loc)), expr(std::move(expr)) {}
+  ExpressionStatement(SourceLocation loc, ExprPtr expr)
+      : Statement(std::move(loc)), expr(std::move(expr)) {}
 };
 
 class IfStatement : public Statement {
@@ -144,34 +147,45 @@ class IfStatement : public Statement {
   StmtPtr elseStmt;
 
 public:
-  IfStatement(SourceLocation loc, ExprPtr condition, StmtPtr thenStmt, StmtPtr elseStmt) : Statement(std::move(loc)), condition(std::move(condition)), thenStmt(std::move(thenStmt)), elseStmt(std::move(elseStmt)) {}
+  IfStatement(SourceLocation loc, ExprPtr condition, StmtPtr thenStmt,
+              StmtPtr elseStmt)
+      : Statement(std::move(loc)), condition(std::move(condition)),
+        thenStmt(std::move(thenStmt)), elseStmt(std::move(elseStmt)) {}
 };
 
 class WhileStatement : public Statement {
   ExprPtr condition;
   StmtPtr statement;
+
 public:
-  WhileStatement(SourceLocation loc, ExprPtr condition, StmtPtr statement) : Statement(std::move(loc)), condition(std::move(condition)), statement(std::move(statement)) {}
+  WhileStatement(SourceLocation loc, ExprPtr condition, StmtPtr statement)
+      : Statement(std::move(loc)), condition(std::move(condition)),
+        statement(std::move(statement)) {}
 };
 
 class ReturnStatement : public Statement {
   // might be nullptr
   ExprPtr expr;
+
 public:
-  ReturnStatement(SourceLocation loc, ExprPtr expr) : Statement(std::move(loc)), expr(std::move(expr)) {}
+  ReturnStatement(SourceLocation loc, ExprPtr expr)
+      : Statement(std::move(loc)), expr(std::move(expr)) {}
 };
 
 class Field : public Node {
   TypePtr type;
   std::string name;
+
 public:
-  Field(SourceLocation loc, TypePtr type, std::string name) : Node(std::move(loc)), type(std::move(type)), name(std::move(name)) {}
+  Field(SourceLocation loc, TypePtr type, std::string name)
+      : Node(std::move(loc)), type(std::move(type)), name(std::move(name)) {}
 };
 using FieldPtr = std::unique_ptr<Field>;
 
 class Parameter : public Node {
   TypePtr type;
   std::string name;
+
 public:
   Parameter(SourceLocation loc, TypePtr type, std::string name)
       : Node(std::move(loc)), type(std::move(type)), name(std::move(name)) {}
@@ -185,8 +199,13 @@ class Method : public Node {
   // might be empty
   ParameterList parameters;
   BlockPtr block;
+
 public:
-  Method(SourceLocation loc, TypePtr returnType, std::string name, ParameterList parameters, BlockPtr block) : Node(std::move(loc)), returnType(std::move(returnType)), name(std::move(name)), parameters(std::move(parameters)), block(std::move(block)) {}
+  Method(SourceLocation loc, TypePtr returnType, std::string name,
+         ParameterList parameters, BlockPtr block)
+      : Node(std::move(loc)), returnType(std::move(returnType)),
+        name(std::move(name)), parameters(std::move(parameters)),
+        block(std::move(block)) {}
 };
 using MethodPtr = std::unique_ptr<Method>;
 
@@ -233,7 +252,10 @@ class VariableDeclaration : public BlockStatement {
   ExprPtr initializer;
 
 public:
-  VariableDeclaration(SourceLocation loc, TypePtr type, std::string name, ExprPtr initializer) : BlockStatement(std::move(loc)), type(std::move(type)), name(std::move(name)), initializer(std::move(initializer)) {}
+  VariableDeclaration(SourceLocation loc, TypePtr type, std::string name,
+                      ExprPtr initializer)
+      : BlockStatement(std::move(loc)), type(std::move(type)),
+        name(std::move(name)), initializer(std::move(initializer)) {}
 };
 
 class PrimaryExpression : public Expression {
@@ -287,7 +309,8 @@ class Ident : public PrimaryExpression {
   std::string name;
 
 public:
-  Ident(SourceLocation loc, std::string name) : PrimaryExpression(std::move(loc)), name(std::move(name)) {}
+  Ident(SourceLocation loc, std::string name)
+      : PrimaryExpression(std::move(loc)), name(std::move(name)) {}
 };
 
 class MethodInvocation : public Expression {
