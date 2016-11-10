@@ -350,6 +350,7 @@ public:
     }
   }
 
+  static bool tokenNameNeedsQuotes(Token::Type type);
   static const char *getTokenName(Token::Type type);
 
 private:

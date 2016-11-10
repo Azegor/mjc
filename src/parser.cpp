@@ -61,8 +61,7 @@ ast::ClassPtr Parser::parseClassDeclaration() {
   std::vector<ast::MainMethodPtr> mainMethods;
 
   expectAndNext(TT::Class);
-  name = curTok.str;
-  expectAndNext(TT::Identifier);
+  name = expectGetIdentAndNext(TT::Identifier);
   expectAndNext(TT::LBrace);
   // parse class members:
   while (true) {
@@ -107,8 +106,7 @@ ast::MainMethodPtr Parser::parseMainMethod() {
   expectAndNext(TT::Static);
   expectAndNext(TT::Void);
   // name must be main (check in semantic analysis):
-  auto methodName = std::move(curTok.str);
-  expectAndNext(TT::Identifier);
+  auto methodName = expectGetIdentAndNext(TT::Identifier);
   expectAndNext(TT::LParen);
   expect(TT::Identifier);
   if (curTok.str != "String") {
@@ -118,8 +116,7 @@ ast::MainMethodPtr Parser::parseMainMethod() {
   expectAndNext(TT::LBracket);
   expectAndNext(TT::RBracket);
   // name doesn't matter here, but keep for pretty print:
-  auto paramName = std::move(curTok.str);
-  expectAndNext(TT::Identifier);
+  auto paramName = expectGetIdentAndNext(TT::Identifier);
   expectAndNext(TT::RParen);
   auto block = parseBlock();
   return ast::make_Ptr<ast::MainMethod>(SourceLocation{}, std::move(methodName),
@@ -131,8 +128,7 @@ void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
   auto startPos = curTok.startPos();
   expectAndNext(TT::Public);
   auto type = parseType();
-  auto name = curTok.str;
-  expectAndNext(TT::Identifier);
+  auto name = expectGetIdentAndNext(TT::Identifier);
   switch (curTok.type) {
   case TT::Semicolon: // field
     fields.emplace_back(ast::make_Ptr<ast::Field>(
@@ -183,8 +179,7 @@ ast::ParameterPtr Parser::parseParameter() {
   auto startPos = curTok.startPos();
   auto type = parseType();
   auto endPos = curTok.endPos();
-  auto ident = curTok.str;
-  expectAndNext(TT::Identifier);
+  auto ident = expectGetIdentAndNext(TT::Identifier);
   return ast::make_Ptr<ast::Parameter>({startPos, endPos}, std::move(type),
                                        std::move(ident));
 }
@@ -320,8 +315,7 @@ ast::BlockStmtPtr Parser::parseBlockStatement() {
 ast::BlockStmtPtr Parser::parseLocalVarDeclStmt() {
   auto startPos = curTok.startPos();
   auto type = parseType();
-  auto ident = curTok.str;
-  expectAndNext(TT::Identifier);
+  auto ident = expectGetIdentAndNext(TT::Identifier);
   switch (curTok.type) {
   case TT::Eq: {
     readNextToken();
@@ -600,8 +594,7 @@ ast::ExprPtr Parser::parsePrimary() {
 ast::ExprPtr Parser::parseMemberAccess(ast::ExprPtr lhs) {
   auto startPos = curTok.startPos();
   expectAndNext(TT::Dot);
-  auto ident = std::move(curTok.str);
-  expectAndNext(TT::Identifier);
+  auto ident = expectGetIdentAndNext(TT::Identifier);
   if (curTok.type == TT::LParen) {
     readNextToken();
     auto args = parseArguments();
@@ -660,8 +653,7 @@ ast::ExprPtr Parser::parseNewExpr() {
   // check next token instead of current
   switch (lookAhead(1).type) {
   case TT::LParen: {
-    auto ident = std::move(curTok.str);
-    expectAndNext(TT::Identifier);
+    auto ident = expectGetIdentAndNext(TT::Identifier);
     // curTok is always LParen
     readNextToken();
     auto endPos = curTok.startPos();

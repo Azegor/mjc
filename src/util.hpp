@@ -38,15 +38,22 @@ template <typename T> struct Identity {
 
 template <typename L, typename Callback = Identity<decltype(*L().begin())>>
 std::string
-listToString(L &list, Callback callback = Identity<decltype(*L().begin())>()) {
+listToString(L &list, const std::string &lastSep = ", ",
+             Callback callback = Identity<decltype(*L().begin())>()) {
   std::stringstream res;
+  auto cl_res = co::make_colored(res);
   bool first = true;
+  auto lastElem = list.end() - 1;
   for (auto &&e : list) {
-    if (first)
+    if (first) {
       first = false;
-    else
-      res << ", ";
-    res << callback(std::forward<decltype(e)>(e));
+    } else if (e == *lastElem) {
+      cl_res << lastSep;
+    } else {
+      cl_res << ", ";
+    }
+    cl_res << co::mode(co::bold) << callback(std::forward<decltype(e)>(e))
+           << co::mode(co::regular);
   }
   return res.str();
 }

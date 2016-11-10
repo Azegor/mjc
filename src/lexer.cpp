@@ -87,6 +87,18 @@ std::unordered_map<std::string, Token::Type> Lexer::identifierTokens{
     {"volatile", Token::Type::ReservedKeyword},
 };
 
+bool Lexer::tokenNameNeedsQuotes(Token::Type type) {
+  switch (type) {
+  case Token::Type::Eof:
+  case Token::Type::Identifier:
+  case Token::Type::IntLiteral:
+  case Token::Type::ReservedKeyword:
+    return false;
+  default:
+    return true;
+  }
+}
+
 const char *Lexer::getTokenName(Token::Type type) {
   switch (type) {
   case Token::Type::Eof:

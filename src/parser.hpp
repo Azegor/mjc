@@ -49,7 +49,7 @@ public:
     co::color_ostream<std::ostream> cl_out(out);
     cl_out << co::mode(co::bold) << filename << ':' << srcLoc.startToken.line
            << ':' << srcLoc.startToken.col << ": " << co::color(co::red)
-           << "error: " << co::color(co::regular) << message << std::endl;
+           << "error: " << co::reset << message << std::endl;
     writeErrorLineHighlight(out);
   }
   void writeErrorLineHighlight(std::ostream &out) const {
@@ -78,10 +78,10 @@ public:
     }
     if (srcLoc.startToken.line == srcLoc.endToken.line) {
       for (size_t i = highlightStart; i <= highlightEnd; ++i) {
-        cl_out << '^';
+        cl_out << co::mode(co::bold) << '^';
       }
     } else {
-      cl_out << '^';
+      cl_out << co::mode(co::bold) << '^';
     }
     cl_out << std::endl;
   }
@@ -118,10 +118,26 @@ private:
     expect(ttype);
     readNextToken();
   }
+  std::string expectGetIdentAndNext(Token::Type ttype) {
+    expect(ttype);
+    std::string res = std::move(curTok.str);
+    readNextToken();
+    return res;
+  }
   void expect(Token::Type ttype) {
     if (unlikely(curTok.type != ttype)) {
-      error("Unexpected '" + truncateString(curTok.str, 64) + "', expected '" +
-            Lexer::getTokenName(ttype) + '\'');
+      std::stringstream errorLine;
+      auto cl_err = co::make_colored(errorLine);
+      cl_err << "Unexpected " << co::mode(co::bold) << '\''
+             << truncateString(curTok.str, 64) << '\'' << co::reset
+             << ", expected ";
+      if (Lexer::tokenNameNeedsQuotes(ttype)) {
+        cl_err << co::mode(co::bold) << '\'' << Lexer::getTokenName(ttype)
+               << '\'';
+      } else {
+        cl_err << co::mode(co::bold) << Lexer::getTokenName(ttype);
+      }
+      error(errorLine.str());
     }
   }
   void expectAny(std::initializer_list<Token::Type> tokens) {
@@ -130,10 +146,7 @@ private:
         return;
       }
     }
-    error("Unexpected '" + truncateString(curTok.str, 64) +
-          "', expected one of " + listToString(tokens, [](auto t) {
-            return "\'"s + Lexer::getTokenName(t) + '\'';
-          }));
+    errorExpectedAnyOf(tokens);
   }
 
   [[noreturn]] void error(std::string msg) {
@@ -143,10 +156,15 @@ private:
 
   [[noreturn]] void
   errorExpectedAnyOf(std::initializer_list<Token::Type> tokens) {
-    error("Unexpected '" + truncateString(curTok.str, 64) +
-          "', expected one of " + listToString(tokens, [](auto t) {
-            return "\'"s + Lexer::getTokenName(t) + '\'';
-          }));
+    std::stringstream errorLine;
+    auto cl_err = co::make_colored(errorLine);
+    cl_err << "Unexpected " << co::mode(co::bold) << '\''
+           << truncateString(curTok.str, 64) << '\'' << co::reset
+           << ", expected one of " << listToString(tokens, " or ", [](auto t) {
+                return "\'"s + Lexer::getTokenName(t) + '\'';
+              });
+
+    error(errorLine.str());
   }
 
   ast::ProgramPtr parseProgram();
