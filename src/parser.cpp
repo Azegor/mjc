@@ -33,6 +33,10 @@
 using TT = Token::Type;
 
 void Parser::parseFileOnly() { parseProgram(); }
+void Parser::parseAndPrintAst() {
+  auto res = parseProgram();
+  (void)res; // TODO
+}
 
 ast::ProgramPtr Parser::parseProgram() {
   std::vector<ast::ClassPtr> classes;

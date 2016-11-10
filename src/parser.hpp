@@ -106,6 +106,7 @@ public:
   Token &lookAhead(size_t numTokens) { return lexer.lookAhead(numTokens); }
 
   void parseFileOnly();
+  void parseAndPrintAst();
 
 private:
   void readExpect(Token::Type ttype) {
