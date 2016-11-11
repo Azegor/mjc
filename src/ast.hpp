@@ -40,6 +40,9 @@ class BlockStatement;
 class Class;
 class Method;
 class Field;
+class PrimitiveType;
+class ClassType;
+class ArrayType;
 using ClassPtr = std::unique_ptr<Class>;
 class Visitor {
 public:
@@ -50,6 +53,9 @@ public:
   virtual void visitClass(Class &klass) { (void)klass; }
   virtual void visitField(Field &field) { (void)field; }
   virtual void visitMethod(Method &method) { (void)method; }
+  virtual void visitPrimitiveType(PrimitiveType &primitiveType) { (void)primitiveType; }
+  virtual void visitClassType(ClassType &classType) { (void)classType; }
+  virtual void visitArrayType(ArrayType &arrayType) { (void)arrayType; }
 };
 
 class Node {
@@ -109,9 +115,8 @@ protected:
 using BasicTypePtr = std::unique_ptr<BasicType>;
 
 class PrimitiveType : public BasicType {
-  enum class TypeType { Boolean, Int, Void, None } type;
-
 public:
+  enum class TypeType { Boolean, Int, Void, None } type;
   PrimitiveType(SourceLocation loc, TypeType type)
       : BasicType(std::move(loc)), type(type) {}
 
@@ -127,6 +132,11 @@ public:
       return TypeType::None;
     }
   }
+  const TypeType &getType() { return type; }
+
+  void accept(Visitor *visitor) override {
+    visitor->visitPrimitiveType(*this);
+  }
 };
 
 class ClassType : public BasicType {
@@ -135,6 +145,12 @@ class ClassType : public BasicType {
 public:
   ClassType(SourceLocation loc, std::string name)
       : BasicType(std::move(loc)), name(std::move(name)) {}
+
+  const std::string &getName() { return name; }
+
+  void accept(Visitor *visitor) override {
+    visitor->visitClassType(*this);
+  }
 };
 
 class ArrayType : public Type {
@@ -145,6 +161,12 @@ public:
   ArrayType(SourceLocation loc, BasicTypePtr elementType, int dimension)
       : Type(std::move(loc)), elementType(std::move(elementType)),
         dimension(dimension) {}
+  BasicType &getElementType() { return *elementType; }
+  const int getDimension() { return dimension; }
+
+  void accept(Visitor *visitor) override {
+    visitor->visitArrayType(*this);
+  }
 };
 using ArrayTypePtr = std::unique_ptr<ArrayType>;
 
@@ -196,6 +218,12 @@ public:
       : Node(std::move(loc)), type(std::move(type)), name(std::move(name)) {}
 
   const std::string &getName() { return name; }
+  Type &getType() { return *type; }
+
+  bool operator< (const Field &other) {
+    return name < other.name;
+  }
+
 };
 using FieldPtr = std::unique_ptr<Field>;
 
@@ -223,6 +251,22 @@ public:
       : Node(std::move(loc)), returnType(std::move(returnType)),
         name(std::move(name)), parameters(std::move(parameters)),
         block(std::move(block)) {}
+
+  const std::string &getName() { return name; }
+  Type &getReturnType() { return *returnType; }
+  Block &getBlock() { return *block; }
+
+  ParameterList getParameters() {
+    ParameterList result;
+    for(ParameterList::size_type i=0; i<parameters.size(); i++) {
+      result.push_back(std::move(parameters[i]));
+    }
+    return result;
+  }
+
+  bool operator< (Method &other) {
+    return name < other.name;
+  }
 };
 using MethodPtr = std::unique_ptr<Method>;
 
@@ -252,10 +296,12 @@ public:
         methods(std::move(methods)), mainMethods(std::move(mainMethods)) {}
 
   void accept(Visitor *visitor) override {
+    std::sort(methods.begin(), methods.end());
     for (auto &mp : methods) {
       visitor->visitMethod(*mp);
     }
 
+    std::sort(fields.begin(), fields.end());
     for (auto &fp : fields) {
       visitor->visitField(*fp);
     }
@@ -275,6 +321,7 @@ public:
     for (auto &cp : classes) {
       visitor->visitClass(*cp);
     }
+    visitor->visitProgram(*this);
   }
 };
 using ProgramPtr = std::unique_ptr<Program>;
@@ -491,19 +538,6 @@ template <typename T, typename... Args>
 std::unique_ptr<T> make_Ptr(SourceLocation loc, Args &&... args) {
   return std::unique_ptr<T>{new T(loc, std::forward<Args>(args)...)};
 }
-
-class TestVisitor : public Visitor {
-
-  void visitProgram(Program &program) override { (void)program; }
-
-  void visitClass(Class &klass) override {
-    std::cout << "Class " << klass.getName() << std::endl;
-  }
-
-  void visitField(Field &field) override {
-    std::cout << "Field: " << field.getName() << std::endl;
-  }
-};
 
 } // namespace ast
 

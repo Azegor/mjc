@@ -27,6 +27,7 @@
 #include "parser.hpp"
 #include "ast.hpp"
 #include "lexer.hpp"
+#include "pprinter.hpp"
 
 #include <deque>
 
@@ -36,7 +37,7 @@ void Parser::parseFileOnly() { parseProgram(); }
 void Parser::parseAndPrintAst() {
   auto program = parseProgram();
 
-  auto v = new ast::TestVisitor();
+  auto v = new PrettyPrinterVisitor(std::cout, "  ");
   std::cout << "accepting" << std::endl;
   program->accept(v);
 
