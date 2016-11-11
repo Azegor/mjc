@@ -57,6 +57,9 @@ class BoolLiteral;
 class NullLiteral;
 class ThisLiteral;
 class Ident;
+class MethodInvocation;
+class FieldAccess;
+class ArrayAccess;
 using ClassPtr = std::unique_ptr<Class>;
 class Visitor {
 public:
@@ -85,6 +88,9 @@ public:
   virtual void visitNullLiteral(NullLiteral &nullLiteral) { (void)nullLiteral; }
   virtual void visitThisLiteral(ThisLiteral &thisLiteral) { (void)thisLiteral; }
   virtual void visitIdent(Ident &ident) { (void)ident; }
+  virtual void visitMethodInvocation(MethodInvocation &methodInvocation) { (void)methodInvocation; }
+  virtual void visitFieldAccess(FieldAccess &fieldAccess) { (void)fieldAccess; }
+  virtual void visitArrayAccess(ArrayAccess &arrayAccess) { (void)arrayAccess; }
 };
 
 class Node {
@@ -549,6 +555,21 @@ public:
                    ExprList methodArgs)
       : Expression(std::move(loc)), left(std::move(lhs)),
         name(std::move(methodName)), arguments(std::move(methodArgs)) {}
+
+  void accept(Visitor *visitor) override {
+    visitor->visitMethodInvocation(*this);
+  }
+
+  std::vector<ExprPtr> getArguments() {
+    std::vector<ExprPtr> result;
+    for(std::vector<ExprPtr>::size_type i=0; i<arguments.size(); i++) {
+      result.push_back(std::move(arguments[i]));
+    }
+    return result;
+  }
+
+  ExprPtr getLeft() { return std::move(left); }
+  const std::string &getName() { return name; }
 };
 
 class FieldAccess : public Expression {
@@ -560,6 +581,13 @@ public:
   FieldAccess(SourceLocation loc, ExprPtr lhs, std::string memberName)
       : Expression(std::move(loc)), left(std::move(lhs)),
         name(std::move(memberName)) {}
+
+  void accept(Visitor *visitor) override {
+    visitor->visitFieldAccess(*this);
+  }
+
+  ExprPtr getLeft() { return std::move(left); }
+  const std::string &getName() { return name; }
 };
 
 class ArrayAccess : public Expression {
@@ -570,6 +598,14 @@ public:
   ArrayAccess(SourceLocation loc, ExprPtr lhs, ExprPtr index)
       : Expression(std::move(loc)), array(std::move(lhs)),
         index(std::move(index)) {}
+
+  void accept(Visitor *visitor) override {
+    visitor->visitArrayAccess(*this);
+  }
+  
+  ExprPtr getArray() { return std::move(array); }
+  ExprPtr getIndex() { return std::move(index); }
+
 };
 
 class BinaryExpression : public Expression {

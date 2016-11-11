@@ -203,23 +203,55 @@ class PrettyPrinterVisitor : public ast::Visitor {
       //TODO: include size in ArrayType
       //currently new A[<expr>][][] gets displayed as new A[][][]
     }
+
     void visitNewObjectExpression(ast::NewObjectExpression &newObjectExpression) {
       stream << "new " << newObjectExpression.getName() << "()";
     }
+
     void visitIntLiteral(ast::IntLiteral &intLiteral) {
       stream << std::to_string(intLiteral.getValue());
     }
+
     void visitBoolLiteral(ast::BoolLiteral &boolLiteral) {
       stream << ( boolLiteral.getValue() ? "true" : "false" );
     }
+
     void visitNullLiteral(ast::NullLiteral &nullLiteral) {
       stream << "null";
     }
+
     void visitThisLiteral(ast::ThisLiteral &thisLiteral) {
       stream << "this";
     }
+
     void visitIdent(ast::Ident &ident) {
       stream << ident.getName();
+    }
+
+    void visitMethodInvocation(ast::MethodInvocation &methodInvocation) {
+      methodInvocation.getLeft()->accept(this);
+      stream << "." << methodInvocation.getName() << "(";
+      std::vector<ast::ExprPtr> arguments = methodInvocation.getArguments();
+      if(arguments.size() >= 1) {
+        arguments[0]->accept(this);
+      }  
+      for(std::vector<ast::ExprPtr>::size_type i=1; i<arguments.size(); i++) {
+        stream << ", ";
+        arguments[i]->accept(this);
+      }
+      stream << ")";
+    }
+
+    void visitFieldAccess(ast::FieldAccess &fieldAccess) {
+      fieldAccess.getLeft()->accept(this);
+      stream << "." << fieldAccess.getName();      
+    }
+
+    void visitArrayAccess(ast::ArrayAccess &arrayAccess) {
+      arrayAccess.getArray()->accept(this);
+      stream << "[";
+      arrayAccess.getIndex()->accept(this);
+      stream << "]";
     }
 
     void newline() {
