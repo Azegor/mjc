@@ -60,6 +60,8 @@ class Ident;
 class MethodInvocation;
 class FieldAccess;
 class ArrayAccess;
+class BinaryExpression;
+class UnaryExpression;
 using ClassPtr = std::unique_ptr<Class>;
 class Visitor {
 public:
@@ -91,6 +93,9 @@ public:
   virtual void visitMethodInvocation(MethodInvocation &methodInvocation) { (void)methodInvocation; }
   virtual void visitFieldAccess(FieldAccess &fieldAccess) { (void)fieldAccess; }
   virtual void visitArrayAccess(ArrayAccess &arrayAccess) { (void)arrayAccess; }
+  virtual void visitBinaryExpression(BinaryExpression &binaryExpression) { (void)binaryExpression; }
+  virtual void visitUnaryExpression(UnaryExpression &unaryExpression) { (void)unaryExpression; }
+
 };
 
 class Node {
@@ -167,7 +172,10 @@ using BasicTypePtr = std::unique_ptr<BasicType>;
 
 class PrimitiveType : public BasicType {
 public:
-  enum class TypeType { Boolean, Int, Void, None } type;
+  enum class TypeType { Boolean, Int, Void, None };
+private:
+  TypeType type;
+public:
   PrimitiveType(SourceLocation loc, TypeType type)
       : BasicType(std::move(loc)), type(type) {}
 
@@ -609,8 +617,8 @@ public:
 };
 
 class BinaryExpression : public Expression {
-  ExprPtr left;
-  ExprPtr right;
+
+public:
   enum class Op {
     None,
     Assign,
@@ -627,7 +635,12 @@ class BinaryExpression : public Expression {
     Mul,
     Div,
     Mod
-  } operation;
+  };
+
+private:
+  ExprPtr left;
+  ExprPtr right;
+  Op operation;
 
 public:
   BinaryExpression(SourceLocation loc, ExprPtr lhs, ExprPtr rhs, Op op)
@@ -668,16 +681,28 @@ public:
       return Op::None;
     }
   }
+
+  void accept(Visitor *visitor) override {
+    visitor->visitBinaryExpression(*this);
+  }
+  
+  ExprPtr getLeft() { return std::move(left); }
+  ExprPtr getRight() { return std::move(right); }
+  const Op& getOperation() {return operation; }
+
 };
 
 class UnaryExpression : public Expression {
-  ExprPtr expression;
+public:
   enum class Op {
     Not,
     Neg,
     None
+  };
 
-  } operation;
+private:
+  ExprPtr expression;
+  Op operation;
 
 public:
   UnaryExpression(SourceLocation loc, ExprPtr expression, Op operation)
@@ -694,6 +719,12 @@ public:
       return Op::None;
     }
   }
+  void accept(Visitor *visitor) override {
+    visitor->visitUnaryExpression(*this);
+  }
+  
+  ExprPtr getExpression() { return std::move(expression); }
+  const Op& getOperation() {return operation; }
 };
 
 template <typename St, typename... Args>

@@ -254,6 +254,70 @@ class PrettyPrinterVisitor : public ast::Visitor {
       stream << "]";
     }
 
+    void visitBinaryExpression(ast::BinaryExpression &binaryExpression) {
+      paren(std::move(binaryExpression.getLeft()));
+      stream << " " << binaryOperationToString(binaryExpression.getOperation()) << " ";
+      paren(std::move(binaryExpression.getRight()));
+    }
+
+    void visitUnaryExpression(ast::UnaryExpression &unaryExpression) {
+      stream << unaryOperationToString(unaryExpression.getOperation());
+      paren(std::move(unaryExpression.getExpression()));
+    }
+
+    static std::string binaryOperationToString(ast::BinaryExpression::Op operation) {
+      switch (operation) {
+      case ast::BinaryExpression::Op::Assign:
+        return "=";
+      case ast::BinaryExpression::Op::Or:
+        return "||";
+      case ast::BinaryExpression::Op::And:
+        return "&&";
+      case ast::BinaryExpression::Op::Equals:
+        return "==";
+      case ast::BinaryExpression::Op::NotEquals:
+        return "!=";
+      case ast::BinaryExpression::Op::Less:
+        return "<";
+      case ast::BinaryExpression::Op::LessEquals:
+        return "<=";
+      case ast::BinaryExpression::Op::Greater:
+        return ">";
+      case ast::BinaryExpression::Op::GreaterEquals:
+        return ">=";
+      case ast::BinaryExpression::Op::Plus:
+        return "+";
+      case ast::BinaryExpression::Op::Minus:
+        return "-";
+      case ast::BinaryExpression::Op::Mul:
+        return "*";
+      case ast::BinaryExpression::Op::Div:
+        return "/";
+      case ast::BinaryExpression::Op::Mod:
+        return "%%";
+      default:
+        return "NONE";
+      }
+    }
+
+    static std::string unaryOperationToString(ast::UnaryExpression::Op operation) {
+      switch (operation) {
+      case ast::UnaryExpression::Op::Neg:
+        return "-";
+      case ast::UnaryExpression::Op::Not:
+        return "!";
+      default:
+        return "NONE";
+      }
+    }
+
+    void paren(ast::ExprPtr expression) {
+      //TODO: parenthesis logic
+      stream << "(";
+      expression->accept(this);
+      stream << ")";
+    }
+
     void newline() {
       stream << std::endl;
       for (int i = 0; i < indentLevel; i++) {
