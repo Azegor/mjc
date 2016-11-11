@@ -37,7 +37,7 @@ void Parser::parseFileOnly() { parseProgram(); }
 void Parser::parseAndPrintAst() {
   auto program = parseProgram();
 
-  auto v = new PrettyPrinterVisitor(std::cout, "  ");
+  auto v = new PrettyPrinterVisitor(std::cout, "\t");
   std::cout << "accepting" << std::endl;
   program->accept(v);
 
