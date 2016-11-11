@@ -118,7 +118,7 @@ public:
   }
 
   void visitBlock(ast::Block &block) override {
-    stream << " {";
+    stream << "{";
     if(block.getContainsNothingExceptOneSingleLonelyEmptyExpression()) {
       stream << " ";
     } else {
