@@ -72,12 +72,13 @@ class PrettyPrinterVisitor : public ast::Visitor {
         stream << ", ";
         params[i]->accept(this);
       }
-      stream << ") {";
-      indentLevel++;
+      stream << ")";
       method.getBlock().accept(this);
-      indentLevel--;
-      newline();
-      stream << "}";
+    }
+
+    void visitParameter(ast::Parameter &parameter) override {
+      parameter.getType().accept(this);
+      stream << " " << parameter.getName();
     }
 
     void visitPrimitiveType(ast::PrimitiveType &primitiveType) override {
@@ -106,6 +107,27 @@ class PrettyPrinterVisitor : public ast::Visitor {
       int dimension = arrayType.getDimension();
       for(int i=0; i<dimension; i++) {
         stream << "[]";
+      }
+    }
+
+    void visitBlock(ast::Block &block) override {
+      if(block.getContainsNothingExceptOneSingleLonelyEmptyExpression()) {
+        stream << " { }";
+      } else {
+        stream << " {";
+        indentLevel++;
+        ast::BlockStmtList statements = block.getStatements();
+
+        for(ast::BlockStmtList::size_type i = 0; i < statements.size(); i++) {
+          newline();
+          if (statements[i] != nullptr) {
+            //statements[i] is no EmptyStatement
+            statements[i]->accept(this);
+          }
+        }
+        indentLevel--;
+        newline();
+        stream << "}";
       }
     }
 

@@ -38,8 +38,9 @@ class Program;
 class Block;
 class BlockStatement;
 class Class;
-class Method;
 class Field;
+class Method;
+class Parameter;
 class PrimitiveType;
 class ClassType;
 class ArrayType;
@@ -53,9 +54,11 @@ public:
   virtual void visitClass(Class &klass) { (void)klass; }
   virtual void visitField(Field &field) { (void)field; }
   virtual void visitMethod(Method &method) { (void)method; }
+  virtual void visitParameter(Parameter &parameter) { (void)parameter; }
   virtual void visitPrimitiveType(PrimitiveType &primitiveType) { (void)primitiveType; }
   virtual void visitClassType(ClassType &classType) { (void)classType; }
   virtual void visitArrayType(ArrayType &arrayType) { (void)arrayType; }
+  virtual void visitBlock(Block &block) { (void)block; }
 };
 
 class Node {
@@ -105,6 +108,22 @@ public:
   Block(SourceLocation loc, BlockStmtList statements, bool flag)
       : Statement(std::move(loc)), statements(std::move(statements)),
         containsNothingExceptOneSingleLonelyEmtpyExpression(flag) {}
+
+  BlockStmtList getStatements() {
+    BlockStmtList result;
+    for(BlockStmtList::size_type i=0; i<statements.size(); i++) {
+      result.push_back(std::move(statements[i]));
+    }
+    return result;
+  }
+
+  const bool getContainsNothingExceptOneSingleLonelyEmptyExpression() {
+    return containsNothingExceptOneSingleLonelyEmtpyExpression;
+  }
+
+  void accept(Visitor *visitor) override {
+    visitor->visitBlock(*this);
+  }
 };
 using BlockPtr = std::unique_ptr<Block>;
 
@@ -234,6 +253,12 @@ class Parameter : public Node {
 public:
   Parameter(SourceLocation loc, TypePtr type, std::string name)
       : Node(std::move(loc)), type(std::move(type)), name(std::move(name)) {}
+
+  void accept(Visitor *visitor) override {
+    visitor->visitParameter(*this);
+  }
+  const std::string &getName() { return name; }
+  Type &getType() { return *type; }
 };
 using ParameterPtr = std::unique_ptr<Parameter>;
 using ParameterList = std::vector<ParameterPtr>;
