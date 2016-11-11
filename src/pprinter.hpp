@@ -197,6 +197,31 @@ class PrettyPrinterVisitor : public ast::Visitor {
       }
     }
 
+    void visitNewArrayExpression(ast::NewArrayExpression &newArrayExpression) {
+      stream << "new ";
+      newArrayExpression.getArrayType()->accept(this);
+      //TODO: include size in ArrayType
+      //currently new A[<expr>][][] gets displayed as new A[][][]
+    }
+    void visitNewObjectExpression(ast::NewObjectExpression &newObjectExpression) {
+      stream << "new " << newObjectExpression.getName() << "()";
+    }
+    void visitIntLiteral(ast::IntLiteral &intLiteral) {
+      stream << std::to_string(intLiteral.getValue());
+    }
+    void visitBoolLiteral(ast::BoolLiteral &boolLiteral) {
+      stream << ( boolLiteral.getValue() ? "true" : "false" );
+    }
+    void visitNullLiteral(ast::NullLiteral &nullLiteral) {
+      stream << "null";
+    }
+    void visitThisLiteral(ast::ThisLiteral &thisLiteral) {
+      stream << "this";
+    }
+    void visitIdent(ast::Ident &ident) {
+      stream << ident.getName();
+    }
+
     void newline() {
       stream << std::endl;
       for (int i = 0; i < indentLevel; i++) {

@@ -50,6 +50,13 @@ class ExpressionStatement;
 class IfStatement;
 class WhileStatement;
 class ReturnStatement;
+class NewArrayExpression;
+class NewObjectExpression;
+class IntLiteral;
+class BoolLiteral;
+class NullLiteral;
+class ThisLiteral;
+class Ident;
 using ClassPtr = std::unique_ptr<Class>;
 class Visitor {
 public:
@@ -71,6 +78,13 @@ public:
   virtual void visitIfStatement(IfStatement &ifStatement) { (void)ifStatement; }
   virtual void visitWhileStatement(WhileStatement &whileStatement) { (void)whileStatement; }
   virtual void visitReturnStatement(ReturnStatement &returnStatement) { (void)returnStatement; }
+  virtual void visitNewArrayExpression(NewArrayExpression &newArrayExpression) { (void)newArrayExpression; }
+  virtual void visitNewObjectExpression(NewObjectExpression &newObjectExpression) { (void)newObjectExpression; }
+  virtual void visitIntLiteral(IntLiteral &intLiteral) { (void)intLiteral; }
+  virtual void visitBoolLiteral(BoolLiteral &boolLiteral) { (void)boolLiteral; }
+  virtual void visitNullLiteral(NullLiteral &nullLiteral) { (void)nullLiteral; }
+  virtual void visitThisLiteral(ThisLiteral &thisLiteral) { (void)thisLiteral; }
+  virtual void visitIdent(Ident &ident) { (void)ident; }
 };
 
 class Node {
@@ -443,6 +457,13 @@ public:
   NewArrayExpression(SourceLocation loc, ArrayTypePtr arrayType, ExprPtr size)
       : PrimaryExpression(std::move(loc)), arrayType(std::move(arrayType)),
         size(std::move(size)) {}
+
+  void accept(Visitor *visitor) override {
+    visitor->visitNewArrayExpression(*this);
+  }
+
+  ArrayTypePtr getArrayType() { return std::move(arrayType); }
+  ExprPtr getSize() { return std::move(size); }
 };
 
 class NewObjectExpression : public PrimaryExpression {
@@ -451,12 +472,24 @@ class NewObjectExpression : public PrimaryExpression {
 public:
   NewObjectExpression(SourceLocation loc, std::string name)
       : PrimaryExpression(std::move(loc)), name(std::move(name)) {}
+
+  void accept(Visitor *visitor) override {
+    visitor->visitNewObjectExpression(*this);
+  }
+
+  const std::string &getName() { return name; }
 };
 class IntLiteral : public PrimaryExpression {
   int32_t value;
 
 public:
   IntLiteral(SourceLocation loc) : PrimaryExpression(std::move(loc)) {}
+
+  void accept(Visitor *visitor) override {
+    visitor->visitIntLiteral(*this);
+  }
+
+  const int32_t &getValue() { return value; }
 };
 
 class BoolLiteral : public PrimaryExpression {
@@ -465,16 +498,30 @@ class BoolLiteral : public PrimaryExpression {
 public:
   BoolLiteral(SourceLocation loc, bool val)
       : PrimaryExpression(std::move(loc)), value(val) {}
+
+  void accept(Visitor *visitor) override {
+    visitor->visitBoolLiteral(*this);
+  }
+
+  const bool &getValue() { return value; }
 };
 
 class NullLiteral : public PrimaryExpression {
 public:
   NullLiteral(SourceLocation loc) : PrimaryExpression(std::move(loc)) {}
+
+  void accept(Visitor *visitor) override {
+    visitor->visitNullLiteral(*this);
+  }
 };
 
 class ThisLiteral : public PrimaryExpression {
 public:
   ThisLiteral(SourceLocation loc) : PrimaryExpression(std::move(loc)) {}
+
+  void accept(Visitor *visitor) override {
+    visitor->visitThisLiteral(*this);
+  }
 };
 
 class Ident : public PrimaryExpression {
@@ -483,6 +530,12 @@ class Ident : public PrimaryExpression {
 public:
   Ident(SourceLocation loc, std::string name)
       : PrimaryExpression(std::move(loc)), name(std::move(name)) {}
+
+  void accept(Visitor *visitor) override {
+    visitor->visitIdent(*this);
+  }
+
+  const std::string &getName() { return name; }
 };
 
 class MethodInvocation : public Expression {
