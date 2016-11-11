@@ -55,14 +55,14 @@ class PrettyPrinterVisitor : public ast::Visitor {
     void visitField(ast::Field &field) override {
       newline();
       stream << "public ";
-      field.getType().accept(this);
+      field.getType()->accept(this);
       stream << " " << field.getName() << ";";
     }
 
     void visitMethod(ast::Method &method) override {
       newline();
       stream << "public ";
-      method.getReturnType().accept(this);
+      method.getReturnType()->accept(this);
       stream << " " << method.getName() << "(";
       ast::ParameterList params = method.getParameters();
       if (params.size() >= 1) {
@@ -72,12 +72,18 @@ class PrettyPrinterVisitor : public ast::Visitor {
         stream << ", ";
         params[i]->accept(this);
       }
-      stream << ")";
-      method.getBlock().accept(this);
+      stream << ") ";
+      method.getBlock()->accept(this);
+    }
+
+    void visitMainMethod(ast::MainMethod &mainMethod) { 
+      newline();
+      stream << "public static void " << mainMethod.getName() << "(String[] " << mainMethod.getArgName() << ") ";
+      mainMethod.getBlock()->accept(this);
     }
 
     void visitParameter(ast::Parameter &parameter) override {
-      parameter.getType().accept(this);
+      parameter.getType()->accept(this);
       stream << " " << parameter.getName();
     }
 
@@ -103,7 +109,7 @@ class PrettyPrinterVisitor : public ast::Visitor {
     }
 
     void visitArrayType(ast::ArrayType &arrayType) override {
-      arrayType.getElementType().accept(this);
+      arrayType.getElementType()->accept(this);
       int dimension = arrayType.getDimension();
       for(int i=0; i<dimension; i++) {
         stream << "[]";
@@ -111,23 +117,83 @@ class PrettyPrinterVisitor : public ast::Visitor {
     }
 
     void visitBlock(ast::Block &block) override {
+      stream << " {";
       if(block.getContainsNothingExceptOneSingleLonelyEmptyExpression()) {
-        stream << " { }";
+        stream << " ";
       } else {
-        stream << " {";
         indentLevel++;
         ast::BlockStmtList statements = block.getStatements();
 
         for(ast::BlockStmtList::size_type i = 0; i < statements.size(); i++) {
-          newline();
           if (statements[i] != nullptr) {
             //statements[i] is no EmptyStatement
+            newline();
             statements[i]->accept(this);
           }
         }
         indentLevel--;
         newline();
-        stream << "}";
+      }
+      stream << "}";
+    }
+
+    void visitVariableDeclaration(ast::VariableDeclaration &variableDeclartion) { 
+      variableDeclartion.getType()->accept(this);
+      stream << " " << variableDeclartion.getName();
+      ast::ExprPtr initializer = variableDeclartion.getInitializer();
+      if(initializer != nullptr) {
+        stream << " = ";
+        initializer->accept(this);
+      }
+      stream << ";";  
+    }
+
+    void visitExpressionStatement(ast::ExpressionStatement &exprStmt) {
+      exprStmt.getExpression()->accept(this);
+      stream << ";";
+    }
+    void visitIfStatement(ast::IfStatement &ifStatement) { 
+      stream << "if (";
+      ifStatement.getCondition()->accept(this);
+      stream << ") ";
+      ast::StmtPtr thenStatement = ifStatement.getThenStatement();
+      if (thenStatement == nullptr) {
+        stream << ";";
+      } else {
+        indentLevel++;
+        thenStatement->accept(this);
+        indentLevel--;
+      }
+      ast::StmtPtr elseStatement = ifStatement.getElseStatement();
+      if (elseStatement != nullptr) {
+        newline();
+        stream << "else ";
+        indentLevel++;
+        elseStatement->accept(this);
+        indentLevel--;
+      }
+    }
+    void visitWhileStatement(ast::WhileStatement &whileStatement) { 
+      stream << "while (";
+      whileStatement.getCondition()->accept(this);
+      stream << ") ";
+      ast::StmtPtr statement = whileStatement.getStatement();
+      if(statement == nullptr) {
+        stream << ";";
+      } else {
+        indentLevel++;
+        statement->accept(this);
+        indentLevel--;
+      }
+    }
+    void visitReturnStatement(ast::ReturnStatement &returnStatement) { 
+      ast::ExprPtr expression = returnStatement.getExpression();
+      if(expression == nullptr) {
+        stream << "return;";
+      } else {
+        stream << "return ";
+        expression->accept(this);
+        stream << ";";
       }
     }
 

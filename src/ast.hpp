@@ -40,10 +40,16 @@ class BlockStatement;
 class Class;
 class Field;
 class Method;
+class MainMethod;
 class Parameter;
 class PrimitiveType;
 class ClassType;
 class ArrayType;
+class VariableDeclaration;
+class ExpressionStatement;
+class IfStatement;
+class WhileStatement;
+class ReturnStatement;
 using ClassPtr = std::unique_ptr<Class>;
 class Visitor {
 public:
@@ -54,11 +60,17 @@ public:
   virtual void visitClass(Class &klass) { (void)klass; }
   virtual void visitField(Field &field) { (void)field; }
   virtual void visitMethod(Method &method) { (void)method; }
+  virtual void visitMainMethod(MainMethod &mainMethod) { (void)mainMethod; }
   virtual void visitParameter(Parameter &parameter) { (void)parameter; }
   virtual void visitPrimitiveType(PrimitiveType &primitiveType) { (void)primitiveType; }
   virtual void visitClassType(ClassType &classType) { (void)classType; }
   virtual void visitArrayType(ArrayType &arrayType) { (void)arrayType; }
   virtual void visitBlock(Block &block) { (void)block; }
+  virtual void visitVariableDeclaration(VariableDeclaration &variableDeclartion) { (void)variableDeclartion; }
+  virtual void visitExpressionStatement(ExpressionStatement &exprStmt) { (void)exprStmt; }
+  virtual void visitIfStatement(IfStatement &ifStatement) { (void)ifStatement; }
+  virtual void visitWhileStatement(WhileStatement &whileStatement) { (void)whileStatement; }
+  virtual void visitReturnStatement(ReturnStatement &returnStatement) { (void)returnStatement; }
 };
 
 class Node {
@@ -180,7 +192,7 @@ public:
   ArrayType(SourceLocation loc, BasicTypePtr elementType, int dimension)
       : Type(std::move(loc)), elementType(std::move(elementType)),
         dimension(dimension) {}
-  BasicType &getElementType() { return *elementType; }
+  BasicTypePtr getElementType() { return std::move(elementType); }
   const int getDimension() { return dimension; }
 
   void accept(Visitor *visitor) override {
@@ -195,6 +207,12 @@ class ExpressionStatement : public Statement {
 public:
   ExpressionStatement(SourceLocation loc, ExprPtr expr)
       : Statement(std::move(loc)), expr(std::move(expr)) {}
+
+  ExprPtr getExpression() { return std::move(expr); }
+
+  void accept(Visitor *visitor) override {
+    visitor->visitExpressionStatement(*this);
+  }
 };
 
 class IfStatement : public Statement {
@@ -207,6 +225,14 @@ public:
               StmtPtr elseStmt)
       : Statement(std::move(loc)), condition(std::move(condition)),
         thenStmt(std::move(thenStmt)), elseStmt(std::move(elseStmt)) {}
+
+  ExprPtr getCondition() { return std::move(condition); }
+  StmtPtr getThenStatement() { return std::move(thenStmt); }
+  StmtPtr getElseStatement() { return std::move(elseStmt); }
+
+  void accept(Visitor *visitor) override {
+    visitor->visitIfStatement(*this);
+  }
 };
 
 class WhileStatement : public Statement {
@@ -217,6 +243,13 @@ public:
   WhileStatement(SourceLocation loc, ExprPtr condition, StmtPtr statement)
       : Statement(std::move(loc)), condition(std::move(condition)),
         statement(std::move(statement)) {}
+
+  ExprPtr getCondition() { return std::move(condition); }
+  StmtPtr getStatement() { return std::move(statement); }
+
+  void accept(Visitor *visitor) override {
+    visitor->visitWhileStatement(*this);
+  }
 };
 
 class ReturnStatement : public Statement {
@@ -226,6 +259,11 @@ class ReturnStatement : public Statement {
 public:
   ReturnStatement(SourceLocation loc, ExprPtr expr)
       : Statement(std::move(loc)), expr(std::move(expr)) {}
+  ExprPtr getExpression() { return std::move(expr); }
+
+  void accept(Visitor *visitor) override {
+    visitor->visitReturnStatement(*this);
+  }
 };
 
 class Field : public Node {
@@ -237,10 +275,11 @@ public:
       : Node(std::move(loc)), type(std::move(type)), name(std::move(name)) {}
 
   const std::string &getName() { return name; }
-  Type &getType() { return *type; }
+  TypePtr getType() { return std::move(type); }
 
   bool operator< (const Field &other) {
     return name < other.name;
+    // include type
   }
 
 };
@@ -258,7 +297,7 @@ public:
     visitor->visitParameter(*this);
   }
   const std::string &getName() { return name; }
-  Type &getType() { return *type; }
+  TypePtr getType() { return std::move(type); }
 };
 using ParameterPtr = std::unique_ptr<Parameter>;
 using ParameterList = std::vector<ParameterPtr>;
@@ -278,8 +317,8 @@ public:
         block(std::move(block)) {}
 
   const std::string &getName() { return name; }
-  Type &getReturnType() { return *returnType; }
-  Block &getBlock() { return *block; }
+  TypePtr getReturnType() { return std::move(returnType); }
+  BlockPtr getBlock() { return std::move(block); }
 
   ParameterList getParameters() {
     ParameterList result;
@@ -291,6 +330,7 @@ public:
 
   bool operator< (Method &other) {
     return name < other.name;
+    //TODO include parameters
   }
 };
 using MethodPtr = std::unique_ptr<Method>;
@@ -305,6 +345,18 @@ public:
              BlockPtr block)
       : Node(std::move(loc)), name(std::move(name)),
         argName(std::move(argName)), block(std::move(block)) {}
+
+  void accept(Visitor *visitor) override {
+    visitor->visitMainMethod(*this);
+  }
+
+  const std::string &getName() { return name; }
+  const std::string &getArgName() { return argName; }
+  BlockPtr getBlock() { return std::move(block); }
+  bool operator< (MainMethod &other) {
+    return name < other.name;
+    //TODO include parameters
+  }
 };
 using MainMethodPtr = std::unique_ptr<MainMethod>;
 
@@ -326,10 +378,16 @@ public:
       visitor->visitMethod(*mp);
     }
 
+    std::sort(mainMethods.begin(), mainMethods.end());
+    for (auto &mp : mainMethods) {
+      visitor->visitMainMethod(*mp);
+    }
+
     std::sort(fields.begin(), fields.end());
     for (auto &fp : fields) {
       visitor->visitField(*fp);
     }
+
   }
 
   const std::string &getName() { return name; }
@@ -362,6 +420,14 @@ public:
                       ExprPtr initializer)
       : BlockStatement(std::move(loc)), type(std::move(type)),
         name(std::move(name)), initializer(std::move(initializer)) {}
+
+  void accept(Visitor *visitor) override {
+    visitor->visitVariableDeclaration(*this);
+  }
+
+  const std::string &getName() { return name; }
+  TypePtr getType() { return std::move(type); }
+  ExprPtr getInitializer() { return std::move(initializer); }
 };
 
 class PrimaryExpression : public Expression {
