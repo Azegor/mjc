@@ -33,6 +33,7 @@ class PrettyPrinterVisitor : public ast::Visitor {
   std::ostream& stream;
   std::string indentWith;
   int indentLevel;
+  bool requireParenthesis = false;
 
 public:
   PrettyPrinterVisitor(std::ostream &stream, std::string indentWith) : stream(stream), indentWith(std::move(indentWith)), indentLevel(0) {} 
@@ -198,6 +199,7 @@ public:
   }
 
   void visitNewArrayExpression(ast::NewArrayExpression &newArrayExpression) {
+    requireParenthesis = false;
     stream << "new ";
     newArrayExpression.getArrayType()->accept(this);
     //TODO: include size in ArrayType
@@ -205,26 +207,32 @@ public:
   }
 
   void visitNewObjectExpression(ast::NewObjectExpression &newObjectExpression) {
+    requireParenthesis = false;
     stream << "new " << newObjectExpression.getName() << "()";
   }
 
   void visitIntLiteral(ast::IntLiteral &intLiteral) {
+    requireParenthesis = false;
     stream << std::to_string(intLiteral.getValue());
   }
 
   void visitBoolLiteral(ast::BoolLiteral &boolLiteral) {
+    requireParenthesis = false;
     stream << ( boolLiteral.getValue() ? "true" : "false" );
   }
 
   void visitNullLiteral(ast::NullLiteral &nullLiteral) {
+    requireParenthesis = false;
     stream << "null";
   }
 
   void visitThisLiteral(ast::ThisLiteral &thisLiteral) {
+    requireParenthesis = false;
     stream << "this";
   }
 
   void visitIdent(ast::Ident &ident) {
+    requireParenthesis = false;
     stream << ident.getName();
   }
 
@@ -255,14 +263,43 @@ public:
   }
 
   void visitBinaryExpression(ast::BinaryExpression &binaryExpression) {
-    paren(std::move(binaryExpression.getLeft()));
+    maybePlaceParenthesis<ast::BinaryExpression>(binaryExpression, &PrettyPrinterVisitor::visitBinaryExpressionHelper);
+  }
+
+  void visitBinaryExpressionHelper(ast::BinaryExpression &binaryExpression) {
+    if (binaryExpression.getOperation() != ast::BinaryExpression::Op::Assign) {
+      requireParenthesis = true;
+    }
+    binaryExpression.getLeft()->accept(this);
     stream << " " << binaryOperationToString(binaryExpression.getOperation()) << " ";
-    paren(std::move(binaryExpression.getRight()));
+    if (binaryExpression.getOperation() != ast::BinaryExpression::Op::Assign) {
+      requireParenthesis = true;
+    }
+    binaryExpression.getRight()->accept(this);
   }
 
   void visitUnaryExpression(ast::UnaryExpression &unaryExpression) {
+    maybePlaceParenthesis<ast::UnaryExpression>(unaryExpression, &PrettyPrinterVisitor::visitUnaryExpressionHelper);
+  }
+
+  void visitUnaryExpressionHelper(ast::UnaryExpression &unaryExpression) {
     stream << unaryOperationToString(unaryExpression.getOperation());
-    paren(std::move(unaryExpression.getExpression()));
+    requireParenthesis = true;
+    unaryExpression.getExpression()->accept(this);
+  }
+
+  template <typename Et>
+  void maybePlaceParenthesis(Et &expr, void (PrettyPrinterVisitor::*function)(Et &expression)) {
+    using namespace std::placeholders; 
+    auto fp = std::bind(function, this, _1);
+    if (requireParenthesis) {
+      requireParenthesis = false;
+      stream << "(";
+      fp(expr);
+      stream << ")";
+    } else {
+      fp(expr);
+    }
   }
 
   static std::string binaryOperationToString(ast::BinaryExpression::Op operation) {
@@ -309,13 +346,6 @@ public:
     default:
       return "NONE";
     }
-  }
-
-  void paren(ast::ExprPtr expression) {
-    //TODO: parenthesis logic
-    stream << "(";
-    expression->accept(this);
-    stream << ")";
   }
 
   void newline() {
