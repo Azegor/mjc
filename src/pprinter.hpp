@@ -156,15 +156,17 @@ public:
   void visitIfStatement(ast::IfStatement &ifStatement) override {
     stream << "if (";
     ifStatement.getCondition()->accept(this);
-    stream << ") ";
+    stream << ")";
     ast::Statement* thenStatement = ifStatement.getThenStatement();
+    indentLevel++;
     if (thenStatement == nullptr) {
+      newline();
       stream << ";";
     } else {
-      indentLevel++;
+      newline();
       thenStatement->accept(this);
-      indentLevel--;
     }
+    indentLevel--;
     ast::Statement* elseStatement = ifStatement.getElseStatement();
     if (elseStatement != nullptr) {
       newline();
