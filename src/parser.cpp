@@ -566,8 +566,17 @@ ast::ExprPtr Parser::parsePrimary() {
   }
   case TT::IntLiteral: {
     auto loc = curTok.singleTokenSrcLoc();
+    int32_t value;
+    try {
+      value = std::stoi(curTok.str);
+    } catch (std::out_of_range &o) {
+      error("Integer literal '" + curTok.str + "' out of range");
+    } catch (std::invalid_argument &i) {
+      // should never happen!
+      throw std::runtime_error("Invalid integer literal");
+    }
     readNextToken();
-    return ast::make_EPtr<ast::IntLiteral>(loc);
+    return ast::make_EPtr<ast::IntLiteral>(loc, value);
   }
   case TT::Identifier: {
     auto ident = std::move(curTok.str);

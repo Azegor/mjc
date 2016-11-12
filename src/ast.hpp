@@ -498,11 +498,10 @@ class IntLiteral : public PrimaryExpression {
   int32_t value;
 
 public:
-  IntLiteral(SourceLocation loc) : PrimaryExpression(std::move(loc)) {}
+  IntLiteral(SourceLocation loc, int32_t value)
+      : PrimaryExpression(std::move(loc)), value(value) {}
 
-  void accept(Visitor *visitor) override {
-    visitor->visitIntLiteral(*this);
-  }
+  void accept(Visitor *visitor) override { visitor->visitIntLiteral(*this); }
 
   const int32_t &getValue() { return value; }
 };
