@@ -309,7 +309,7 @@ public:
     }
   }
 
-  static std::string binaryOperationToString(ast::BinaryExpression::Op operation) {
+  static const char* binaryOperationToString(ast::BinaryExpression::Op operation) {
     switch (operation) {
     case ast::BinaryExpression::Op::Assign:
       return "=";
@@ -338,7 +338,7 @@ public:
     case ast::BinaryExpression::Op::Div:
       return "/";
     case ast::BinaryExpression::Op::Mod:
-      return "%%";
+      return "%";
     default:
       return "NONE";
     }
