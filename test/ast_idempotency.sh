@@ -39,18 +39,23 @@ if [[ ${compiler_retval2} -ne 0 ]]; then
   exit 1
 fi
 
-if [[ ${compiler_out1} != ${compiler_out2} ]]; then
-  echo "ERROR: Output of first and second pass of the Compiler are not identical"
+if [[ "${compiler_out1}" != "${compiler_out2}" ]]; then
   diff=$(diff <(echo "${compiler_out1}") <(echo "${compiler_out2}"))
-  echo "================================="
+  echo "ERROR: Output of first and second pass of the Compiler are not identical"
   echo "First Pass:"
+  echo "================================="
   echo "${compiler_out1}"
   echo "================================="
+  echo
   echo "Second Pass:"
+  echo "================================="
   echo "${compiler_out2}"
   echo "================================="
   echo "Diff:"
+  echo "================================="
   echo "${diff}"
+  echo "================================="
+  echo "Return values: pass1=${compiler_retval1}, pass2=${compiler_retval2}"
   exit 1
 fi
 
