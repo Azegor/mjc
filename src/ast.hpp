@@ -155,10 +155,10 @@ public:
       : Statement(std::move(loc)), statements(std::move(statements)),
         containsNothingExceptOneSingleLonelyEmtpyExpression(flag) {}
 
-  BlockStmtList getStatements() {
-    BlockStmtList result;
+  std::vector<BlockStatement*> getStatements() {
+    std::vector<BlockStatement*> result;
     for(BlockStmtList::size_type i=0; i<statements.size(); i++) {
-      result.push_back(std::move(statements[i]));
+      result.push_back(statements[i].get());
     }
     return result;
   }
@@ -229,7 +229,7 @@ public:
   ArrayType(SourceLocation loc, BasicTypePtr elementType, int dimension)
       : Type(std::move(loc)), elementType(std::move(elementType)),
         dimension(dimension) {}
-  BasicTypePtr getElementType() { return std::move(elementType); }
+  BasicType *getElementType() const { return elementType.get(); }
   int getDimension() const { return dimension; }
 
   void accept(Visitor *visitor) override {
@@ -245,7 +245,7 @@ public:
   ExpressionStatement(SourceLocation loc, ExprPtr expr)
       : Statement(std::move(loc)), expr(std::move(expr)) {}
 
-  ExprPtr getExpression() { return std::move(expr); }
+  Expression *getExpression() const { return expr.get(); }
 
   void accept(Visitor *visitor) override {
     visitor->visitExpressionStatement(*this);
@@ -263,9 +263,9 @@ public:
       : Statement(std::move(loc)), condition(std::move(condition)),
         thenStmt(std::move(thenStmt)), elseStmt(std::move(elseStmt)) {}
 
-  ExprPtr getCondition() { return std::move(condition); }
-  StmtPtr getThenStatement() { return std::move(thenStmt); }
-  StmtPtr getElseStatement() { return std::move(elseStmt); }
+  Expression *getCondition() const { return condition.get(); }
+  Statement *getThenStatement() { return thenStmt.get(); }
+  Statement *getElseStatement() { return elseStmt.get(); }
 
   void accept(Visitor *visitor) override {
     visitor->visitIfStatement(*this);
@@ -281,8 +281,8 @@ public:
       : Statement(std::move(loc)), condition(std::move(condition)),
         statement(std::move(statement)) {}
 
-  ExprPtr getCondition() { return std::move(condition); }
-  StmtPtr getStatement() { return std::move(statement); }
+  Expression *getCondition() const { return condition.get(); }
+  Statement *getStatement() { return statement.get(); }
 
   void accept(Visitor *visitor) override {
     visitor->visitWhileStatement(*this);
@@ -296,7 +296,7 @@ class ReturnStatement : public Statement {
 public:
   ReturnStatement(SourceLocation loc, ExprPtr expr)
       : Statement(std::move(loc)), expr(std::move(expr)) {}
-  ExprPtr getExpression() { return std::move(expr); }
+  Expression *getExpression() { return expr.get(); }
 
   void accept(Visitor *visitor) override {
     visitor->visitReturnStatement(*this);
@@ -312,7 +312,7 @@ public:
       : Node(std::move(loc)), type(std::move(type)), name(std::move(name)) {}
 
   const std::string &getName() { return name; }
-  TypePtr getType() { return std::move(type); }
+  Type *getType() const { return type.get(); }
 
   bool operator< (const Field &other) {
     return name < other.name;
@@ -334,7 +334,7 @@ public:
     visitor->visitParameter(*this);
   }
   const std::string &getName() { return name; }
-  TypePtr getType() { return std::move(type); }
+  Type *getType() const { return type.get(); }
 };
 using ParameterPtr = std::unique_ptr<Parameter>;
 using ParameterList = std::vector<ParameterPtr>;
@@ -354,13 +354,13 @@ public:
         block(std::move(block)) {}
 
   const std::string &getName() { return name; }
-  TypePtr getReturnType() { return std::move(returnType); }
-  BlockPtr getBlock() { return std::move(block); }
+  Type *getReturnType() const { return returnType.get(); }
+  Block *getBlock() const { return block.get(); }
 
-  ParameterList getParameters() {
-    ParameterList result;
+  std::vector<Parameter*> getParameters() {
+    std::vector<Parameter*> result;
     for(ParameterList::size_type i=0; i<parameters.size(); i++) {
-      result.push_back(std::move(parameters[i]));
+      result.push_back(parameters[i].get());
     }
     return result;
   }
@@ -389,7 +389,7 @@ public:
 
   const std::string &getName() { return name; }
   const std::string &getArgName() { return argName; }
-  BlockPtr getBlock() { return std::move(block); }
+  Block *getBlock() const { return block.get(); }
   bool operator< (MainMethod &other) {
     return name < other.name;
     //TODO include parameters
@@ -462,8 +462,8 @@ public:
   }
 
   const std::string &getName() { return name; }
-  TypePtr getType() { return std::move(type); }
-  ExprPtr getInitializer() { return std::move(initializer); }
+  Type *getType() const { return type.get(); }
+  Expression *getInitializer() const { return initializer.get(); }
 };
 
 class PrimaryExpression : public Expression {
@@ -484,8 +484,8 @@ public:
     visitor->visitNewArrayExpression(*this);
   }
 
-  ArrayTypePtr getArrayType() { return std::move(arrayType); }
-  ExprPtr getSize() { return std::move(size); }
+  ArrayType *getArrayType() const { return arrayType.get(); }
+  Expression *getSize() const { return size.get(); }
 };
 
 class NewObjectExpression : public PrimaryExpression {
@@ -575,15 +575,15 @@ public:
     visitor->visitMethodInvocation(*this);
   }
 
-  std::vector<ExprPtr> getArguments() {
-    std::vector<ExprPtr> result;
+  std::vector<Expression*> getArguments() {
+    std::vector<Expression*> result;
     for(std::vector<ExprPtr>::size_type i=0; i<arguments.size(); i++) {
-      result.push_back(std::move(arguments[i]));
+      result.push_back(arguments[i].get());
     }
     return result;
   }
 
-  ExprPtr getLeft() { return std::move(left); }
+  Expression *getLeft() const { return left.get(); }
   const std::string &getName() { return name; }
 };
 
@@ -601,7 +601,7 @@ public:
     visitor->visitFieldAccess(*this);
   }
 
-  ExprPtr getLeft() { return std::move(left); }
+  Expression *getLeft() const { return left.get(); }
   const std::string &getName() { return name; }
 };
 
@@ -618,8 +618,8 @@ public:
     visitor->visitArrayAccess(*this);
   }
   
-  ExprPtr getArray() { return std::move(array); }
-  ExprPtr getIndex() { return std::move(index); }
+  Expression *getArray() const { return array.get(); }
+  Expression *getIndex() const { return index.get(); }
 
 };
 
@@ -693,8 +693,8 @@ public:
     visitor->visitBinaryExpression(*this);
   }
   
-  ExprPtr getLeft() { return std::move(left); }
-  ExprPtr getRight() { return std::move(right); }
+  Expression *getLeft() const { return left.get(); }
+  Expression *getRight() const { return right.get(); }
   const Op& getOperation() {return operation; }
 
 };
@@ -730,7 +730,7 @@ public:
     visitor->visitUnaryExpression(*this);
   }
   
-  ExprPtr getExpression() { return std::move(expression); }
+  Expression *getExpression() const { return expression.get(); }
   const Op& getOperation() {return operation; }
 };
 

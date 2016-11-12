@@ -65,11 +65,11 @@ public:
     stream << "public ";
     method.getReturnType()->accept(this);
     stream << " " << method.getName() << "(";
-    ast::ParameterList params = method.getParameters();
+    std::vector<ast::Parameter*> params = method.getParameters();
     if (params.size() >= 1) {
       params[0]->accept(this);
     }
-    for(ast::ParameterList::size_type i = 1; i < params.size(); i++) {
+    for(std::vector<ast::Parameter*>::size_type i = 1; i < params.size(); i++) {
       stream << ", ";
       params[i]->accept(this);
     }
@@ -123,9 +123,9 @@ public:
       stream << " ";
     } else {
       indentLevel++;
-      ast::BlockStmtList statements = block.getStatements();
+      std::vector<ast::BlockStatement*> statements = block.getStatements();
 
-      for(ast::BlockStmtList::size_type i = 0; i < statements.size(); i++) {
+      for(std::vector<ast::BlockStatement*>::size_type i = 0; i < statements.size(); i++) {
         if (statements[i] != nullptr) {
           //statements[i] is no EmptyStatement
           newline();
@@ -141,7 +141,7 @@ public:
   void visitVariableDeclaration(ast::VariableDeclaration &variableDeclartion) override {
     variableDeclartion.getType()->accept(this);
     stream << " " << variableDeclartion.getName();
-    ast::ExprPtr initializer = variableDeclartion.getInitializer();
+    ast::Expression* initializer = variableDeclartion.getInitializer();
     if(initializer != nullptr) {
       stream << " = ";
       initializer->accept(this);
@@ -157,7 +157,7 @@ public:
     stream << "if (";
     ifStatement.getCondition()->accept(this);
     stream << ") ";
-    ast::StmtPtr thenStatement = ifStatement.getThenStatement();
+    ast::Statement* thenStatement = ifStatement.getThenStatement();
     if (thenStatement == nullptr) {
       stream << ";";
     } else {
@@ -165,7 +165,7 @@ public:
       thenStatement->accept(this);
       indentLevel--;
     }
-    ast::StmtPtr elseStatement = ifStatement.getElseStatement();
+    ast::Statement* elseStatement = ifStatement.getElseStatement();
     if (elseStatement != nullptr) {
       newline();
       stream << "else ";
@@ -178,7 +178,7 @@ public:
     stream << "while (";
     whileStatement.getCondition()->accept(this);
     stream << ") ";
-    ast::StmtPtr statement = whileStatement.getStatement();
+    ast::Statement* statement = whileStatement.getStatement();
     if(statement == nullptr) {
       stream << ";";
     } else {
@@ -188,7 +188,7 @@ public:
     }
   }
   void visitReturnStatement(ast::ReturnStatement &returnStatement) override {
-    ast::ExprPtr expression = returnStatement.getExpression();
+    ast::Expression* expression = returnStatement.getExpression();
     if(expression == nullptr) {
       stream << "return;";
     } else {
@@ -246,11 +246,11 @@ public:
   void visitMethodInvocation(ast::MethodInvocation &methodInvocation) override {
     methodInvocation.getLeft()->accept(this);
     stream << "." << methodInvocation.getName() << "(";
-    std::vector<ast::ExprPtr> arguments = methodInvocation.getArguments();
+    std::vector<ast::Expression*> arguments = methodInvocation.getArguments();
     if(arguments.size() >= 1) {
       arguments[0]->accept(this);
     }  
-    for(std::vector<ast::ExprPtr>::size_type i=1; i<arguments.size(); i++) {
+    for(std::vector<ast::Expression*>::size_type i=1; i<arguments.size(); i++) {
       stream << ", ";
       arguments[i]->accept(this);
     }
