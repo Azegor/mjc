@@ -35,6 +35,14 @@
 
 namespace ast {
 
+struct SortUniquePtrPred {
+  template <typename T>
+  bool operator()(const std::unique_ptr<T> &lhs,
+                  const std::unique_ptr<T> &rhs) {
+    return *lhs < *rhs;
+  }
+};
+
 class Program;
 class Block;
 class BlockStatement;
@@ -402,21 +410,20 @@ public:
         methods(std::move(methods)), mainMethods(std::move(mainMethods)) {}
 
   void accept(Visitor *visitor) override {
-    std::sort(methods.begin(), methods.end());
+    std::sort(methods.begin(), methods.end(), SortUniquePtrPred());
     for (auto &mp : methods) {
       visitor->visitMethod(*mp);
     }
 
-    std::sort(mainMethods.begin(), mainMethods.end());
+    std::sort(mainMethods.begin(), mainMethods.end(), SortUniquePtrPred());
     for (auto &mp : mainMethods) {
       visitor->visitMainMethod(*mp);
     }
 
-    std::sort(fields.begin(), fields.end());
+    std::sort(fields.begin(), fields.end(), SortUniquePtrPred());
     for (auto &fp : fields) {
       visitor->visitField(*fp);
     }
-
   }
 
   const std::string &getName() { return name; }
