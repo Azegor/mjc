@@ -31,6 +31,8 @@ if [[ ${compiler_retval2} -ne 0 ]]; then
   fi
 
   echo "ERROR: Compiler (pass 2) returned ${compiler_retval2} but output of first run is supposed to be valid"
+  echo "Output:"
+  echo "${compiler_out2}"
   echo "Output of first pass was:"
   echo "========================"
   echo "${compiler_out1}"

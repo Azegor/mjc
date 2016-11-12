@@ -102,7 +102,7 @@ int Compiler::astPrint() {
     parser.parseAndPrintAst();
     return EXIT_SUCCESS;
   } catch (CompilerError &e) {
-    // don't print error message
+    e.writeErrorMessage(std::cerr);
     return EXIT_FAILURE;
   }
 }
