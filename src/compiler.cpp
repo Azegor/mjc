@@ -107,6 +107,17 @@ int Compiler::astPrint() {
   }
 }
 
+int Compiler::astDot() {
+  Parser parser{inputFile};
+  try {
+    parser.parseAndDotAst();
+    return EXIT_SUCCESS;
+  } catch (CompilerError &e) {
+    e.writeErrorMessage(std::cerr);
+    return EXIT_FAILURE;
+  }
+}
+
 static int exclusiveOptionsSum(bool b) { return b ? 1 : 0; }
 
 template <typename... Args>
@@ -136,6 +147,8 @@ int Compiler::run() {
     return parserFuzz();
   } else if (options.printAst) {
     return astPrint();
+  } else if (options.dotAst) {
+    return astDot();
   }
   return EXIT_FAILURE;
 }

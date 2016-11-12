@@ -107,6 +107,7 @@ public:
 
   void parseFileOnly();
   void parseAndPrintAst();
+  void parseAndDotAst();
 
 private:
   void readExpect(Token::Type ttype) {

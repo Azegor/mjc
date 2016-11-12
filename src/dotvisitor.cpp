@@ -2,11 +2,10 @@
 #include "dotvisitor.hpp"
 #include <sstream>
 
-void DotVisitor::visitProgram(ast::Program& program) {
+void DotVisitor::start(ast::Program &program) {
   s << "digraph G {" << std::endl;
   program.accept(this);
   s << "}" << std::endl;
-
   assert(this->nodeStack.size() == 0);
 }
 

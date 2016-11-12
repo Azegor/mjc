@@ -28,6 +28,7 @@
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "pprinter.hpp"
+#include "dotvisitor.hpp"
 
 #include <deque>
 
@@ -38,6 +39,11 @@ void Parser::parseAndPrintAst() {
   auto program = parseProgram();
   auto v = std::make_unique<PrettyPrinterVisitor>(std::cout, "\t");
   program->accept(v.get());
+}
+void Parser::parseAndDotAst() {
+  auto program = parseProgram();
+  DotVisitor v{std::cout};
+  v.start(*program);
 }
 
 ast::ProgramPtr Parser::parseProgram() {

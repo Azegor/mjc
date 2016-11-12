@@ -80,7 +80,9 @@ private:
 
 public:
   DotVisitor(std::ostream &stream) : s(stream) {}
-  void visitProgram(ast::Program& program) override;
+
+  void start(ast::Program &program);
+
   void visitClass(ast::Class& klass) override;
   void visitField(ast::Field& field) override;
   void visitMethod(ast::Method& method) override;
