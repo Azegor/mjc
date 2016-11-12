@@ -201,9 +201,16 @@ public:
   void visitNewArrayExpression(ast::NewArrayExpression &newArrayExpression) override {
     requireParenthesis = false;
     stream << "new ";
-    newArrayExpression.getArrayType()->accept(this);
-    //TODO: include size in ArrayType
-    //currently new A[<expr>][][] gets displayed as new A[][][]
+    auto arrayType = newArrayExpression.getArrayType();
+    arrayType->getElementType()->accept(this);
+    int dimension = arrayType->getDimension();
+    stream << "[";
+    newArrayExpression.getSize()->accept(this);
+    stream << "]";
+    // start from dimension 1:
+    for(int i=1; i<dimension; i++) {
+      stream << "[]";
+    }
   }
 
   void visitNewObjectExpression(ast::NewObjectExpression &newObjectExpression) override {
