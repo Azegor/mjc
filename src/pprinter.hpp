@@ -38,7 +38,7 @@ class PrettyPrinterVisitor : public ast::Visitor {
 public:
   PrettyPrinterVisitor(std::ostream &stream, std::string indentWith) : stream(stream), indentWith(std::move(indentWith)), indentLevel(0) {} 
 
-  void visitProgram(ast::Program &program) override {
+  void visitProgram(ast::Program &) override {
     newline();
   }
 
@@ -221,12 +221,12 @@ public:
     stream << ( boolLiteral.getValue() ? "true" : "false" );
   }
 
-  void visitNullLiteral(ast::NullLiteral &nullLiteral) {
+  void visitNullLiteral(ast::NullLiteral &) {
     requireParenthesis = false;
     stream << "null";
   }
 
-  void visitThisLiteral(ast::ThisLiteral &thisLiteral) {
+  void visitThisLiteral(ast::ThisLiteral &) {
     requireParenthesis = false;
     stream << "this";
   }

@@ -27,6 +27,7 @@
 #ifndef AST_H
 #define AST_H
 
+#include <algorithm>
 #include <iostream>
 #include <memory>
 
@@ -154,7 +155,7 @@ public:
     return result;
   }
 
-  const bool getContainsNothingExceptOneSingleLonelyEmptyExpression() {
+  bool getContainsNothingExceptOneSingleLonelyEmptyExpression() const {
     return containsNothingExceptOneSingleLonelyEmtpyExpression;
   }
 
@@ -221,7 +222,7 @@ public:
       : Type(std::move(loc)), elementType(std::move(elementType)),
         dimension(dimension) {}
   BasicTypePtr getElementType() { return std::move(elementType); }
-  const int getDimension() { return dimension; }
+  int getDimension() const { return dimension; }
 
   void accept(Visitor *visitor) override {
     visitor->visitArrayType(*this);

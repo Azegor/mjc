@@ -24,9 +24,9 @@
  * SOFTWARE.
  */
 
-#include "parser.hpp"
 #include "ast.hpp"
 #include "lexer.hpp"
+#include "parser.hpp"
 #include "pprinter.hpp"
 
 #include <deque>
