@@ -77,7 +77,7 @@ public:
     method.getBlock()->accept(this);
   }
 
-  void visitMainMethod(ast::MainMethod &mainMethod) { 
+  void visitMainMethod(ast::MainMethod &mainMethod) override {
     newline();
     stream << "public static void " << mainMethod.getName() << "(String[] " << mainMethod.getArgName() << ") ";
     mainMethod.getBlock()->accept(this);
@@ -138,7 +138,7 @@ public:
     stream << "}";
   }
 
-  void visitVariableDeclaration(ast::VariableDeclaration &variableDeclartion) { 
+  void visitVariableDeclaration(ast::VariableDeclaration &variableDeclartion) override {
     variableDeclartion.getType()->accept(this);
     stream << " " << variableDeclartion.getName();
     ast::ExprPtr initializer = variableDeclartion.getInitializer();
@@ -149,11 +149,11 @@ public:
     stream << ";";  
   }
 
-  void visitExpressionStatement(ast::ExpressionStatement &exprStmt) {
+  void visitExpressionStatement(ast::ExpressionStatement &exprStmt) override {
     exprStmt.getExpression()->accept(this);
     stream << ";";
   }
-  void visitIfStatement(ast::IfStatement &ifStatement) { 
+  void visitIfStatement(ast::IfStatement &ifStatement) override {
     stream << "if (";
     ifStatement.getCondition()->accept(this);
     stream << ") ";
@@ -174,7 +174,7 @@ public:
       indentLevel--;
     }
   }
-  void visitWhileStatement(ast::WhileStatement &whileStatement) { 
+  void visitWhileStatement(ast::WhileStatement &whileStatement) override {
     stream << "while (";
     whileStatement.getCondition()->accept(this);
     stream << ") ";
@@ -187,7 +187,7 @@ public:
       indentLevel--;
     }
   }
-  void visitReturnStatement(ast::ReturnStatement &returnStatement) { 
+  void visitReturnStatement(ast::ReturnStatement &returnStatement) override {
     ast::ExprPtr expression = returnStatement.getExpression();
     if(expression == nullptr) {
       stream << "return;";
@@ -198,7 +198,7 @@ public:
     }
   }
 
-  void visitNewArrayExpression(ast::NewArrayExpression &newArrayExpression) {
+  void visitNewArrayExpression(ast::NewArrayExpression &newArrayExpression) override {
     requireParenthesis = false;
     stream << "new ";
     newArrayExpression.getArrayType()->accept(this);
@@ -206,37 +206,37 @@ public:
     //currently new A[<expr>][][] gets displayed as new A[][][]
   }
 
-  void visitNewObjectExpression(ast::NewObjectExpression &newObjectExpression) {
+  void visitNewObjectExpression(ast::NewObjectExpression &newObjectExpression) override {
     requireParenthesis = false;
     stream << "new " << newObjectExpression.getName() << "()";
   }
 
-  void visitIntLiteral(ast::IntLiteral &intLiteral) {
+  void visitIntLiteral(ast::IntLiteral &intLiteral) override {
     requireParenthesis = false;
     stream << std::to_string(intLiteral.getValue());
   }
 
-  void visitBoolLiteral(ast::BoolLiteral &boolLiteral) {
+  void visitBoolLiteral(ast::BoolLiteral &boolLiteral) override {
     requireParenthesis = false;
     stream << ( boolLiteral.getValue() ? "true" : "false" );
   }
 
-  void visitNullLiteral(ast::NullLiteral &) {
+  void visitNullLiteral(ast::NullLiteral &) override {
     requireParenthesis = false;
     stream << "null";
   }
 
-  void visitThisLiteral(ast::ThisLiteral &) {
+  void visitThisLiteral(ast::ThisLiteral &) override {
     requireParenthesis = false;
     stream << "this";
   }
 
-  void visitIdent(ast::Ident &ident) {
+  void visitIdent(ast::Ident &ident) override {
     requireParenthesis = false;
     stream << ident.getName();
   }
 
-  void visitMethodInvocation(ast::MethodInvocation &methodInvocation) {
+  void visitMethodInvocation(ast::MethodInvocation &methodInvocation) override {
     methodInvocation.getLeft()->accept(this);
     stream << "." << methodInvocation.getName() << "(";
     std::vector<ast::ExprPtr> arguments = methodInvocation.getArguments();
@@ -250,19 +250,19 @@ public:
     stream << ")";
   }
 
-  void visitFieldAccess(ast::FieldAccess &fieldAccess) {
+  void visitFieldAccess(ast::FieldAccess &fieldAccess) override {
     fieldAccess.getLeft()->accept(this);
     stream << "." << fieldAccess.getName();      
   }
 
-  void visitArrayAccess(ast::ArrayAccess &arrayAccess) {
+  void visitArrayAccess(ast::ArrayAccess &arrayAccess) override {
     arrayAccess.getArray()->accept(this);
     stream << "[";
     arrayAccess.getIndex()->accept(this);
     stream << "]";
   }
 
-  void visitBinaryExpression(ast::BinaryExpression &binaryExpression) {
+  void visitBinaryExpression(ast::BinaryExpression &binaryExpression) override {
     maybePlaceParenthesis<ast::BinaryExpression>(binaryExpression, &PrettyPrinterVisitor::visitBinaryExpressionHelper);
   }
 
@@ -278,7 +278,7 @@ public:
     binaryExpression.getRight()->accept(this);
   }
 
-  void visitUnaryExpression(ast::UnaryExpression &unaryExpression) {
+  void visitUnaryExpression(ast::UnaryExpression &unaryExpression) override {
     maybePlaceParenthesis<ast::UnaryExpression>(unaryExpression, &PrettyPrinterVisitor::visitUnaryExpressionHelper);
   }
 
