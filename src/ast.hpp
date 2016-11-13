@@ -427,6 +427,10 @@ public:
   }
 
   const std::string &getName() { return name; }
+
+  bool operator< (Class &other) {
+    return name < other.name;
+  }
 };
 
 class Program : public Node {
@@ -437,6 +441,7 @@ public:
       : Node(loc), classes(std::move(classes)) {}
 
   void accept(Visitor *visitor) override {
+    std::sort(classes.begin(), classes.end(), SortUniquePtrPred());
     for (auto &cp : classes) {
       visitor->visitClass(*cp);
     }
