@@ -65,7 +65,7 @@ class IntLiteral;
 class BoolLiteral;
 class NullLiteral;
 class ThisLiteral;
-class Ident;
+class VarRef;
 class MethodInvocation;
 class FieldAccess;
 class ArrayAccess;
@@ -98,7 +98,7 @@ public:
   virtual void visitBoolLiteral(BoolLiteral &boolLiteral) { (void)boolLiteral; }
   virtual void visitNullLiteral(NullLiteral &nullLiteral) { (void)nullLiteral; }
   virtual void visitThisLiteral(ThisLiteral &thisLiteral) { (void)thisLiteral; }
-  virtual void visitIdent(Ident &ident) { (void)ident; }
+  virtual void visitVarRef(VarRef &ident) { (void)ident; }
   virtual void visitMethodInvocation(MethodInvocation &methodInvocation) { (void)methodInvocation; }
   virtual void visitFieldAccess(FieldAccess &fieldAccess) { (void)fieldAccess; }
   virtual void visitArrayAccess(ArrayAccess &arrayAccess) { (void)arrayAccess; }
@@ -545,15 +545,15 @@ public:
   }
 };
 
-class Ident : public PrimaryExpression {
+class VarRef : public PrimaryExpression {
   std::string name;
 
 public:
-  Ident(SourceLocation loc, std::string name)
+  VarRef(SourceLocation loc, std::string name)
       : PrimaryExpression(std::move(loc)), name(std::move(name)) {}
 
   void accept(Visitor *visitor) override {
-    visitor->visitIdent(*this);
+    visitor->visitVarRef(*this);
   }
 
   const std::string &getName() { return name; }

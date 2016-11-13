@@ -597,7 +597,7 @@ ast::ExprPtr Parser::parsePrimary() {
           std::move(args));
     } else {
       SourceLocation loc{startPos, fieldEndPos};
-      return ast::make_EPtr<ast::Ident>(loc, std::move(ident));
+      return ast::make_EPtr<ast::VarRef>(loc, std::move(ident));
     }
   }
   case TT::New:

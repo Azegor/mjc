@@ -240,7 +240,7 @@ public:
     stream << "this";
   }
 
-  void visitIdent(ast::Ident &ident) override {
+  void visitVarRef(ast::VarRef &ident) override {
     requireParenthesis = false;
     stream << ident.getName();
   }

@@ -89,7 +89,7 @@ public:
   void visitBlock(ast::Block &block) override;
   void visitVariableDeclaration(ast::VariableDeclaration &decl) override;
   void visitReturnStatement(ast::ReturnStatement& stmt) override;
-  void visitIdent(ast::Ident& ident) override;
+  void visitVarRef(ast::VarRef& ident) override;
   void visitBinaryExpression(ast::BinaryExpression &expr) override;
   void visitIntLiteral(ast::IntLiteral &lit) override;
   void visitBoolLiteral(ast::BoolLiteral &lit) override;
