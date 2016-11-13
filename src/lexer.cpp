@@ -87,6 +87,18 @@ std::unordered_map<std::string, Token::Type> Lexer::identifierTokens{
     {"volatile", Token::Type::ReservedKeyword},
 };
 
+bool Lexer::tokenNameNeedsQuotes(Token::Type type) {
+  switch (type) {
+  case Token::Type::Eof:
+  case Token::Type::Identifier:
+  case Token::Type::IntLiteral:
+  case Token::Type::ReservedKeyword:
+    return false;
+  default:
+    return true;
+  }
+}
+
 const char *Lexer::getTokenName(Token::Type type) {
   switch (type) {
   case Token::Type::Eof:
@@ -337,7 +349,7 @@ int Lexer::nextChar() {
     column = 1;
     ++line;
 
-    lineStartFileOffsets.push_back(input.tellg() -
+    lineStartFileOffsets.push_back(bufferStartOffset + nextCharPos -
                                    static_cast<std::streamoff>(1));
 
     return lastChar;
@@ -349,6 +361,7 @@ int Lexer::nextChar() {
 
 std::string Lexer::getCurrentLineFromInput(int lineNr) {
   int oldPos = input.tellg();
+  input.clear(); // need to clear potential eof bit before seek
   input.seekg(lineStartFileOffsets.at(lineNr - 1));
   std::string res;
   int c = input.get();

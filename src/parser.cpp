@@ -24,23 +24,37 @@
  * SOFTWARE.
  */
 
+#include "ast.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
+#include "pprinter.hpp"
+#include "dotvisitor.hpp"
 
 #include <deque>
 
 using TT = Token::Type;
 
 void Parser::parseFileOnly() { parseProgram(); }
+void Parser::parseAndPrintAst() {
+  auto program = parseProgram();
+  auto v = std::make_unique<PrettyPrinterVisitor>(std::cout, "\t");
+  program->accept(v.get());
+}
+void Parser::parseAndDotAst() {
+  auto program = parseProgram();
+  DotVisitor v{std::cout};
+  v.start(*program);
+}
 
-void Parser::parseProgram() {
+ast::ProgramPtr Parser::parseProgram() {
+  std::vector<ast::ClassPtr> classes;
   while (true) {
     switch (curTok.type) {
     case TT::Class:
-      parseClassDeclaration();
+      classes.emplace_back(parseClassDeclaration());
       break;
     case TT::Eof:
-      return;
+      return ast::make_Ptr<ast::Program>(SourceLocation{}, std::move(classes));
     default:
       errorExpectedAnyOf({TT::Class, TT::Eof});
       break;
@@ -48,18 +62,25 @@ void Parser::parseProgram() {
   }
 }
 
-void Parser::parseClassDeclaration() {
+ast::ClassPtr Parser::parseClassDeclaration() {
+  std::string name;
+  std::vector<ast::FieldPtr> fields;
+  std::vector<ast::MethodPtr> methods;
+  std::vector<ast::MainMethodPtr> mainMethods;
+
   expectAndNext(TT::Class);
-  expectAndNext(TT::Identifier);
+  name = expectGetIdentAndNext(TT::Identifier);
   expectAndNext(TT::LBrace);
   // parse class members:
   while (true) {
     switch (curTok.type) {
     case TT::RBrace:
       readNextToken();
-      return;
+      return ast::make_Ptr<ast::Class>(SourceLocation{}, std::move(name),
+                                       std::move(fields), std::move(methods),
+                                       std::move(mainMethods));
     case TT::Public:
-      parseClassMember();
+      parseClassMember(fields, methods, mainMethods);
       break;
     default:
       errorExpectedAnyOf({TT::RBrace, TT::Public});
@@ -68,16 +89,18 @@ void Parser::parseClassDeclaration() {
   }
 }
 
-void Parser::parseClassMember() {
+void Parser::parseClassMember(std::vector<ast::FieldPtr> &fields,
+                              std::vector<ast::MethodPtr> &methods,
+                              std::vector<ast::MainMethodPtr> &mainMethods) {
   switch (lookAhead(1).type) {
   case TT::Static:
-    parseMainMethod();
+    mainMethods.emplace_back(parseMainMethod());
     return;
   case TT::Boolean:
   case TT::Identifier:
   case TT::Int:
   case TT::Void:
-    parseFieldOrMethod();
+    parseFieldOrMethod(fields, methods);
     return;
   default:
     errorExpectedAnyOf(
@@ -86,11 +109,12 @@ void Parser::parseClassMember() {
   }
 }
 
-void Parser::parseMainMethod() {
+ast::MainMethodPtr Parser::parseMainMethod() {
   expectAndNext(TT::Public);
   expectAndNext(TT::Static);
   expectAndNext(TT::Void);
-  expectAndNext(TT::Identifier); // name doesn't matter here
+  // name must be main (check in semantic analysis):
+  auto methodName = expectGetIdentAndNext(TT::Identifier);
   expectAndNext(TT::LParen);
   expect(TT::Identifier);
   if (curTok.str != "String") {
@@ -99,94 +123,150 @@ void Parser::parseMainMethod() {
   readNextToken();
   expectAndNext(TT::LBracket);
   expectAndNext(TT::RBracket);
-  expectAndNext(TT::Identifier);
+  // name doesn't matter here, but keep for pretty print:
+  auto paramName = expectGetIdentAndNext(TT::Identifier);
   expectAndNext(TT::RParen);
-  parseBlock();
+  auto block = parseBlock();
+  return ast::make_Ptr<ast::MainMethod>(SourceLocation{}, std::move(methodName),
+                                        std::move(paramName), std::move(block));
 }
 
-void Parser::parseFieldOrMethod() {
+void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
+                                std::vector<ast::MethodPtr> &methods) {
+  auto startPos = curTok.startPos();
   expectAndNext(TT::Public);
-  parseType();
-  expectAndNext(TT::Identifier);
+  auto type = parseType();
+  auto name = expectGetIdentAndNext(TT::Identifier);
   switch (curTok.type) {
   case TT::Semicolon: // field
+    fields.emplace_back(ast::make_Ptr<ast::Field>(
+        {startPos, curTok.endPos()}, std::move(type), std::move(name)));
     readNextToken();
     return;
-  case TT::LParen: // method
+  case TT::LParen: { // method
     readNextToken();
-    parseParameterList();
+    auto params = parseParameterList();
     expectAndNext(TT::RParen);
-    parseBlock();
+    auto block = parseBlock();
+    methods.emplace_back(ast::make_Ptr<ast::Method>(
+        {startPos, curTok.endPos()}, std::move(type), std::move(name),
+        std::move(params), std::move(block)));
     return;
+  }
   default:
     errorExpectedAnyOf({TT::Semicolon, TT::LParen});
     break;
   }
 }
 
-void Parser::parseParameterList() {
+ast::ParameterList Parser::parseParameterList() {
+  ast::ParameterList params;
   switch (curTok.type) {
   case TT::Boolean:
   case TT::Identifier:
   case TT::Int:
   case TT::Void:
-    parseParameter();
+    params.emplace_back(parseParameter());
     while (true) {
       switch (curTok.type) {
       case TT::Comma:
         readNextToken();
-        parseParameter();
+        params.emplace_back(parseParameter());
         break;
       default:
-        return;
+        return params;
       }
     }
     break;
   default:
-    return;
+    return {}; // empty vector
   }
 }
 
-void Parser::parseParameter() {
-  parseType();
-  expectAndNext(TT::Identifier);
+ast::ParameterPtr Parser::parseParameter() {
+  auto startPos = curTok.startPos();
+  auto type = parseType();
+  auto endPos = curTok.endPos();
+  auto ident = expectGetIdentAndNext(TT::Identifier);
+  return ast::make_Ptr<ast::Parameter>({startPos, endPos}, std::move(type),
+                                       std::move(ident));
 }
 
-void Parser::parseType() {
-  parseBasicType();
+ast::TypePtr Parser::parseType() {
+  auto startPos = curTok.startPos();
+  auto endPos = curTok.endPos();
+  auto basicType = parseBasicType();
+  int numDimensions = 0;
   while (true) {
     switch (curTok.type) {
     case TT::LBracket:
       readNextToken();
+      endPos = curTok.endPos();
       expectAndNext(TT::RBracket);
+      numDimensions++;
       break;
     default:
-      return;
+      if (numDimensions == 0) {
+        return std::move(basicType);
+      } else {
+        return ast::make_Ptr<ast::ArrayType>(
+            {startPos, endPos}, std::move(basicType), numDimensions);
+      }
     }
   }
 }
 
-void Parser::parseBasicType() {
+ast::BasicTypePtr Parser::parseBasicType() {
+  auto loc = curTok.singleTokenSrcLoc();
   switch (curTok.type) {
   case TT::Boolean:
-  case TT::Identifier:
   case TT::Int:
-  case TT::Void:
+  case TT::Void: {
+    auto type = curTok.type;
     readNextToken();
-    break;
+    auto typeType = ast::PrimitiveType::getTypeForToken(type);
+    return ast::make_Ptr<ast::PrimitiveType>(loc, typeType);
+  }
+  case TT::Identifier: {
+    auto ident = std::move(curTok.str);
+    readNextToken();
+    return ast::make_Ptr<ast::ClassType>(loc, std::move(ident));
+  }
   default:
     errorExpectedAnyOf({TT::Boolean, TT::Identifier, TT::Int, TT::Void});
     break;
   }
 }
 
-void Parser::parseBlock() {
+ast::BlockPtr Parser::parseBlock() {
+  auto startPos = curTok.startPos();
+  ast::BlockStmtList statements;
+
   expectAndNext(TT::LBrace);
   while (true) {
     switch (curTok.type) {
-    case TT::RBrace:
+    case TT::RBrace: {
+      auto endPos = curTok.endPos();
       readNextToken();
-      return;
+      bool containsNothingExceptOneSingleLonelyEmtpyExpression = true;
+
+      for(ast::BlockStmtList::size_type i=0; i<statements.size(); i++) {
+        if (statements[i] == nullptr) {
+          //do nothing
+        } else if (ast::Block* b = dynamic_cast<ast::Block*>(statements[i].get())) {
+          if (!b->getContainsNothingExceptOneSingleLonelyEmptyExpression()) {
+            containsNothingExceptOneSingleLonelyEmtpyExpression = false;
+          }  
+        } else {
+          containsNothingExceptOneSingleLonelyEmtpyExpression = false;
+        }
+      }
+
+
+      return ast::make_Ptr<ast::Block>({startPos, endPos},
+                                       std::move(statements), 
+                                       containsNothingExceptOneSingleLonelyEmtpyExpression);
+    }
     case TT::Bang:
     case TT::Boolean:
     case TT::False:
@@ -205,7 +285,7 @@ void Parser::parseBlock() {
     case TT::This:
     case TT::Void:
     case TT::While:
-      parseBlockStatement();
+      statements.push_back(parseBlockStatement());
       break;
     default:
       errorExpectedAnyOf({TT::RBrace, TT::Bang, TT::Boolean, TT::False,
@@ -218,13 +298,12 @@ void Parser::parseBlock() {
   }
 }
 
-void Parser::parseBlockStatement() {
+ast::BlockStmtPtr Parser::parseBlockStatement() {
   switch (curTok.type) {
   case TT::Boolean:
   case TT::Int:
   case TT::Void:
-    parseLocalVarDeclStmt();
-    break;
+    return parseLocalVarDeclStmt();
   case TT::Bang:
   case TT::False:
   case TT::If:
@@ -239,60 +318,62 @@ void Parser::parseBlockStatement() {
   case TT::Semicolon:
   case TT::This:
   case TT::While:
-    parseStmt();
-    break;
+    return parseStmt();
   case TT::Identifier: {
     Token &nextTok = lookAhead(1);
     Token &afterNextTok = lookAhead(2);
     if (nextTok.type == TT::Identifier ||
         (nextTok.type == TT::LBracket && afterNextTok.type == TT::RBracket)) {
-      parseLocalVarDeclStmt();
-      return;
+      return parseLocalVarDeclStmt();
     } else {
-      parseStmt();
-      return;
+      return parseStmt();
     }
     break;
   }
   default:
-    break;
+    return nullptr; // return null if block is empty
   }
 }
 
-void Parser::parseLocalVarDeclStmt() {
-  parseType();
-  expectAndNext(TT::Identifier);
+ast::BlockStmtPtr Parser::parseLocalVarDeclStmt() {
+  auto startPos = curTok.startPos();
+  auto type = parseType();
+  auto ident = expectGetIdentAndNext(TT::Identifier);
   switch (curTok.type) {
-  case TT::Eq:
+  case TT::Eq: {
     readNextToken();
-    parseExpr();
+    auto initializer = parseExpr();
+    auto endPos = curTok.endPos();
     expectAndNext(TT::Semicolon);
-    break;
-  case TT::Semicolon:
+    return ast::make_Ptr<ast::VariableDeclaration>(
+        {startPos, endPos}, std::move(type), std::move(ident),
+        std::move(initializer));
+  }
+  case TT::Semicolon: {
+    auto endPos = curTok.endPos();
     readNextToken();
-    break;
+    return ast::make_Ptr<ast::VariableDeclaration>(
+        {startPos, endPos}, std::move(type), std::move(ident), nullptr);
+  }
   default:
     errorExpectedAnyOf({TT::Eq, TT::Semicolon});
   }
 }
 
-void Parser::parseStmt() {
+// might return nullptr if statement is empty
+ast::StmtPtr Parser::parseStmt() {
   switch (curTok.type) {
   case TT::LBrace:
-    parseBlock();
-    break;
+    return parseBlock();
   case TT::Semicolon:
     readNextToken(); // empty statement -> ignore
-    break;
+    return nullptr;  // return null for empty statements
   case TT::If:
-    parseIfStmt();
-    break;
+    return parseIfStmt();
   case TT::Return:
-    parseReturnStmt();
-    break;
+    return parseReturnStmt();
   case TT::While:
-    parseWhileStmt();
-    break;
+    return parseWhileStmt();
   case TT::Bang:
   case TT::False:
   case TT::IntLiteral:
@@ -303,56 +384,76 @@ void Parser::parseStmt() {
   case TT::Minus:
   case TT::This:
   case TT::Identifier:
-    parseExprStmt();
-    break;
+    return parseExprStmt();
   default:
     errorExpectedAnyOf({TT::LBrace, TT::Semicolon, TT::If, TT::Return,
                         TT::While, TT::Bang, TT::False, TT::IntLiteral, TT::New,
                         TT::Null, TT::True, TT::LParen, TT::Minus, TT::This,
                         TT::Identifier});
-    break;
   }
 }
 
-void Parser::parseExprStmt() {
-  parseExpr();
+ast::StmtPtr Parser::parseExprStmt() {
+  auto startPos = curTok.startPos();
+  auto expr = parseExpr();
+  auto endPos = curTok.endPos();
   expectAndNext(TT::Semicolon);
+  return ast::make_Ptr<ast::ExpressionStatement>({startPos, endPos},
+                                                 std::move(expr));
 }
 
-void Parser::parseIfStmt() {
+ast::StmtPtr Parser::parseIfStmt() {
+  auto startPos = curTok.startPos();
+  ast::StmtPtr elseStmt = nullptr;
+
   expectAndNext(TT::If); // necessary?
   expectAndNext(TT::LParen);
-  parseExpr();
+  auto condition = parseExpr();
+  auto endPos = curTok.endPos();
   expectAndNext(TT::RParen);
-  parseStmt();
+  auto thenStmt = parseStmt();
   if (curTok.type == TT::Else) {
     readNextToken();
-    parseStmt();
+    elseStmt = parseStmt();
   }
+  return ast::make_Ptr<ast::IfStatement>(
+      {startPos, endPos}, std::move(condition), std::move(thenStmt),
+      elseStmt ? std::move(elseStmt) : nullptr);
 }
 
-void Parser::parseReturnStmt() {
+ast::StmtPtr Parser::parseReturnStmt() {
+  auto startPos = curTok.startPos();
   expectAndNext(TT::Return);
   switch (curTok.type) {
-  case TT::Semicolon:
+  case TT::Semicolon: {
+    auto endPos = curTok.startPos();
     readNextToken();
-    return;
-  default:
-    parseExpr();
+    return ast::make_Ptr<ast::ReturnStatement>({startPos, endPos}, nullptr);
+  }
+  default: {
+    auto expr = parseExpr();
+    auto endPos = curTok.startPos();
     expectAndNext(TT::Semicolon);
-    return;
+    return ast::make_Ptr<ast::ReturnStatement>({startPos, endPos},
+                                               std::move(expr));
+  }
   }
 }
 
-void Parser::parseWhileStmt() {
+ast::StmtPtr Parser::parseWhileStmt() {
+  auto startPos = curTok.startPos();
   expectAndNext(TT::While); // necessary?
   expectAndNext(TT::LParen);
-  parseExpr();
+  auto condition = parseExpr();
   expectAndNext(TT::RParen);
-  parseStmt();
+  auto stmt = parseStmt();
+  auto endPos = curTok.endPos();
+
+  return ast::make_Ptr<ast::WhileStatement>(
+      {startPos, endPos}, std::move(condition), std::move(stmt));
 }
 
-void Parser::parseExpr() { precedenceParse(0); }
+ast::ExprPtr Parser::parseExpr() { return precedenceParse(0); }
 
 static int getOpPrec(Token::Type tt) {
   switch (tt) {
@@ -382,9 +483,10 @@ static int getOpPrec(Token::Type tt) {
   }
 }
 
-void Parser::precedenceParse(int minPrec) {
+ast::ExprPtr Parser::precedenceParse(int minPrec) {
   // check precondition!
-  parseUnary();
+  auto startPos = curTok.startPos(); // stays the same
+  auto result = parseUnary();
   int opPrec;
   while ((opPrec = getOpPrec(curTok.type)) >= minPrec) {
     auto opTok = std::move(curTok);
@@ -392,131 +494,165 @@ void Parser::precedenceParse(int minPrec) {
     if (opTok.type != TT::Eq) { // only right assoc case
       opPrec += 1;
     }
-    precedenceParse(opPrec);
-    // result = handle_operator(result, rhs);
+    auto rhs = precedenceParse(opPrec);
+    auto endPos = curTok.endPos();
+    auto operation = ast::BinaryExpression::getOpForToken(opTok.type);
+    result = ast::make_EPtr<ast::BinaryExpression>(
+        {startPos, endPos}, std::move(result), std::move(rhs), operation);
+  }
+  return result;
+}
+
+ast::ExprPtr Parser::parseUnary() {
+  std::deque<Token> unaries;
+  while (true) {
+    switch (curTok.type) {
+    case TT::Bang:
+      unaries.emplace_back(std::move(curTok));
+      readNextToken();
+      continue; // parseUnary();
+    case TT::Minus:
+      unaries.emplace_back(std::move(curTok));
+      readNextToken();
+      continue; // parseUnary();
+      break;
+    default:
+      auto expression = parsePostfixExpr();
+      auto endPos = expression->getLoc().endToken;
+      // result = ...
+      // consume all unary prefixes in reverse order
+
+      for (std::deque<Token>::reverse_iterator i = unaries.rbegin(),
+                                               end = unaries.rend();
+           i != end; ++i) {
+
+        Token t = std::move(*i);
+        auto startPos = t.startPos();
+        auto op = ast::UnaryExpression::getOpForToken(t.type);
+        expression = ast::make_EPtr<ast::UnaryExpression>(
+            {startPos, endPos}, std::move(expression), op);
+      }
+      return expression;
+    }
   }
 }
 
-void Parser::parseUnary() {
-  switch (curTok.type) {
-  case TT::Bang:
-    readNextToken();
-    parseUnary();
-    break;
-  case TT::Minus:
-    readNextToken();
-    parseUnary();
-    break;
-  default:
-    parsePostfixExpr();
-    break;
-  }
-}
-
-// TODO: use this implementation later when the AST is also constructed
-// (since then tail call elimination cannot be applied anymore)
-// void Parser::parseUnary() {
-//   std::deque<Token> unaries;
-//   while (true) {
-//     switch (curTok.type) {
-//     case TT::Bang:
-//       unaries.emplace_back(std::move(curTok));
-//       readNextToken();
-//       continue; // parseUnary();
-//     case TT::Minus:
-//       unaries.emplace_back(std::move(curTok));
-//       readNextToken();
-//       continue; // parseUnary();
-//       break;
-//     default:
-//       parsePostfixExpr();
-//       // result = ...
-//       // consume all unary prefixes in reverse order
-//       for (std::deque<Token>::reverse_iterator i = unaries.rbegin(),
-//                                                 end = unaries.rend();
-//            i != end; ++i) {
-//         Token t = std::move(*i);
-//         // consume token in some way
-//         // TODO implement function which handles unary operators
-//         // result = UnaryOp(t, result)
-//       }
-//       return;
-//     }
-//   }
-// }
-
-void Parser::parsePostfixExpr() {
-  parsePrimary();
+ast::ExprPtr Parser::parsePostfixExpr() {
+  auto lhs = parsePrimary();
   while (true) {
     switch (curTok.type) {
     case TT::Dot:
-      parseMemberAccess();
+      lhs = parseMemberAccess(std::move(lhs));
       break;
     case TT::LBracket:
-      parseArrayAccess();
+      lhs = parseArrayAccess(std::move(lhs));
       break;
     default:
-      return;
+      return lhs;
     }
   }
 }
 
-void Parser::parsePrimary() {
+ast::ExprPtr Parser::parsePrimary() {
   switch (curTok.type) {
-  case TT::LParen:
+  case TT::LParen: {
     readNextToken();
-    parseExpr();
+    auto expr = parseExpr();
     expectAndNext(TT::RParen);
-    break;
-  case TT::False:
+    return expr;
+  }
+  case TT::False: {
+    auto loc = curTok.singleTokenSrcLoc();
     readNextToken();
-    break;
-  case TT::True:
+    return ast::make_EPtr<ast::BoolLiteral>(loc, false);
+  }
+  case TT::True: {
+    auto loc = curTok.singleTokenSrcLoc();
     readNextToken();
-    break;
-  case TT::Null:
+    return ast::make_EPtr<ast::BoolLiteral>(loc, true);
+  }
+  case TT::Null: {
+    auto loc = curTok.singleTokenSrcLoc();
     readNextToken();
-    break;
-  case TT::This:
+    return ast::make_EPtr<ast::NullLiteral>(loc);
+  }
+  case TT::This: {
+    auto loc = curTok.singleTokenSrcLoc();
     readNextToken();
-    break;
-  case TT::IntLiteral:
+    return ast::make_EPtr<ast::ThisLiteral>(loc);
+  }
+  case TT::IntLiteral: {
+    auto loc = curTok.singleTokenSrcLoc();
+    int32_t value;
+    try {
+      value = std::stoi(curTok.str);
+    } catch (std::out_of_range &o) {
+      error("Integer literal '" + curTok.str + "' out of range");
+    } catch (std::invalid_argument &i) {
+      // should never happen!
+      throw std::runtime_error("Invalid integer literal");
+    }
     readNextToken();
-    break;
-  case TT::Identifier:
+    return ast::make_EPtr<ast::IntLiteral>(loc, value);
+  }
+  case TT::Identifier: {
+    auto ident = std::move(curTok.str);
+    auto startPos = curTok.startPos();
+    auto fieldEndPos = curTok.endPos();
     readNextToken();
     if (curTok.type == TT::LParen) {
+      // return "this.methodinvocation(args)
       readNextToken();
-      parseArguments();
+      auto args = parseArguments();
+      auto endPos = curTok.endPos();
       expectAndNext(TT::RParen);
+      SourceLocation loc{startPos, endPos};
+      return ast::make_EPtr<ast::MethodInvocation>(
+          loc, ast::make_EPtr<ast::ThisLiteral>(loc), std::move(ident),
+          std::move(args));
+    } else {
+      SourceLocation loc{startPos, fieldEndPos};
+      return ast::make_EPtr<ast::VarRef>(loc, std::move(ident));
     }
-    break;
+  }
   case TT::New:
-    parseNewExpr();
-    break;
+    return parseNewExpr();
   default:
     errorExpectedAnyOf({TT::LParen, TT::False, TT::True, TT::Null, TT::This,
                         TT::IntLiteral, TT::Identifier, TT::New});
   }
 }
 
-void Parser::parseMemberAccess() {
+ast::ExprPtr Parser::parseMemberAccess(ast::ExprPtr lhs) {
+  auto startPos = curTok.startPos();
   expectAndNext(TT::Dot);
-  expectAndNext(TT::Identifier);
+  auto ident = expectGetIdentAndNext(TT::Identifier);
   if (curTok.type == TT::LParen) {
     readNextToken();
-    parseArguments();
+    auto args = parseArguments();
     expectAndNext(TT::RParen);
+    auto endPos = curTok.endPos();
+    return ast::make_EPtr<ast::MethodInvocation>(
+        {startPos, endPos}, std::move(lhs), std::move(ident), std::move(args));
+  } else {
+    auto endPos = curTok.endPos();
+    return ast::make_EPtr<ast::FieldAccess>({startPos, endPos}, std::move(lhs),
+                                            std::move(ident));
   }
 }
 
-void Parser::parseArrayAccess() {
+ast::ExprPtr Parser::parseArrayAccess(ast::ExprPtr lhs) {
+  auto startPos = curTok.startPos();
   expectAndNext(TT::LBracket);
-  parseExpr();
+  auto index = parseExpr();
   expectAndNext(TT::RBracket);
+  auto endPos = curTok.endPos();
+  return ast::make_EPtr<ast::ArrayAccess>({startPos, endPos}, std::move(lhs),
+                                          std::move(index));
 }
 
-void Parser::parseArguments() {
+ast::ExprList Parser::parseArguments() {
+  ast::ExprList arguments;
   switch (curTok.type) {
   case TT::Bang:
   case TT::False:
@@ -528,14 +664,14 @@ void Parser::parseArguments() {
   case TT::LParen:
   case TT::Minus:
   case TT::This:
-    parseExpr();
+    arguments.emplace_back(parseExpr());
     while (curTok.type == TT::Comma) {
       readNextToken();
-      parseExpr();
+      arguments.emplace_back(parseExpr());
     }
-    break;
+    return arguments;
   case TT::RParen:
-    return;
+    return arguments; // empty vector
   default:
     errorExpectedAnyOf({TT::Bang, TT::False, TT::Identifier, TT::IntLiteral,
                         TT::New, TT::Null, TT::True, TT::LParen, TT::Minus,
@@ -543,29 +679,40 @@ void Parser::parseArguments() {
   }
 }
 
-void Parser::parseNewExpr() {
+ast::ExprPtr Parser::parseNewExpr() {
+  auto startPos = curTok.startPos();
   expectAndNext(TT::New);
   // check next token instead of current
   switch (lookAhead(1).type) {
-  case TT::LParen:
-    expectAndNext(TT::Identifier);
+  case TT::LParen: {
+    auto ident = expectGetIdentAndNext(TT::Identifier);
     // curTok is always LParen
     readNextToken();
+    auto endPos = curTok.startPos();
     expectAndNext(TT::RParen);
-    break;
-  case TT::LBracket:
-    parseBasicType();
+    return ast::make_EPtr<ast::NewObjectExpression>({startPos, endPos}, ident);
+  }
+  case TT::LBracket: {
+    auto elementType = parseBasicType();
     // curTok is always LBracket
     readNextToken(); // eat '['
-    parseExpr();
+    auto size = parseExpr();
+    auto endPos = curTok.endPos();
     expectAndNext(TT::RBracket);
+    int dimension = 1;
     while (curTok.type == TT::LBracket && lookAhead(1).type == TT::RBracket) {
+      dimension += 1;
       readNextToken(); // eat '['
+      endPos = curTok.endPos();
       readNextToken(); // eat ']'
     }
-    break;
+    SourceLocation loc{startPos, endPos};
+    auto arrayType =
+        ast::make_Ptr<ast::ArrayType>(loc, std::move(elementType), dimension);
+    return ast::make_EPtr<ast::NewArrayExpression>(loc, std::move(arrayType),
+                                                   std::move(size));
+  }
   default:
-    expectAny({TT::LParen, TT::LBracket});
-    break;
+    errorExpectedAnyOf({TT::LParen, TT::LBracket});
   }
 }

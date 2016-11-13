@@ -29,6 +29,7 @@
 
 #include <algorithm> // for std::max
 
+#include "ast.hpp"
 #include "error.hpp"
 #include "input_file.hpp"
 #include "lexer.hpp"
@@ -48,7 +49,7 @@ public:
     co::color_ostream<std::ostream> cl_out(out);
     cl_out << co::mode(co::bold) << filename << ':' << srcLoc.startToken.line
            << ':' << srcLoc.startToken.col << ": " << co::color(co::red)
-           << "error: " << co::color(co::regular) << message << std::endl;
+           << "error: " << co::reset << message << std::endl;
     writeErrorLineHighlight(out);
   }
   void writeErrorLineHighlight(std::ostream &out) const {
@@ -77,10 +78,10 @@ public:
     }
     if (srcLoc.startToken.line == srcLoc.endToken.line) {
       for (size_t i = highlightStart; i <= highlightEnd; ++i) {
-        cl_out << '^';
+        cl_out << co::mode(co::bold) << '^';
       }
     } else {
-      cl_out << '^';
+      cl_out << co::mode(co::bold) << '^';
     }
     cl_out << std::endl;
   }
@@ -105,6 +106,8 @@ public:
   Token &lookAhead(size_t numTokens) { return lexer.lookAhead(numTokens); }
 
   void parseFileOnly();
+  void parseAndPrintAst();
+  void parseAndDotAst();
 
 private:
   void readExpect(Token::Type ttype) {
@@ -116,10 +119,26 @@ private:
     expect(ttype);
     readNextToken();
   }
+  std::string expectGetIdentAndNext(Token::Type ttype) {
+    expect(ttype);
+    std::string res = std::move(curTok.str);
+    readNextToken();
+    return res;
+  }
   void expect(Token::Type ttype) {
     if (unlikely(curTok.type != ttype)) {
-      error("Unexpected '" + truncateString(curTok.str, 64) + "', expected '" +
-            Lexer::getTokenName(ttype) + '\'');
+      std::stringstream errorLine;
+      auto cl_err = co::make_colored(errorLine);
+      cl_err << "Unexpected " << co::mode(co::bold) << '\''
+             << truncateString(curTok.str, 64) << '\'' << co::reset
+             << ", expected ";
+      if (Lexer::tokenNameNeedsQuotes(ttype)) {
+        cl_err << co::mode(co::bold) << '\'' << Lexer::getTokenName(ttype)
+               << '\'';
+      } else {
+        cl_err << co::mode(co::bold) << Lexer::getTokenName(ttype);
+      }
+      error(errorLine.str());
     }
   }
   void expectAny(std::initializer_list<Token::Type> tokens) {
@@ -128,51 +147,56 @@ private:
         return;
       }
     }
-    error("Unexpected '" + truncateString(curTok.str, 64) +
-          "', expected one of " + listToString(tokens, [](auto t) {
-            return "\'"s + Lexer::getTokenName(t) + '\'';
-          }));
+    errorExpectedAnyOf(tokens);
   }
 
   [[noreturn]] void error(std::string msg) {
     throw ParseError(curTok, inputFile.getFilename(), std::move(msg),
-                     lexer.getCurrentLineFromInput(curTok.line));
+                     lexer.getCurrentLineFromInput(curTok.pos.line));
   }
 
   [[noreturn]] void
   errorExpectedAnyOf(std::initializer_list<Token::Type> tokens) {
-    error("Unexpected '" + truncateString(curTok.str, 64) +
-          "', expected one of " + listToString(tokens, [](auto t) {
-            return "\'"s + Lexer::getTokenName(t) + '\'';
-          }));
+    std::stringstream errorLine;
+    auto cl_err = co::make_colored(errorLine);
+    cl_err << "Unexpected " << co::mode(co::bold) << '\''
+           << truncateString(curTok.str, 64) << '\'' << co::reset
+           << ", expected one of " << listToString(tokens, " or ", [](auto t) {
+                return "\'"s + Lexer::getTokenName(t) + '\'';
+              });
+
+    error(errorLine.str());
   }
 
-  void parseProgram();
-  inline void parseClassDeclaration();
-  inline void parseClassMember();
-  inline void parseMainMethod();
-  inline void parseFieldOrMethod();
-  inline void parseParameterList();
-  inline void parseParameter();
-  inline void parseType();
-  inline void parseBasicType();
-  inline void parseBlock();
-  inline void parseBlockStatement();
-  inline void parseLocalVarDeclStmt();
-  inline void parseStmt();
-  inline void parseIfStmt();
-  inline void parseReturnStmt();
-  inline void parseWhileStmt();
-  inline void parseExprStmt();
-  inline void parseExpr();
-  inline void precedenceParse(int minPrec);
-  inline void parseUnary();
-  inline void parsePostfixExpr();
-  inline void parsePrimary();
-  inline void parseMemberAccess();
-  inline void parseArrayAccess();
-  inline void parseArguments();
-  inline void parseNewExpr();
+  ast::ProgramPtr parseProgram();
+  inline ast::ClassPtr parseClassDeclaration();
+  inline void parseClassMember(std::vector<ast::FieldPtr> &fields,
+                               std::vector<ast::MethodPtr> &methods,
+                               std::vector<ast::MainMethodPtr> &mainMethods);
+  inline ast::MainMethodPtr parseMainMethod();
+  inline void parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
+                                 std::vector<ast::MethodPtr> &methods);
+  inline ast::ParameterList parseParameterList();
+  inline ast::ParameterPtr parseParameter();
+  inline ast::TypePtr parseType();
+  inline ast::BasicTypePtr parseBasicType();
+  inline ast::BlockPtr parseBlock();
+  inline ast::BlockStmtPtr parseBlockStatement();
+  inline ast::BlockStmtPtr parseLocalVarDeclStmt();
+  inline ast::StmtPtr parseStmt();
+  inline ast::StmtPtr parseIfStmt();
+  inline ast::StmtPtr parseReturnStmt();
+  inline ast::StmtPtr parseWhileStmt();
+  inline ast::StmtPtr parseExprStmt();
+  inline ast::ExprPtr parseExpr();
+  inline ast::ExprPtr precedenceParse(int minPrec);
+  inline ast::ExprPtr parseUnary();
+  inline ast::ExprPtr parsePostfixExpr();
+  inline ast::ExprPtr parsePrimary();
+  inline ast::ExprPtr parseMemberAccess(ast::ExprPtr lhs);
+  inline ast::ExprPtr parseArrayAccess(ast::ExprPtr lhs);
+  inline ast::ExprList parseArguments();
+  inline ast::ExprPtr parseNewExpr();
 };
 
 #endif // PARSER_H

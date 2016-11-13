@@ -96,6 +96,28 @@ int Compiler::parserFuzz() {
   }
 }
 
+int Compiler::astPrint() {
+  Parser parser{inputFile};
+  try {
+    parser.parseAndPrintAst();
+    return EXIT_SUCCESS;
+  } catch (CompilerError &e) {
+    e.writeErrorMessage(std::cerr);
+    return EXIT_FAILURE;
+  }
+}
+
+int Compiler::astDot() {
+  Parser parser{inputFile};
+  try {
+    parser.parseAndDotAst();
+    return EXIT_SUCCESS;
+  } catch (CompilerError &e) {
+    e.writeErrorMessage(std::cerr);
+    return EXIT_FAILURE;
+  }
+}
+
 static int exclusiveOptionsSum(bool b) { return b ? 1 : 0; }
 
 template <typename... Args>
@@ -106,9 +128,10 @@ static int exclusiveOptionsSum(bool b, Args... args) {
 void Compiler::checkOptions() {
   if (exclusiveOptionsSum(options.echoFile, options.testLexer,
                           options.fuzzLexer, options.testParser,
-                          options.fuzzParser) > 1)
+                          options.fuzzParser, options.printAst) > 1)
     throw ArgumentError("Cannot have Options --echo, --lextext, --lexfuzz, "
-                        "--parsertest or --parserfuzz simultaneously");
+                        "--parsertest, --parserfuzz or --printast "
+                        "simultaneously");
 }
 
 int Compiler::run() {
@@ -122,6 +145,10 @@ int Compiler::run() {
     return parserTest();
   } else if (options.fuzzParser) {
     return parserFuzz();
+  } else if (options.printAst) {
+    return astPrint();
+  } else if (options.dotAst) {
+    return astDot();
   }
   return EXIT_FAILURE;
 }
