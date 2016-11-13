@@ -42,6 +42,7 @@ struct CompilerOptions {
   bool testParser = false;
   bool fuzzParser = false;
   bool printAst = false;
+  bool dotAst = false;
   // ...
 };
 
@@ -58,6 +59,7 @@ class Compiler {
   int parserTest();
   int parserFuzz();
   int astPrint();
+  int astDot();
 
   void checkOptions();
   bool sanityChecks();

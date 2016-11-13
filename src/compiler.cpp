@@ -102,7 +102,18 @@ int Compiler::astPrint() {
     parser.parseAndPrintAst();
     return EXIT_SUCCESS;
   } catch (CompilerError &e) {
-    // don't print error message
+    e.writeErrorMessage(std::cerr);
+    return EXIT_FAILURE;
+  }
+}
+
+int Compiler::astDot() {
+  Parser parser{inputFile};
+  try {
+    parser.parseAndDotAst();
+    return EXIT_SUCCESS;
+  } catch (CompilerError &e) {
+    e.writeErrorMessage(std::cerr);
     return EXIT_FAILURE;
   }
 }
@@ -136,6 +147,8 @@ int Compiler::run() {
     return parserFuzz();
   } else if (options.printAst) {
     return astPrint();
+  } else if (options.dotAst) {
+    return astDot();
   }
   return EXIT_FAILURE;
 }

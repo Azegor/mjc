@@ -24,9 +24,11 @@
  * SOFTWARE.
  */
 
-#include "parser.hpp"
 #include "ast.hpp"
 #include "lexer.hpp"
+#include "parser.hpp"
+#include "pprinter.hpp"
+#include "dotvisitor.hpp"
 
 #include <deque>
 
@@ -34,8 +36,14 @@ using TT = Token::Type;
 
 void Parser::parseFileOnly() { parseProgram(); }
 void Parser::parseAndPrintAst() {
-  auto res = parseProgram();
-  (void)res; // TODO
+  auto program = parseProgram();
+  auto v = std::make_unique<PrettyPrinterVisitor>(std::cout, "\t");
+  program->accept(v.get());
+}
+void Parser::parseAndDotAst() {
+  auto program = parseProgram();
+  DotVisitor v{std::cout};
+  v.start(*program);
 }
 
 ast::ProgramPtr Parser::parseProgram() {
@@ -560,8 +568,17 @@ ast::ExprPtr Parser::parsePrimary() {
   }
   case TT::IntLiteral: {
     auto loc = curTok.singleTokenSrcLoc();
+    int32_t value;
+    try {
+      value = std::stoi(curTok.str);
+    } catch (std::out_of_range &o) {
+      error("Integer literal '" + curTok.str + "' out of range");
+    } catch (std::invalid_argument &i) {
+      // should never happen!
+      throw std::runtime_error("Invalid integer literal");
+    }
     readNextToken();
-    return ast::make_EPtr<ast::IntLiteral>(loc);
+    return ast::make_EPtr<ast::IntLiteral>(loc, value);
   }
   case TT::Identifier: {
     auto ident = std::move(curTok.str);

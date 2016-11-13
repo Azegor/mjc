@@ -37,7 +37,9 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
       // fuzz parser
       ("parsefuzz", "fuzz parser, no output")
       // print ast
-      ("print-ast", "pretty print input program");
+      ("print-ast", "pretty print input program")
+      // dot ast
+      ("dot-ast", "print AST to dot output");
 
   bpo::variables_map var_map;
   try {
@@ -79,6 +81,9 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
     }
     if (var_map.count("print-ast")) {
       compilerOptions.printAst = true;
+    }
+    if (var_map.count("dot-ast")) {
+      compilerOptions.dotAst = true;
     }
   } catch (bpo::required_option &e) {
     cl_cerr << co::mode(co::bold) << co::color(co::red)

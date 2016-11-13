@@ -34,7 +34,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/thirdparty/cmake)
 
 find_package(JeMalloc)
 
-add_executable(mjc src/main.cpp src/compiler.cpp src/lexer.cpp src/parser.cpp)
+add_executable(mjc src/main.cpp src/compiler.cpp src/lexer.cpp src/parser.cpp src/dotvisitor.cpp)
 
 
 target_link_libraries(mjc ${Boost_LIBRARIES} ${JEMALLOC_LIBRARIES})
