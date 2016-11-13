@@ -128,9 +128,10 @@ static int exclusiveOptionsSum(bool b, Args... args) {
 void Compiler::checkOptions() {
   if (exclusiveOptionsSum(options.echoFile, options.testLexer,
                           options.fuzzLexer, options.testParser,
-                          options.fuzzParser, options.printAst) > 1)
+                          options.fuzzParser, options.printAst,
+                          options.dotAst) > 1)
     throw ArgumentError("Cannot have Options --echo, --lextext, --lexfuzz, "
-                        "--parsertest, --parserfuzz or --printast "
+                        "--parsertest, --parserfuzz, --print-ast or --dot-ast "
                         "simultaneously");
 }
 
