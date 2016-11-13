@@ -248,9 +248,24 @@ ast::BlockPtr Parser::parseBlock() {
     case TT::RBrace: {
       auto endPos = curTok.endPos();
       readNextToken();
-      // TODO containsNothingExceptOneSingleLonelyEmtpyExpression
+      bool containsNothingExceptOneSingleLonelyEmtpyExpression = true;
+
+      for(ast::BlockStmtList::size_type i=0; i<statements.size(); i++) {
+        if (statements[i] == nullptr) {
+          //do nothing
+        } else if (ast::Block* b = dynamic_cast<ast::Block*>(statements[i].get())) {
+          if (!b->getContainsNothingExceptOneSingleLonelyEmptyExpression()) {
+            containsNothingExceptOneSingleLonelyEmtpyExpression = false;
+          }  
+        } else {
+          containsNothingExceptOneSingleLonelyEmtpyExpression = false;
+        }
+      }
+
+
       return ast::make_Ptr<ast::Block>({startPos, endPos},
-                                       std::move(statements), false);
+                                       std::move(statements), 
+                                       containsNothingExceptOneSingleLonelyEmtpyExpression);
     }
     case TT::Bang:
     case TT::Boolean:

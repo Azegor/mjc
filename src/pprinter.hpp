@@ -156,39 +156,55 @@ public:
   void visitIfStatement(ast::IfStatement &ifStatement) override {
     stream << "if (";
     ifStatement.getCondition()->accept(this);
-    stream << ")";
-    ast::Statement* thenStatement = ifStatement.getThenStatement();
-    indentLevel++;
-    if (thenStatement == nullptr) {
-      newline();
-      stream << ";";
-    } else {
-      newline();
-      thenStatement->accept(this);
-    }
-    indentLevel--;
-    ast::Statement* elseStatement = ifStatement.getElseStatement();
-    if (elseStatement != nullptr) {
-      newline();
-      stream << "else ";
-      indentLevel++;
-      elseStatement->accept(this);
-      indentLevel--;
-    }
+    stream << ") ";
+    printStatementAsBlock(ifStatement.getThenStatement());
+    printElseStatementAsBlock(ifStatement.getElseStatement()); 
   }
+
   void visitWhileStatement(ast::WhileStatement &whileStatement) override {
     stream << "while (";
     whileStatement.getCondition()->accept(this);
     stream << ") ";
-    ast::Statement* statement = whileStatement.getStatement();
-    if(statement == nullptr) {
-      stream << ";";
+    printStatementAsBlock(whileStatement.getStatement());
+  }
+
+  void printStatementAsBlock(ast::Statement *statement) {
+    if (statement == nullptr) {
+      stream << "{ }";
+    } else if(dynamic_cast<ast::Block*>(statement)) {
+      statement->accept(this);
     } else {
+      stream << "{";
       indentLevel++;
+      newline();
       statement->accept(this);
       indentLevel--;
+      newline();
+      stream << "}";
     }
   }
+
+  void printElseStatementAsBlock(ast::Statement *statement) {
+    if (statement == nullptr) {
+      // do nothing
+    } else if (ast::Block* b = dynamic_cast<ast::Block*>(statement)) {
+      if (!b->getContainsNothingExceptOneSingleLonelyEmptyExpression()) {
+        newline();
+        stream << "else ";
+        b->accept(this);
+      }
+    } else {
+      newline();
+      stream << "else {";
+      indentLevel++;
+      newline();
+      statement->accept(this);
+      indentLevel--;
+      newline();
+      stream << "}";
+    }
+  }
+
   void visitReturnStatement(ast::ReturnStatement &returnStatement) override {
     ast::Expression* expression = returnStatement.getExpression();
     if(expression == nullptr) {
