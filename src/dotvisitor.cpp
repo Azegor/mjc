@@ -96,7 +96,7 @@ void DotVisitor::visitReturnStatement(ast::ReturnStatement& stmt) {
 }
 
 void DotVisitor::visitVarRef(ast::VarRef& ident) {
-  auto nodeLabel = "Ident " + ident.getName();
+  auto nodeLabel = "VarRef " + ident.getName();
   auto nodeName = nodeDecl(nodeLabel);
 }
 
