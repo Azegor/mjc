@@ -96,7 +96,10 @@ void DotVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
   auto nodeName = nodeDecl(nodeLabel, SHAPE_BOX);
 
   pushNode(nodeName);
-  stmt.getExpression()->accept(this);
+  auto expr = stmt.getExpression();
+  if (expr) {
+    expr->accept(this);
+  }
   popNode();
 }
 
