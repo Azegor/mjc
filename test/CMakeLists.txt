@@ -12,7 +12,8 @@ foreach(arg ${invalid_arguments})
   math(EXPR Count "${Count} + 1")
 #   MESSAGE(STATUS "Coverage valid test command: mjc ${arg}")
   add_test(NAME "Coverage_valid_command_${Count}"
-           COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/coverage_valid.sh" $<TARGET_FILE:mjc> "${arg}")
+           COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/coverage_valid.sh" $<TARGET_FILE:mjc> "${arg}"
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 endforeach()
 MESSAGE(STATUS "  Added ${Count} valid coverage tests")
 
@@ -23,7 +24,8 @@ foreach(arg ${invalid_arguments})
   math(EXPR Count "${Count}+1")
 #   MESSAGE(STATUS "Coverage invalid test command: mjc ${arg}")
   add_test(NAME "Coverage_invalid_command_${Count}"
-           COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/coverage_invalid.sh" $<TARGET_FILE:mjc> "${arg}")
+           COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/coverage_invalid.sh" $<TARGET_FILE:mjc> "${arg}"
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
   math(EXPR Count "${Count} + 1")
 endforeach()
 MESSAGE(STATUS "  Added ${Count} invalid coverage tests")

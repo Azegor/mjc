@@ -5,3 +5,6 @@
 --lexfuzz /dev/null
 --parsetest /dev/null
 --parsefuzz /dev/null
+--print-ast /dev/null
+--dot-ast /dev/null
+--dot-ast parsetest/valid/all.java
