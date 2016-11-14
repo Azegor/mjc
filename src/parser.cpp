@@ -24,11 +24,11 @@
  * SOFTWARE.
  */
 
-#include "ast.hpp"
-#include "lexer.hpp"
 #include "parser.hpp"
-#include "pprinter.hpp"
+#include "ast.hpp"
 #include "dotvisitor.hpp"
+#include "lexer.hpp"
+#include "pprinter.hpp"
 
 #include <deque>
 
@@ -250,22 +250,22 @@ ast::BlockPtr Parser::parseBlock() {
       readNextToken();
       bool containsNothingExceptOneSingleLonelyEmtpyExpression = true;
 
-      for(ast::BlockStmtList::size_type i=0; i<statements.size(); i++) {
+      for (ast::BlockStmtList::size_type i = 0; i < statements.size(); i++) {
         if (statements[i] == nullptr) {
-          //do nothing
-        } else if (ast::Block* b = dynamic_cast<ast::Block*>(statements[i].get())) {
+          // do nothing
+        } else if (ast::Block *b =
+                       dynamic_cast<ast::Block *>(statements[i].get())) {
           if (!b->getContainsNothingExceptOneSingleLonelyEmptyExpression()) {
             containsNothingExceptOneSingleLonelyEmtpyExpression = false;
-          }  
+          }
         } else {
           containsNothingExceptOneSingleLonelyEmtpyExpression = false;
         }
       }
 
-
-      return ast::make_Ptr<ast::Block>({startPos, endPos},
-                                       std::move(statements), 
-                                       containsNothingExceptOneSingleLonelyEmtpyExpression);
+      return ast::make_Ptr<ast::Block>(
+          {startPos, endPos}, std::move(statements),
+          containsNothingExceptOneSingleLonelyEmtpyExpression);
     }
     case TT::Bang:
     case TT::Boolean:

@@ -9,7 +9,7 @@ void DotVisitor::start(ast::Program &program) {
   assert(this->nodeStack.size() == 0);
 }
 
-void DotVisitor::visitClass(ast::Class& klass) {
+void DotVisitor::visitClass(ast::Class &klass) {
   this->parentNode = newNodeName();
   auto nodeLabel = "Class " + klass.getName();
   auto nodeName = toplevelDecl(nodeLabel);
@@ -18,7 +18,7 @@ void DotVisitor::visitClass(ast::Class& klass) {
   popNode();
 }
 
-void DotVisitor::visitField(ast::Field& field) {
+void DotVisitor::visitField(ast::Field &field) {
   auto nodeLabel = "Field(" + field.getName() + ")";
   auto nodeName = nodeDecl(nodeLabel);
 
@@ -28,7 +28,7 @@ void DotVisitor::visitField(ast::Field& field) {
   popNode();
 }
 
-void DotVisitor::visitMethod(ast::Method& method) {
+void DotVisitor::visitMethod(ast::Method &method) {
   auto nodeLabel = "Method(" + method.getName() + ")";
   auto nodeName = nodeDecl(nodeLabel);
 
@@ -42,7 +42,7 @@ void DotVisitor::visitMethod(ast::Method& method) {
     for (auto &p : params) {
       edgeLabel("Param " + std::to_string(param_index));
       p->accept(this);
-      param_index ++;
+      param_index++;
     }
 
     auto bodyNode = nodeDecl("Body");
@@ -86,7 +86,7 @@ void DotVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
   popNode();
 }
 
-void DotVisitor::visitReturnStatement(ast::ReturnStatement& stmt) {
+void DotVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
   auto nodeLabel = "Return";
   auto nodeName = nodeDecl(nodeLabel, SHAPE_BOX);
 
@@ -95,13 +95,13 @@ void DotVisitor::visitReturnStatement(ast::ReturnStatement& stmt) {
   popNode();
 }
 
-void DotVisitor::visitVarRef(ast::VarRef& ident) {
+void DotVisitor::visitVarRef(ast::VarRef &ident) {
   auto nodeLabel = "VarRef " + ident.getName();
   auto nodeName = nodeDecl(nodeLabel);
 }
 
-
-static std::string binaryOperationToString(ast::BinaryExpression::Op operation) {
+static std::string
+binaryOperationToString(ast::BinaryExpression::Op operation) {
   switch (operation) {
   case ast::BinaryExpression::Op::Assign:
     return "=";
@@ -137,7 +137,8 @@ static std::string binaryOperationToString(ast::BinaryExpression::Op operation) 
 }
 
 void DotVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
-  std::string nodeLabel = "BinaryExpression(" + binaryOperationToString(expr.getOperation()) + ")";
+  std::string nodeLabel =
+      "BinaryExpression(" + binaryOperationToString(expr.getOperation()) + ")";
   auto nodeName = nodeDecl(nodeLabel);
 
   pushNode(nodeName);
@@ -156,22 +157,18 @@ void DotVisitor::visitIntLiteral(ast::IntLiteral &lit) {
 void DotVisitor::visitBoolLiteral(ast::BoolLiteral &lit) {
   auto nodeLabel = "Bool(" + std::to_string(lit.getValue()) + ")";
   auto nodeName = nodeDecl(nodeLabel);
-
 }
 
-
 void DotVisitor::visitNullLiteral(ast::NullLiteral &lit) {
-  (void) lit;
+  (void)lit;
   auto nodeLabel = "null";
   auto nodeName = nodeDecl(nodeLabel);
-
 }
 
 void DotVisitor::visitThisLiteral(ast::ThisLiteral &lit) {
-  (void) lit;
+  (void)lit;
   auto nodeLabel = "this";
   auto nodeName = nodeDecl(nodeLabel);
-
 }
 
 void DotVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
@@ -222,7 +219,6 @@ void DotVisitor::visitIfStatement(ast::IfStatement &stmt) {
       elseStmt->accept(this);
       popNode();
     }
-
   }
   popNode();
 }
@@ -233,14 +229,13 @@ void DotVisitor::visitExpressionStatement(ast::ExpressionStatement &stmt) {
 
 void DotVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
   std::string nodeLabel = "UnaryExpression(";
-  switch(expr.getOperation()) {
-    case ast::UnaryExpression::Op::Not:
-      nodeLabel += "Not";
-      break;
-    case ast::UnaryExpression::Op::Neg:
-      nodeLabel += "Neg";
-    default:
-      ;
+  switch (expr.getOperation()) {
+  case ast::UnaryExpression::Op::Not:
+    nodeLabel += "Not";
+    break;
+  case ast::UnaryExpression::Op::Neg:
+    nodeLabel += "Neg";
+  default:;
   }
   nodeLabel += ")";
   auto nodeName = nodeDecl(nodeLabel);
@@ -295,7 +290,8 @@ void DotVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
 }
 
 void DotVisitor::visitArrayType(ast::ArrayType &type) {
-  auto nodeLabel = "ArrayType\nDimension: " + std::to_string(type.getDimension());
+  auto nodeLabel =
+      "ArrayType\nDimension: " + std::to_string(type.getDimension());
   auto nodeName = nodeDecl(nodeLabel);
 
   pushNode(nodeName);
@@ -308,18 +304,18 @@ void DotVisitor::visitArrayType(ast::ArrayType &type) {
 
 void DotVisitor::visitPrimitiveType(ast::PrimitiveType &type) {
   std::string nodeLabel;
-  switch(type.getType()) {
-    case ast::PrimitiveType::TypeType::Boolean:
-      nodeLabel = "boolean";
-      break;
-    case ast::PrimitiveType::TypeType::Int:
-      nodeLabel = "int";
-      break;
-    case ast::PrimitiveType::TypeType::Void:
-      nodeLabel = "void";
-      break;
-    default:
-      assert(false);
+  switch (type.getType()) {
+  case ast::PrimitiveType::TypeType::Boolean:
+    nodeLabel = "boolean";
+    break;
+  case ast::PrimitiveType::TypeType::Int:
+    nodeLabel = "int";
+    break;
+  case ast::PrimitiveType::TypeType::Void:
+    nodeLabel = "void";
+    break;
+  default:
+    assert(false);
   }
 
   nodeDecl(nodeLabel);

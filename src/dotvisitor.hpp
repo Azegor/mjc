@@ -2,10 +2,9 @@
 #define DOT_VISITOR_H
 
 #include "ast.hpp"
+#include <cassert>
 #include <ostream>
 #include <vector>
-#include <cassert>
-
 
 class DotVisitor : public ast::Visitor {
 private:
@@ -13,20 +12,18 @@ private:
     SHAPE_NONE,
     SHAPE_BOX,
   };
-  std::ostream& s;
+  std::ostream &s;
   size_t nodeCounter = 0;
   std::string parentNode;
   std::string nextEdgeLabel;
 
   std::vector<std::string> nodeStack;
 
-  void edgeLabel(const std::string &label) {
-    nextEdgeLabel = label;
-  }
+  void edgeLabel(const std::string &label) { nextEdgeLabel = label; }
 
   std::string newNodeName() {
     std::stringstream ss;
-    ss << "node" << (nodeCounter ++);
+    ss << "node" << (nodeCounter++);
     return ss.str();
   }
 
@@ -34,12 +31,12 @@ private:
     auto nodeName = newNodeName();
 
     s << nodeName << "[label=\"" << nodeLabel;
-    switch(shape) {
-      case SHAPE_BOX:
-        s << "\", shape=box";
-        break;
-      case SHAPE_NONE:
-        s << "\"";
+    switch (shape) {
+    case SHAPE_BOX:
+      s << "\", shape=box";
+      break;
+    case SHAPE_NONE:
+      s << "\"";
     }
     s << "]" << std::endl;
 
@@ -83,13 +80,13 @@ public:
 
   void start(ast::Program &program);
 
-  void visitClass(ast::Class& klass) override;
-  void visitField(ast::Field& field) override;
-  void visitMethod(ast::Method& method) override;
+  void visitClass(ast::Class &klass) override;
+  void visitField(ast::Field &field) override;
+  void visitMethod(ast::Method &method) override;
   void visitBlock(ast::Block &block) override;
   void visitVariableDeclaration(ast::VariableDeclaration &decl) override;
-  void visitReturnStatement(ast::ReturnStatement& stmt) override;
-  void visitVarRef(ast::VarRef& ident) override;
+  void visitReturnStatement(ast::ReturnStatement &stmt) override;
+  void visitVarRef(ast::VarRef &ident) override;
   void visitBinaryExpression(ast::BinaryExpression &expr) override;
   void visitIntLiteral(ast::IntLiteral &lit) override;
   void visitBoolLiteral(ast::BoolLiteral &lit) override;

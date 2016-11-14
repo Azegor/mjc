@@ -83,28 +83,49 @@ public:
   virtual void visitMethod(Method &method) { (void)method; }
   virtual void visitMainMethod(MainMethod &mainMethod) { (void)mainMethod; }
   virtual void visitParameter(Parameter &parameter) { (void)parameter; }
-  virtual void visitPrimitiveType(PrimitiveType &primitiveType) { (void)primitiveType; }
+  virtual void visitPrimitiveType(PrimitiveType &primitiveType) {
+    (void)primitiveType;
+  }
   virtual void visitClassType(ClassType &classType) { (void)classType; }
   virtual void visitArrayType(ArrayType &arrayType) { (void)arrayType; }
   virtual void visitBlock(Block &block) { (void)block; }
-  virtual void visitVariableDeclaration(VariableDeclaration &variableDeclartion) { (void)variableDeclartion; }
-  virtual void visitExpressionStatement(ExpressionStatement &exprStmt) { (void)exprStmt; }
+  virtual void
+  visitVariableDeclaration(VariableDeclaration &variableDeclartion) {
+    (void)variableDeclartion;
+  }
+  virtual void visitExpressionStatement(ExpressionStatement &exprStmt) {
+    (void)exprStmt;
+  }
   virtual void visitIfStatement(IfStatement &ifStatement) { (void)ifStatement; }
-  virtual void visitWhileStatement(WhileStatement &whileStatement) { (void)whileStatement; }
-  virtual void visitReturnStatement(ReturnStatement &returnStatement) { (void)returnStatement; }
-  virtual void visitNewArrayExpression(NewArrayExpression &newArrayExpression) { (void)newArrayExpression; }
-  virtual void visitNewObjectExpression(NewObjectExpression &newObjectExpression) { (void)newObjectExpression; }
+  virtual void visitWhileStatement(WhileStatement &whileStatement) {
+    (void)whileStatement;
+  }
+  virtual void visitReturnStatement(ReturnStatement &returnStatement) {
+    (void)returnStatement;
+  }
+  virtual void visitNewArrayExpression(NewArrayExpression &newArrayExpression) {
+    (void)newArrayExpression;
+  }
+  virtual void
+  visitNewObjectExpression(NewObjectExpression &newObjectExpression) {
+    (void)newObjectExpression;
+  }
   virtual void visitIntLiteral(IntLiteral &intLiteral) { (void)intLiteral; }
   virtual void visitBoolLiteral(BoolLiteral &boolLiteral) { (void)boolLiteral; }
   virtual void visitNullLiteral(NullLiteral &nullLiteral) { (void)nullLiteral; }
   virtual void visitThisLiteral(ThisLiteral &thisLiteral) { (void)thisLiteral; }
   virtual void visitVarRef(VarRef &ident) { (void)ident; }
-  virtual void visitMethodInvocation(MethodInvocation &methodInvocation) { (void)methodInvocation; }
+  virtual void visitMethodInvocation(MethodInvocation &methodInvocation) {
+    (void)methodInvocation;
+  }
   virtual void visitFieldAccess(FieldAccess &fieldAccess) { (void)fieldAccess; }
   virtual void visitArrayAccess(ArrayAccess &arrayAccess) { (void)arrayAccess; }
-  virtual void visitBinaryExpression(BinaryExpression &binaryExpression) { (void)binaryExpression; }
-  virtual void visitUnaryExpression(UnaryExpression &unaryExpression) { (void)unaryExpression; }
-
+  virtual void visitBinaryExpression(BinaryExpression &binaryExpression) {
+    (void)binaryExpression;
+  }
+  virtual void visitUnaryExpression(UnaryExpression &unaryExpression) {
+    (void)unaryExpression;
+  }
 };
 
 class Node {
@@ -155,9 +176,9 @@ public:
       : Statement(std::move(loc)), statements(std::move(statements)),
         containsNothingExceptOneSingleLonelyEmtpyExpression(flag) {}
 
-  std::vector<BlockStatement*> getStatements() {
-    std::vector<BlockStatement*> result;
-    for(BlockStmtList::size_type i=0; i<statements.size(); i++) {
+  std::vector<BlockStatement *> getStatements() {
+    std::vector<BlockStatement *> result;
+    for (BlockStmtList::size_type i = 0; i < statements.size(); i++) {
       result.push_back(statements[i].get());
     }
     return result;
@@ -167,9 +188,7 @@ public:
     return containsNothingExceptOneSingleLonelyEmtpyExpression;
   }
 
-  void accept(Visitor *visitor) override {
-    visitor->visitBlock(*this);
-  }
+  void accept(Visitor *visitor) override { visitor->visitBlock(*this); }
 };
 using BlockPtr = std::unique_ptr<Block>;
 
@@ -182,8 +201,10 @@ using BasicTypePtr = std::unique_ptr<BasicType>;
 class PrimitiveType : public BasicType {
 public:
   enum class TypeType { Boolean, Int, Void, None };
+
 private:
   TypeType type;
+
 public:
   PrimitiveType(SourceLocation loc, TypeType type)
       : BasicType(std::move(loc)), type(type) {}
@@ -202,9 +223,7 @@ public:
   }
   const TypeType &getType() { return type; }
 
-  void accept(Visitor *visitor) override {
-    visitor->visitPrimitiveType(*this);
-  }
+  void accept(Visitor *visitor) override { visitor->visitPrimitiveType(*this); }
 };
 
 class ClassType : public BasicType {
@@ -216,9 +235,7 @@ public:
 
   const std::string &getName() { return name; }
 
-  void accept(Visitor *visitor) override {
-    visitor->visitClassType(*this);
-  }
+  void accept(Visitor *visitor) override { visitor->visitClassType(*this); }
 };
 
 class ArrayType : public Type {
@@ -232,9 +249,7 @@ public:
   BasicType *getElementType() const { return elementType.get(); }
   int getDimension() const { return dimension; }
 
-  void accept(Visitor *visitor) override {
-    visitor->visitArrayType(*this);
-  }
+  void accept(Visitor *visitor) override { visitor->visitArrayType(*this); }
 };
 using ArrayTypePtr = std::unique_ptr<ArrayType>;
 
@@ -267,9 +282,7 @@ public:
   Statement *getThenStatement() { return thenStmt.get(); }
   Statement *getElseStatement() { return elseStmt.get(); }
 
-  void accept(Visitor *visitor) override {
-    visitor->visitIfStatement(*this);
-  }
+  void accept(Visitor *visitor) override { visitor->visitIfStatement(*this); }
 };
 
 class WhileStatement : public Statement {
@@ -314,11 +327,10 @@ public:
   const std::string &getName() { return name; }
   Type *getType() const { return type.get(); }
 
-  bool operator< (const Field &other) {
+  bool operator<(const Field &other) {
     return name < other.name;
     // include type
   }
-
 };
 using FieldPtr = std::unique_ptr<Field>;
 
@@ -330,9 +342,7 @@ public:
   Parameter(SourceLocation loc, TypePtr type, std::string name)
       : Node(std::move(loc)), type(std::move(type)), name(std::move(name)) {}
 
-  void accept(Visitor *visitor) override {
-    visitor->visitParameter(*this);
-  }
+  void accept(Visitor *visitor) override { visitor->visitParameter(*this); }
   const std::string &getName() { return name; }
   Type *getType() const { return type.get(); }
 };
@@ -357,17 +367,17 @@ public:
   Type *getReturnType() const { return returnType.get(); }
   Block *getBlock() const { return block.get(); }
 
-  std::vector<Parameter*> getParameters() {
-    std::vector<Parameter*> result;
-    for(ParameterList::size_type i=0; i<parameters.size(); i++) {
+  std::vector<Parameter *> getParameters() {
+    std::vector<Parameter *> result;
+    for (ParameterList::size_type i = 0; i < parameters.size(); i++) {
       result.push_back(parameters[i].get());
     }
     return result;
   }
 
-  bool operator< (Method &other) {
+  bool operator<(Method &other) {
     return name < other.name;
-    //TODO include parameters
+    // TODO include parameters
   }
 };
 using MethodPtr = std::unique_ptr<Method>;
@@ -383,16 +393,14 @@ public:
       : Node(std::move(loc)), name(std::move(name)),
         argName(std::move(argName)), block(std::move(block)) {}
 
-  void accept(Visitor *visitor) override {
-    visitor->visitMainMethod(*this);
-  }
+  void accept(Visitor *visitor) override { visitor->visitMainMethod(*this); }
 
   const std::string &getName() { return name; }
   const std::string &getArgName() { return argName; }
   Block *getBlock() const { return block.get(); }
-  bool operator< (MainMethod &other) {
+  bool operator<(MainMethod &other) {
     return name < other.name;
-    //TODO include parameters
+    // TODO include parameters
   }
 };
 using MainMethodPtr = std::unique_ptr<MainMethod>;
@@ -428,9 +436,7 @@ public:
 
   const std::string &getName() { return name; }
 
-  bool operator< (Class &other) {
-    return name < other.name;
-  }
+  bool operator<(Class &other) { return name < other.name; }
 };
 
 class Program : public Node {
@@ -525,9 +531,7 @@ public:
   BoolLiteral(SourceLocation loc, bool val)
       : PrimaryExpression(std::move(loc)), value(val) {}
 
-  void accept(Visitor *visitor) override {
-    visitor->visitBoolLiteral(*this);
-  }
+  void accept(Visitor *visitor) override { visitor->visitBoolLiteral(*this); }
 
   const bool &getValue() { return value; }
 };
@@ -536,18 +540,14 @@ class NullLiteral : public PrimaryExpression {
 public:
   NullLiteral(SourceLocation loc) : PrimaryExpression(std::move(loc)) {}
 
-  void accept(Visitor *visitor) override {
-    visitor->visitNullLiteral(*this);
-  }
+  void accept(Visitor *visitor) override { visitor->visitNullLiteral(*this); }
 };
 
 class ThisLiteral : public PrimaryExpression {
 public:
   ThisLiteral(SourceLocation loc) : PrimaryExpression(std::move(loc)) {}
 
-  void accept(Visitor *visitor) override {
-    visitor->visitThisLiteral(*this);
-  }
+  void accept(Visitor *visitor) override { visitor->visitThisLiteral(*this); }
 };
 
 class VarRef : public PrimaryExpression {
@@ -557,9 +557,7 @@ public:
   VarRef(SourceLocation loc, std::string name)
       : PrimaryExpression(std::move(loc)), name(std::move(name)) {}
 
-  void accept(Visitor *visitor) override {
-    visitor->visitVarRef(*this);
-  }
+  void accept(Visitor *visitor) override { visitor->visitVarRef(*this); }
 
   const std::string &getName() { return name; }
 };
@@ -580,9 +578,9 @@ public:
     visitor->visitMethodInvocation(*this);
   }
 
-  std::vector<Expression*> getArguments() {
-    std::vector<Expression*> result;
-    for(std::vector<ExprPtr>::size_type i=0; i<arguments.size(); i++) {
+  std::vector<Expression *> getArguments() {
+    std::vector<Expression *> result;
+    for (std::vector<ExprPtr>::size_type i = 0; i < arguments.size(); i++) {
       result.push_back(arguments[i].get());
     }
     return result;
@@ -602,9 +600,7 @@ public:
       : Expression(std::move(loc)), left(std::move(lhs)),
         name(std::move(memberName)) {}
 
-  void accept(Visitor *visitor) override {
-    visitor->visitFieldAccess(*this);
-  }
+  void accept(Visitor *visitor) override { visitor->visitFieldAccess(*this); }
 
   Expression *getLeft() const { return left.get(); }
   const std::string &getName() { return name; }
@@ -619,13 +615,10 @@ public:
       : Expression(std::move(loc)), array(std::move(lhs)),
         index(std::move(index)) {}
 
-  void accept(Visitor *visitor) override {
-    visitor->visitArrayAccess(*this);
-  }
-  
+  void accept(Visitor *visitor) override { visitor->visitArrayAccess(*this); }
+
   Expression *getArray() const { return array.get(); }
   Expression *getIndex() const { return index.get(); }
-
 };
 
 class BinaryExpression : public Expression {
@@ -697,20 +690,15 @@ public:
   void accept(Visitor *visitor) override {
     visitor->visitBinaryExpression(*this);
   }
-  
+
   Expression *getLeft() const { return left.get(); }
   Expression *getRight() const { return right.get(); }
-  const Op& getOperation() {return operation; }
-
+  const Op &getOperation() { return operation; }
 };
 
 class UnaryExpression : public Expression {
 public:
-  enum class Op {
-    Not,
-    Neg,
-    None
-  };
+  enum class Op { Not, Neg, None };
 
 private:
   ExprPtr expression;
@@ -734,9 +722,9 @@ public:
   void accept(Visitor *visitor) override {
     visitor->visitUnaryExpression(*this);
   }
-  
+
   Expression *getExpression() const { return expression.get(); }
-  const Op& getOperation() {return operation; }
+  const Op &getOperation() { return operation; }
 };
 
 template <typename St, typename... Args>

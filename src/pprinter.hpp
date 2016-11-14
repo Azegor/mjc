@@ -30,17 +30,16 @@
 #include "ast.hpp"
 
 class PrettyPrinterVisitor : public ast::Visitor {
-  std::ostream& stream;
+  std::ostream &stream;
   std::string indentWith;
   int indentLevel;
   bool requireParenthesis = false;
 
 public:
-  PrettyPrinterVisitor(std::ostream &stream, std::string indentWith) : stream(stream), indentWith(std::move(indentWith)), indentLevel(0) {} 
+  PrettyPrinterVisitor(std::ostream &stream, std::string indentWith)
+      : stream(stream), indentWith(std::move(indentWith)), indentLevel(0) {}
 
-  void visitProgram(ast::Program &) override {
-    newline();
-  }
+  void visitProgram(ast::Program &) override { newline(); }
 
   void visitClass(ast::Class &klass) override {
     newline();
@@ -65,11 +64,12 @@ public:
     stream << "public ";
     method.getReturnType()->accept(this);
     stream << " " << method.getName() << "(";
-    std::vector<ast::Parameter*> params = method.getParameters();
+    std::vector<ast::Parameter *> params = method.getParameters();
     if (params.size() >= 1) {
       params[0]->accept(this);
     }
-    for(std::vector<ast::Parameter*>::size_type i = 1; i < params.size(); i++) {
+    for (std::vector<ast::Parameter *>::size_type i = 1; i < params.size();
+         i++) {
       stream << ", ";
       params[i]->accept(this);
     }
@@ -79,7 +79,8 @@ public:
 
   void visitMainMethod(ast::MainMethod &mainMethod) override {
     newline();
-    stream << "public static void " << mainMethod.getName() << "(String[] " << mainMethod.getArgName() << ") ";
+    stream << "public static void " << mainMethod.getName() << "(String[] "
+           << mainMethod.getArgName() << ") ";
     mainMethod.getBlock()->accept(this);
   }
 
@@ -112,22 +113,23 @@ public:
   void visitArrayType(ast::ArrayType &arrayType) override {
     arrayType.getElementType()->accept(this);
     int dimension = arrayType.getDimension();
-    for(int i=0; i<dimension; i++) {
+    for (int i = 0; i < dimension; i++) {
       stream << "[]";
     }
   }
 
   void visitBlock(ast::Block &block) override {
     stream << "{";
-    if(block.getContainsNothingExceptOneSingleLonelyEmptyExpression()) {
+    if (block.getContainsNothingExceptOneSingleLonelyEmptyExpression()) {
       stream << " ";
     } else {
       indentLevel++;
-      std::vector<ast::BlockStatement*> statements = block.getStatements();
+      std::vector<ast::BlockStatement *> statements = block.getStatements();
 
-      for(std::vector<ast::BlockStatement*>::size_type i = 0; i < statements.size(); i++) {
+      for (std::vector<ast::BlockStatement *>::size_type i = 0;
+           i < statements.size(); i++) {
         if (statements[i] != nullptr) {
-          //statements[i] is no EmptyStatement
+          // statements[i] is no EmptyStatement
           newline();
           statements[i]->accept(this);
         }
@@ -138,15 +140,16 @@ public:
     stream << "}";
   }
 
-  void visitVariableDeclaration(ast::VariableDeclaration &variableDeclartion) override {
+  void visitVariableDeclaration(
+      ast::VariableDeclaration &variableDeclartion) override {
     variableDeclartion.getType()->accept(this);
     stream << " " << variableDeclartion.getName();
-    ast::Expression* initializer = variableDeclartion.getInitializer();
-    if(initializer != nullptr) {
+    ast::Expression *initializer = variableDeclartion.getInitializer();
+    if (initializer != nullptr) {
       stream << " = ";
       initializer->accept(this);
     }
-    stream << ";";  
+    stream << ";";
   }
 
   void visitExpressionStatement(ast::ExpressionStatement &exprStmt) override {
@@ -158,7 +161,7 @@ public:
     ifStatement.getCondition()->accept(this);
     stream << ") ";
     printStatementAsBlock(ifStatement.getThenStatement());
-    printElseStatementAsBlock(ifStatement.getElseStatement()); 
+    printElseStatementAsBlock(ifStatement.getElseStatement());
   }
 
   void visitWhileStatement(ast::WhileStatement &whileStatement) override {
@@ -171,7 +174,7 @@ public:
   void printStatementAsBlock(ast::Statement *statement) {
     if (statement == nullptr) {
       stream << "{ }";
-    } else if(dynamic_cast<ast::Block*>(statement)) {
+    } else if (dynamic_cast<ast::Block *>(statement)) {
       statement->accept(this);
     } else {
       stream << "{";
@@ -187,7 +190,7 @@ public:
   void printElseStatementAsBlock(ast::Statement *statement) {
     if (statement == nullptr) {
       // do nothing
-    } else if (ast::Block* b = dynamic_cast<ast::Block*>(statement)) {
+    } else if (ast::Block *b = dynamic_cast<ast::Block *>(statement)) {
       if (!b->getContainsNothingExceptOneSingleLonelyEmptyExpression()) {
         newline();
         stream << "else ";
@@ -206,8 +209,8 @@ public:
   }
 
   void visitReturnStatement(ast::ReturnStatement &returnStatement) override {
-    ast::Expression* expression = returnStatement.getExpression();
-    if(expression == nullptr) {
+    ast::Expression *expression = returnStatement.getExpression();
+    if (expression == nullptr) {
       stream << "return;";
     } else {
       stream << "return ";
@@ -216,7 +219,8 @@ public:
     }
   }
 
-  void visitNewArrayExpression(ast::NewArrayExpression &newArrayExpression) override {
+  void visitNewArrayExpression(
+      ast::NewArrayExpression &newArrayExpression) override {
     requireParenthesis = false;
     stream << "new ";
     auto arrayType = newArrayExpression.getArrayType();
@@ -226,12 +230,13 @@ public:
     newArrayExpression.getSize()->accept(this);
     stream << "]";
     // start from dimension 1:
-    for(int i=1; i<dimension; i++) {
+    for (int i = 1; i < dimension; i++) {
       stream << "[]";
     }
   }
 
-  void visitNewObjectExpression(ast::NewObjectExpression &newObjectExpression) override {
+  void visitNewObjectExpression(
+      ast::NewObjectExpression &newObjectExpression) override {
     requireParenthesis = false;
     stream << "new " << newObjectExpression.getName() << "()";
   }
@@ -243,7 +248,7 @@ public:
 
   void visitBoolLiteral(ast::BoolLiteral &boolLiteral) override {
     requireParenthesis = false;
-    stream << ( boolLiteral.getValue() ? "true" : "false" );
+    stream << (boolLiteral.getValue() ? "true" : "false");
   }
 
   void visitNullLiteral(ast::NullLiteral &) override {
@@ -264,11 +269,12 @@ public:
   void visitMethodInvocation(ast::MethodInvocation &methodInvocation) override {
     methodInvocation.getLeft()->accept(this);
     stream << "." << methodInvocation.getName() << "(";
-    std::vector<ast::Expression*> arguments = methodInvocation.getArguments();
-    if(arguments.size() >= 1) {
+    std::vector<ast::Expression *> arguments = methodInvocation.getArguments();
+    if (arguments.size() >= 1) {
       arguments[0]->accept(this);
-    }  
-    for(std::vector<ast::Expression*>::size_type i=1; i<arguments.size(); i++) {
+    }
+    for (std::vector<ast::Expression *>::size_type i = 1; i < arguments.size();
+         i++) {
       stream << ", ";
       arguments[i]->accept(this);
     }
@@ -277,7 +283,7 @@ public:
 
   void visitFieldAccess(ast::FieldAccess &fieldAccess) override {
     fieldAccess.getLeft()->accept(this);
-    stream << "." << fieldAccess.getName();      
+    stream << "." << fieldAccess.getName();
   }
 
   void visitArrayAccess(ast::ArrayAccess &arrayAccess) override {
@@ -288,7 +294,8 @@ public:
   }
 
   void visitBinaryExpression(ast::BinaryExpression &binaryExpression) override {
-    maybePlaceParenthesis<ast::BinaryExpression>(binaryExpression, &PrettyPrinterVisitor::visitBinaryExpressionHelper);
+    maybePlaceParenthesis<ast::BinaryExpression>(
+        binaryExpression, &PrettyPrinterVisitor::visitBinaryExpressionHelper);
   }
 
   void visitBinaryExpressionHelper(ast::BinaryExpression &binaryExpression) {
@@ -296,7 +303,8 @@ public:
       requireParenthesis = true;
     }
     binaryExpression.getLeft()->accept(this);
-    stream << " " << binaryOperationToString(binaryExpression.getOperation()) << " ";
+    stream << " " << binaryOperationToString(binaryExpression.getOperation())
+           << " ";
     if (binaryExpression.getOperation() != ast::BinaryExpression::Op::Assign) {
       requireParenthesis = true;
     }
@@ -304,7 +312,8 @@ public:
   }
 
   void visitUnaryExpression(ast::UnaryExpression &unaryExpression) override {
-    maybePlaceParenthesis<ast::UnaryExpression>(unaryExpression, &PrettyPrinterVisitor::visitUnaryExpressionHelper);
+    maybePlaceParenthesis<ast::UnaryExpression>(
+        unaryExpression, &PrettyPrinterVisitor::visitUnaryExpressionHelper);
   }
 
   void visitUnaryExpressionHelper(ast::UnaryExpression &unaryExpression) {
@@ -314,8 +323,9 @@ public:
   }
 
   template <typename Et>
-  void maybePlaceParenthesis(Et &expr, void (PrettyPrinterVisitor::*function)(Et &expression)) {
-    using namespace std::placeholders; 
+  void maybePlaceParenthesis(
+      Et &expr, void (PrettyPrinterVisitor::*function)(Et &expression)) {
+    using namespace std::placeholders;
     auto fp = std::bind(function, this, _1);
     if (requireParenthesis) {
       requireParenthesis = false;
@@ -327,7 +337,8 @@ public:
     }
   }
 
-  static const char* binaryOperationToString(ast::BinaryExpression::Op operation) {
+  static const char *
+  binaryOperationToString(ast::BinaryExpression::Op operation) {
     switch (operation) {
     case ast::BinaryExpression::Op::Assign:
       return "=";
@@ -362,7 +373,8 @@ public:
     }
   }
 
-  static std::string unaryOperationToString(ast::UnaryExpression::Op operation) {
+  static std::string
+  unaryOperationToString(ast::UnaryExpression::Op operation) {
     switch (operation) {
     case ast::UnaryExpression::Op::Neg:
       return "-";
@@ -380,7 +392,5 @@ public:
     }
   }
 };
-
-
 
 #endif // PPRINTER_H
