@@ -104,3 +104,27 @@ foreach(file ${lexer_input_files})
            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/ast_idempotency.sh" $<TARGET_FILE:mjc> "${file}")
 endforeach()
 MESSAGE(STATUS "  Added ${Count} ast idempotency tests")
+
+# check valid programs semantically
+set(Count 0)
+file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/sematest/valid/*.java")
+foreach(file ${lexer_input_files})
+  math(EXPR Count "${Count} + 1")
+#   MESSAGE(STATUS "Parser test file: ${file}")
+  get_filename_component(filename "${file}" NAME)
+  add_test(NAME "Semantics_valid_${filename}"
+           COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/semantic_valid.sh" $<TARGET_FILE:mjc> "${file}")
+endforeach()
+MESSAGE(STATUS "  Added ${Count} valid semantic tests")
+
+# check invalid programs semantically
+set(Count 0)
+file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/sematest/invalid/*.java")
+foreach(file ${lexer_input_files})
+  math(EXPR Count "${Count} + 1")
+#   MESSAGE(STATUS "Parser test file: ${file}")
+  get_filename_component(filename "${file}" NAME)
+  add_test(NAME "Semantics_invalid_${filename}"
+           COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/semantic_invalid.sh" $<TARGET_FILE:mjc> "${file}")
+endforeach()
+MESSAGE(STATUS "  Added ${Count} invalid semantic tests")
