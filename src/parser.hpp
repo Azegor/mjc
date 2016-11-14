@@ -109,6 +109,8 @@ public:
   void parseAndPrintAst();
   void parseAndDotAst();
 
+  ast::ProgramPtr parseProgram();
+
 private:
   void readExpect(Token::Type ttype) {
     readNextToken();
@@ -167,8 +169,6 @@ private:
 
     error(errorLine.str());
   }
-
-  ast::ProgramPtr parseProgram();
   inline ast::ClassPtr parseClassDeclaration();
   inline void parseClassMember(std::vector<ast::FieldPtr> &fields,
                                std::vector<ast::MethodPtr> &methods,

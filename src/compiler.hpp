@@ -32,6 +32,7 @@
 
 #include "color_ostream.hpp"
 #include "input_file.hpp"
+#include "ast.hpp"
 
 struct CompilerOptions {
   std::string inputFileName;
@@ -43,6 +44,7 @@ struct CompilerOptions {
   bool fuzzParser = false;
   bool printAst = false;
   bool dotAst = false;
+  bool checkSemantic = false;
   // ...
 };
 
@@ -60,9 +62,12 @@ class Compiler {
   int parserFuzz();
   int astPrint();
   int astDot();
+  int checkSemantic();
 
   void checkOptions();
   bool sanityChecks();
+
+  void analyzeAstSemantic(ast::Program* astRoot);
 
 public:
   Compiler(InputFile inputFile, CompilerOptions &opt)

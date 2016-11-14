@@ -118,6 +118,22 @@ int Compiler::astDot() {
   }
 }
 
+int Compiler::checkSemantic() {
+  Parser parser{inputFile};
+  try {
+    auto ast = parser.parseProgram();
+    analyzeAstSemantic(ast.get());
+    return EXIT_SUCCESS;
+  } catch (CompilerError &e) {
+    e.writeErrorMessage(std::cerr);
+    return EXIT_FAILURE;
+  }
+}
+
+void Compiler::analyzeAstSemantic(ast::Program *astRoot) {
+  (void)astRoot;
+}
+
 static int exclusiveOptionsSum(bool b) { return b ? 1 : 0; }
 
 template <typename... Args>
@@ -131,8 +147,8 @@ void Compiler::checkOptions() {
                           options.fuzzParser, options.printAst,
                           options.dotAst) > 1)
     throw ArgumentError("Cannot have Options --echo, --lextext, --lexfuzz, "
-                        "--parsertest, --parserfuzz, --print-ast or --dot-ast "
-                        "simultaneously");
+                        "--parsertest, --parserfuzz, --print-ast, --dot-ast or "
+                        "--check simultaneously");
 }
 
 int Compiler::run() {
@@ -150,6 +166,8 @@ int Compiler::run() {
     return astPrint();
   } else if (options.dotAst) {
     return astDot();
+  } else if (options.checkSemantic) {
+    return checkSemantic();
   }
   return EXIT_FAILURE;
 }

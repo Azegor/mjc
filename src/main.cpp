@@ -38,8 +38,10 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
       ("parsefuzz", "fuzz parser, no output")
       // print ast
       ("print-ast", "pretty print input program")
-      // dot ast
-      ("dot-ast", "print AST to dot output");
+      // create graphviz graph from AST
+      ("dot-ast", "print AST to dot output")
+      // check semantic of program
+      ("check", "check whether input program is semantically valid");
 
   bpo::variables_map var_map;
   try {
@@ -84,6 +86,9 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
     }
     if (var_map.count("dot-ast")) {
       compilerOptions.dotAst = true;
+    }
+    if (var_map.count("check")) {
+      compilerOptions.checkSemantic = true;
     }
   } catch (bpo::required_option &e) {
     cl_cerr << co::mode(co::bold) << co::color(co::red)
