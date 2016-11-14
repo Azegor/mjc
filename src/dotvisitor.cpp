@@ -65,7 +65,12 @@ void DotVisitor::visitMainMethod(ast::MainMethod &method) {
 void DotVisitor::visitBlock(ast::Block &block) {
   auto stmts = block.getStatements();
   for (auto &stmt : stmts) {
-    (*stmt).accept(this);
+    if (stmt) {
+      stmt->accept(this);
+    } else {
+//       auto nodeLabel = ";";
+//       auto nodeName = nodeDecl(nodeLabel, SHAPE_NONE);
+    }
   }
 }
 
@@ -130,7 +135,7 @@ binaryOperationToString(ast::BinaryExpression::Op operation) {
   case ast::BinaryExpression::Op::Div:
     return "/";
   case ast::BinaryExpression::Op::Mod:
-    return "%%";
+    return "%";
   default:
     return "NONE";
   }
