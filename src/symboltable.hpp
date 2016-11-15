@@ -37,7 +37,7 @@ class Definition;
 class Scope {
   friend class SymbolTable;
   std::unique_ptr<Scope> parent;
-  int oldSize;
+  size_t oldSize;
 
   Scope(std::unique_ptr<Scope> parent, int parentSize)
       : parent(std::move(parent)), oldSize(parentSize) {}
@@ -68,8 +68,8 @@ public:
 };
 
 class Definition {
-  virtual Symbol &getSymbol(){}; // TODO: should be = 0
-  virtual ast::Type getType(){}; // TODO: should be = 0
+  virtual Symbol &getSymbol() = 0;
+  virtual ast::Type getType() = 0;
 };
 
 class SymbolTable {

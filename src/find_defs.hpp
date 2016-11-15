@@ -3,6 +3,7 @@
 
 #include "ast.hpp"
 #include "error.hpp"
+#include "symboltable.hpp"
 
 #include <algorithm>
 
@@ -29,6 +30,7 @@ class FindDefsVisitor : public ast::Visitor {
   std::string fileName;
   ast::Program *currentProgram = nullptr;
   ast::Class *currentClass = nullptr;
+  SymbolTable::SymbolTable symTbl;
 
   ast::Class *findClassByName(const std::string &className) {
     // implemented with binary search. TODO: maybe consider a set instead
