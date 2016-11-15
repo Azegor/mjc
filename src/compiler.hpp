@@ -30,9 +30,9 @@
 #include <iostream>
 #include <string>
 
+#include "ast.hpp"
 #include "color_ostream.hpp"
 #include "input_file.hpp"
-#include "ast.hpp"
 
 struct CompilerOptions {
   std::string inputFileName;
@@ -67,7 +67,7 @@ class Compiler {
   void checkOptions();
   bool sanityChecks();
 
-  void analyzeAstSemantic(ast::Program* astRoot);
+  void analyzeAstSemantic(ast::Program *astRoot);
 
 public:
   Compiler(InputFile inputFile, CompilerOptions &opt)

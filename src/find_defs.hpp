@@ -16,10 +16,9 @@ public:
 
   virtual void writeErrorMessage(std::ostream &out) const override {
     co::color_ostream<std::ostream> cl_out(out);
-    cl_out << co::mode(co::bold) << filename << ':'
-           << srcLoc.startToken.line << ':' << srcLoc.startToken.col << ": "
-           << co::color(co::red) << "error: " << co::reset << message
-           << std::endl;
+    cl_out << co::mode(co::bold) << filename << ':' << srcLoc.startToken.line
+           << ':' << srcLoc.startToken.col << ": " << co::color(co::red)
+           << "error: " << co::reset << message << std::endl;
     //     writeErrorLineHighlight(out);
   }
 };

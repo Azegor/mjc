@@ -132,7 +132,8 @@ ast::MainMethodPtr Parser::parseMainMethod() {
   auto paramName = expectGetIdentAndNext(TT::Identifier);
   expectAndNext(TT::RParen);
   auto block = parseBlock();
-  return ast::make_Ptr<ast::MainMethod>({startPos, curTok.endPos()}, std::move(methodName),
+  return ast::make_Ptr<ast::MainMethod>({startPos, curTok.endPos()},
+                                        std::move(methodName),
                                         std::move(paramName), std::move(block));
 }
 

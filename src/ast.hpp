@@ -360,12 +360,8 @@ public:
 
   void acceptChildren(Visitor *visitor) override { type->accept(visitor); }
 
-  bool operator<(const Field& o) const {
-    return name < o.name;
-  }
-  bool operator==(const Field& o) const {
-    return name == o.name;
-  }
+  bool operator<(const Field &o) const { return name < o.name; }
+  bool operator==(const Field &o) const { return name == o.name; }
 };
 using FieldPtr = std::unique_ptr<Field>;
 
@@ -415,9 +411,7 @@ public:
     return name < other.name;
     // TODO include parameters
   }
-  bool operator==(const Method& o) const {
-    return name == o.name;
-  }
+  bool operator==(const Method &o) const { return name == o.name; }
 
   void accept(Visitor *visitor) override { visitor->visitMethod(*this); }
 
@@ -451,9 +445,7 @@ public:
     return name < other.name;
     // TODO include parameters
   }
-  bool operator==(const MainMethod& o) const {
-    return name == o.name;
-  }
+  bool operator==(const MainMethod &o) const { return name == o.name; }
 };
 using MainMethodPtr = std::unique_ptr<MainMethod>;
 
