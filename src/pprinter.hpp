@@ -39,14 +39,17 @@ public:
   PrettyPrinterVisitor(std::ostream &stream, std::string indentWith)
       : stream(stream), indentWith(std::move(indentWith)), indentLevel(0) {}
 
-  void visitProgram(ast::Program &) override { newline(); }
+  void visitProgram(ast::Program &program) override {
+    newline();
+    program.acceptChildren(this);
+  }
 
   void visitClass(ast::Class &klass) override {
     newline();
     stream << "class " << klass.getName() << " {";
     indentLevel++;
     newline();
-    klass.accept(this);
+    klass.acceptChildren(this);
     indentLevel--;
     newline();
     stream << "}";
