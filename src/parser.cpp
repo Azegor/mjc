@@ -38,8 +38,8 @@ using TT = Token::Type;
 void Parser::parseFileOnly() { parseProgram(); }
 void Parser::parseAndPrintAst() {
   auto program = parseProgram();
-  auto v = std::make_unique<PrettyPrinterVisitor>(std::cout, "\t");
-  program->accept(v.get());
+  PrettyPrinterVisitor v(std::cout, "\t");
+  program->accept(&v);
 }
 void Parser::parseAndDotAst() {
   auto program = parseProgram();

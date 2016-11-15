@@ -31,6 +31,7 @@
 #include <fcntl.h>
 
 #include "error.hpp"
+#include "find_defs.hpp"
 #include "input_file.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
@@ -131,7 +132,8 @@ int Compiler::checkSemantic() {
 }
 
 void Compiler::analyzeAstSemantic(ast::Program *astRoot) {
-  (void)astRoot;
+  FindDefsVisitor v;
+  astRoot->accept(&v);
 }
 
 static int exclusiveOptionsSum(bool b) { return b ? 1 : 0; }

@@ -1,10 +1,10 @@
 #include "ast.hpp"
 
 namespace ast {
-void Visitor::visitProgram(ast::Program& program) {
+void Visitor::visitProgram(Program& program) {
   program.acceptChildren(this);
 }
-void Visitor::visitClass(ast::Class& klass) {
+void Visitor::visitClass(Class& klass) {
   klass.acceptChildren(this);
 }
 void Visitor::visitFieldList(FieldList &fieldList) {

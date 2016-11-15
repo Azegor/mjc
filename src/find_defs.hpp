@@ -2,15 +2,36 @@
 #define FIND_DEFS_H
 
 #include "ast.hpp"
+#include "error.hpp"
+
+class SemanticError : public CompilerError {
+public:
+  const SourceLocation srcLoc;
+  const std::string message;
+  SemanticError(SourceLocation srcLoc, std::string message)
+      : srcLoc(std::move(srcLoc)), message(std::move(message)) {}
+  const char *what() const noexcept override { return message.c_str(); }
+
+  virtual void writeErrorMessage(std::ostream &out) const override {
+    co::color_ostream<std::ostream> cl_out(out);
+    cl_out << co::mode(co::bold) /*<< filename*/ << ':'
+           << srcLoc.startToken.line << ':' << srcLoc.startToken.col << ": "
+           << co::color(co::red) << "error: " << co::reset << message
+           << std::endl;
+    //     writeErrorLineHighlight(out);
+  }
+};
 
 class FindDefsVisitor : public ast::Visitor {
-  ast::Program* currentProgram = nullptr;
-  ast::Class* currentClass = nullptr;
-public:
-  FindDefsVisitor() {}
+  ast::Program *currentProgram = nullptr;
+  ast::Class *currentClass = nullptr;
 
-  void visitProgram(ast::Program & program) override;
+public:
+  void visitProgram(ast::Program &program) override;
   void visitClass(ast::Class &klass) override;
+  void visitFieldList(ast::FieldList &fieldList) override;
+  void visitMethodList(ast::MethodList &methodList) override;
+  void visitMainMethodList(ast::MainMethodList &mainMethodList) override;
 //   void visitField(ast::Field &field) override;
 //   void visitMethod(ast::Method &method) override;
 //   void visitBlock(ast::Block &block) override;
@@ -37,6 +58,24 @@ public:
 //   void visitParameter(ast::Parameter &param) override;
 
   virtual ~FindDefsVisitor() {}
+
+private:
+  [[noreturn]] void error(const ast::Node &node, std::string msg) {
+    throw SemanticError(node.getLoc(), std::move(msg));
+  }
+  [[noreturn]] void error(SourceLocation loc, std::string msg) {
+    throw SemanticError(loc, std::move(msg));
+  }
+
+  template <typename T> void checkForDuplicates(T &list) {
+    std::stable_sort(list.begin(), list.end(), ast::SortUniquePtrPred());
+    auto firstDuplicate =
+        std::adjacent_find(list.begin(), list.end(), ast::UniquePtrEqPred());
+    if (firstDuplicate != list.end()) {
+      error(**++firstDuplicate, "invalid duplicate definition of field");
+      // first defition is at **firstDuplicate
+    }
+  }
 };
 
 #endif

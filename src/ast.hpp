@@ -42,6 +42,13 @@ struct SortUniquePtrPred {
     return *lhs < *rhs;
   }
 };
+struct UniquePtrEqPred {
+  template <typename T>
+  bool operator()(const std::unique_ptr<T> &lhs,
+                  const std::unique_ptr<T> &rhs) {
+    return *lhs == *rhs;
+  }
+};
 
 class Program;
 class Block;
@@ -352,6 +359,13 @@ public:
   void accept(Visitor *visitor) override { visitor->visitField(*this); }
 
   void acceptChildren(Visitor *visitor) override { type->accept(visitor); }
+
+  bool operator<(const Field& o) const {
+    return name < o.name;
+  }
+  bool operator==(const Field& o) const {
+    return name == o.name;
+  }
 };
 using FieldPtr = std::unique_ptr<Field>;
 
@@ -397,9 +411,12 @@ public:
     return result;
   }
 
-  bool operator<(Method &other) {
+  bool operator<(const Method &other) const {
     return name < other.name;
     // TODO include parameters
+  }
+  bool operator==(const Method& o) const {
+    return name == o.name;
   }
 
   void accept(Visitor *visitor) override { visitor->visitMethod(*this); }
@@ -430,17 +447,20 @@ public:
   const std::string &getName() { return name; }
   const std::string &getArgName() { return argName; }
   Block *getBlock() const { return block.get(); }
-  bool operator<(MainMethod &other) {
+  bool operator<(const MainMethod &other) const {
     return name < other.name;
     // TODO include parameters
+  }
+  bool operator==(const MainMethod& o) const {
+    return name == o.name;
   }
 };
 using MainMethodPtr = std::unique_ptr<MainMethod>;
 
 class FieldList : public Node {
+public:
   std::vector<FieldPtr> fields;
 
-public:
   FieldList(std::vector<FieldPtr> fields)
       : Node({}), fields(std::move(fields)) {}
   void accept(Visitor *visitor) override { visitor->visitFieldList(*this); }
@@ -453,9 +473,9 @@ public:
 };
 
 class MethodList : public Node {
+public:
   std::vector<MethodPtr> methods;
 
-public:
   MethodList(std::vector<MethodPtr> methods)
       : Node({}), methods(std::move(methods)) {}
   void accept(Visitor *visitor) override { visitor->visitMethodList(*this); }
@@ -468,9 +488,9 @@ public:
 };
 
 class MainMethodList : public Node {
+public:
   std::vector<MainMethodPtr> mainMethods;
 
-public:
   MainMethodList(std::vector<MainMethodPtr> mainMethods)
       : Node({}), mainMethods(std::move(mainMethods)) {}
   void accept(Visitor *visitor) override {
