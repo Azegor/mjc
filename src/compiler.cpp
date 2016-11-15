@@ -132,7 +132,7 @@ int Compiler::checkSemantic() {
 }
 
 void Compiler::analyzeAstSemantic(ast::Program *astRoot) {
-  FindDefsVisitor v;
+  FindDefsVisitor v(inputFile.getFilename());
   astRoot->accept(&v);
 }
 

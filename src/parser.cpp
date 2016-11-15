@@ -114,6 +114,7 @@ void Parser::parseClassMember(std::vector<ast::FieldPtr> &fields,
 }
 
 ast::MainMethodPtr Parser::parseMainMethod() {
+  auto startPos = curTok.startPos();
   expectAndNext(TT::Public);
   expectAndNext(TT::Static);
   expectAndNext(TT::Void);
@@ -131,7 +132,7 @@ ast::MainMethodPtr Parser::parseMainMethod() {
   auto paramName = expectGetIdentAndNext(TT::Identifier);
   expectAndNext(TT::RParen);
   auto block = parseBlock();
-  return ast::make_Ptr<ast::MainMethod>(SourceLocation{}, std::move(methodName),
+  return ast::make_Ptr<ast::MainMethod>({startPos, curTok.endPos()}, std::move(methodName),
                                         std::move(paramName), std::move(block));
 }
 
