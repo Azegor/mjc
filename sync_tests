@@ -3,6 +3,7 @@
 declare -A mappings
 mappings=(
     [parsetest]='syntax'
+    [sematest]='semantic'
 )
 declare -A suffixes
 suffixes=(
@@ -21,6 +22,7 @@ edo() {
 _copy_if_different() {
     local copied=1
     if ! diff -q -N "${1}" "${2}" &> /dev/null; then
+        [[ -d ${2%/*} ]] || edo mkdir -p "${2%/*}"
         edo cp -f "${1}" "${2}"
         copied=0
     fi
