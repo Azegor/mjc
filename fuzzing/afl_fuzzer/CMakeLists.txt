@@ -39,7 +39,7 @@ endif()
 find_package(Boost COMPONENTS program_options REQUIRED)
 
 # create instrumented binary for afl
-add_executable(mjc_instr ../../src/main.cpp ../../src/compiler.cpp ../../src/lexer.cpp ../../src/parser.cpp ../../src/dotvisitor.cpp)
+add_executable(mjc_instr ../../src/main.cpp ../../src/compiler.cpp ../../src/lexer.cpp ../../src/parser.cpp ../../src/dotvisitor.cpp ../../src/ast.cpp)
 
 target_link_libraries(mjc_instr ${Boost_LIBRARIES})
 
