@@ -7,6 +7,15 @@ void Visitor::visitProgram(ast::Program& program) {
 void Visitor::visitClass(ast::Class& klass) {
   klass.acceptChildren(this);
 }
+void Visitor::visitFieldList(FieldList &fieldList) {
+  fieldList.acceptChildren(this);
+}
+void Visitor::visitMethodList(MethodList &methodList) {
+  methodList.acceptChildren(this);
+}
+void Visitor::visitMainMethodList(MainMethodList &mainMethodList) {
+  mainMethodList.acceptChildren(this);
+}
 void Visitor::visitField(Field &field) {
   field.acceptChildren(this);
 }
@@ -82,7 +91,5 @@ void Visitor::visitBinaryExpression(BinaryExpression &binaryExpression){
 void Visitor::visitUnaryExpression(UnaryExpression &unaryExpression) {
   unaryExpression.acceptChildren(this);
 }
-
-
 
 } /* namespace ast */

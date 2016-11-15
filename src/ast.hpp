@@ -47,6 +47,9 @@ class Program;
 class Block;
 class BlockStatement;
 class Class;
+class FieldList;
+class MethodList;
+class MainMethodList;
 class Field;
 class Method;
 class MainMethod;
@@ -77,6 +80,9 @@ public:
   virtual ~Visitor() {}
   virtual void visitProgram(Program &program);
   virtual void visitClass(Class &klass);
+  virtual void visitFieldList(FieldList &fieldList);
+  virtual void visitMethodList(MethodList &methodList);
+  virtual void visitMainMethodList(MainMethodList &mainMethodList);
   virtual void visitField(Field &field);
   virtual void visitMethod(Method &method);
   virtual void visitMainMethod(MainMethod &mainMethod);
@@ -85,13 +91,15 @@ public:
   virtual void visitClassType(ClassType &classType);
   virtual void visitArrayType(ArrayType &arrayType);
   virtual void visitBlock(Block &block);
-  virtual void visitVariableDeclaration(VariableDeclaration &variableDeclartion);
+  virtual void
+  visitVariableDeclaration(VariableDeclaration &variableDeclartion);
   virtual void visitExpressionStatement(ExpressionStatement &exprStmt);
   virtual void visitIfStatement(IfStatement &ifStatement);
   virtual void visitWhileStatement(WhileStatement &whileStatement);
   virtual void visitReturnStatement(ReturnStatement &returnStatement);
   virtual void visitNewArrayExpression(NewArrayExpression &newArrayExpression);
-  virtual void visitNewObjectExpression(NewObjectExpression &newObjectExpression);
+  virtual void
+  visitNewObjectExpression(NewObjectExpression &newObjectExpression);
   virtual void visitIntLiteral(IntLiteral &intLiteral);
   virtual void visitBoolLiteral(BoolLiteral &boolLiteral);
   virtual void visitNullLiteral(NullLiteral &nullLiteral);
@@ -112,7 +120,7 @@ protected:
 
 public:
   virtual void accept(Visitor *visitor) { (void)visitor; }
-  virtual void acceptChildren(Visitor *visitor) { (void) visitor; }
+  virtual void acceptChildren(Visitor *visitor) { (void)visitor; }
   virtual ~Node() = default;
   const SourceLocation &getLoc() const { return location; }
 };
@@ -341,14 +349,9 @@ public:
     // include type
   }
 
-  void accept(Visitor *visitor) override {
-    visitor->visitField(*this);
-  }
+  void accept(Visitor *visitor) override { visitor->visitField(*this); }
 
-  void acceptChildren(Visitor *visitor) override {
-    type->accept(visitor);
-  }
-
+  void acceptChildren(Visitor *visitor) override { type->accept(visitor); }
 };
 using FieldPtr = std::unique_ptr<Field>;
 
@@ -361,9 +364,7 @@ public:
       : Node(std::move(loc)), type(std::move(type)), name(std::move(name)) {}
 
   void accept(Visitor *visitor) override { visitor->visitParameter(*this); }
-  void acceptChildren(Visitor *visitor) override {
-    type->accept(visitor);
-  }
+  void acceptChildren(Visitor *visitor) override { type->accept(visitor); }
   const std::string &getName() { return name; }
   Type *getType() const { return type.get(); }
 };
@@ -401,9 +402,7 @@ public:
     // TODO include parameters
   }
 
-  void accept(Visitor *visitor) override {
-    visitor->visitMethod(*this);
-  }
+  void accept(Visitor *visitor) override { visitor->visitMethod(*this); }
 
   void acceptChildren(Visitor *visitor) override {
     for (auto &param : parameters)
@@ -426,9 +425,7 @@ public:
         argName(std::move(argName)), block(std::move(block)) {}
 
   void accept(Visitor *visitor) override { visitor->visitMainMethod(*this); }
-  void acceptChildren(Visitor *visitor) override {
-    block->accept(visitor);
-  }
+  void acceptChildren(Visitor *visitor) override { block->accept(visitor); }
 
   const std::string &getName() { return name; }
   const std::string &getArgName() { return argName; }
@@ -440,37 +437,71 @@ public:
 };
 using MainMethodPtr = std::unique_ptr<MainMethod>;
 
-class Class : public Node {
-  std::string name;
+class FieldList : public Node {
   std::vector<FieldPtr> fields;
+
+public:
+  FieldList(std::vector<FieldPtr> fields)
+      : Node({}), fields(std::move(fields)) {}
+  void accept(Visitor *visitor) override { visitor->visitFieldList(*this); }
+  void acceptChildren(Visitor *visitor) override {
+    std::sort(fields.begin(), fields.end(), SortUniquePtrPred());
+    for (auto &e : fields) {
+      visitor->visitField(*e);
+    }
+  }
+};
+
+class MethodList : public Node {
   std::vector<MethodPtr> methods;
+
+public:
+  MethodList(std::vector<MethodPtr> methods)
+      : Node({}), methods(std::move(methods)) {}
+  void accept(Visitor *visitor) override { visitor->visitMethodList(*this); }
+  void acceptChildren(Visitor *visitor) override {
+    std::sort(methods.begin(), methods.end(), SortUniquePtrPred());
+    for (auto &e : methods) {
+      visitor->visitMethod(*e);
+    }
+  }
+};
+
+class MainMethodList : public Node {
   std::vector<MainMethodPtr> mainMethods;
 
 public:
-  Class(SourceLocation loc, std::string name, std::vector<FieldPtr> fields,
-        std::vector<MethodPtr> methods, std::vector<MainMethodPtr> mainMethods)
+  MainMethodList(std::vector<MainMethodPtr> mainMethods)
+      : Node({}), mainMethods(std::move(mainMethods)) {}
+  void accept(Visitor *visitor) override {
+    visitor->visitMainMethodList(*this);
+  }
+  void acceptChildren(Visitor *visitor) override {
+    std::sort(mainMethods.begin(), mainMethods.end(), SortUniquePtrPred());
+    for (auto &e : mainMethods) {
+      visitor->visitMainMethod(*e);
+    }
+  }
+};
+
+class Class : public Node {
+  std::string name;
+  FieldList fields;
+  MethodList methods;
+  MainMethodList mainMethods;
+
+public:
+  Class(SourceLocation loc, std::string name, FieldList fields,
+        MethodList methods, MainMethodList mainMethods)
       : Node(loc), name(std::move(name)), fields(std::move(fields)),
         methods(std::move(methods)), mainMethods(std::move(mainMethods)) {}
 
-  void accept(Visitor *visitor) override {
-    visitor->visitClass(*this);
-  }
+  void accept(Visitor *visitor) override { visitor->visitClass(*this); }
 
   void acceptChildren(Visitor *visitor) override {
-    std::sort(methods.begin(), methods.end(), SortUniquePtrPred());
-    for (auto &mp : methods) {
-      visitor->visitMethod(*mp);
-    }
-
-    std::sort(mainMethods.begin(), mainMethods.end(), SortUniquePtrPred());
-    for (auto &mp : mainMethods) {
-      visitor->visitMainMethod(*mp);
-    }
-
-    std::sort(fields.begin(), fields.end(), SortUniquePtrPred());
-    for (auto &fp : fields) {
-      visitor->visitField(*fp);
-    }
+    visitor->visitFieldList(fields);
+    visitor->visitMethodList(methods);
+    visitor->visitMainMethodList(mainMethods);
   }
 
   const std::string &getName() { return name; }
@@ -485,9 +516,7 @@ public:
   Program(SourceLocation loc, std::vector<ClassPtr> classes)
       : Node(loc), classes(std::move(classes)) {}
 
-  void accept(Visitor *visitor) override {
-    visitor->visitProgram(*this);
-  }
+  void accept(Visitor *visitor) override { visitor->visitProgram(*this); }
 
   void acceptChildren(Visitor *visitor) override {
     std::sort(classes.begin(), classes.end(), SortUniquePtrPred());

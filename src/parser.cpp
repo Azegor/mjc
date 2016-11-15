@@ -25,6 +25,7 @@
  */
 
 #include "parser.hpp"
+
 #include "ast.hpp"
 #include "dotvisitor.hpp"
 #include "lexer.hpp"
@@ -68,17 +69,20 @@ ast::ClassPtr Parser::parseClassDeclaration() {
   std::vector<ast::MethodPtr> methods;
   std::vector<ast::MainMethodPtr> mainMethods;
 
+  auto startPos = curTok.startPos();
   expectAndNext(TT::Class);
   name = expectGetIdentAndNext(TT::Identifier);
   expectAndNext(TT::LBrace);
   // parse class members:
   while (true) {
     switch (curTok.type) {
-    case TT::RBrace:
+    case TT::RBrace: {
+      auto endPos = curTok.endPos();
       readNextToken();
-      return ast::make_Ptr<ast::Class>(SourceLocation{}, std::move(name),
+      return ast::make_Ptr<ast::Class>({startPos, endPos}, std::move(name),
                                        std::move(fields), std::move(methods),
                                        std::move(mainMethods));
+    }
     case TT::Public:
       parseClassMember(fields, methods, mainMethods);
       break;
