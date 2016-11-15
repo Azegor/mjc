@@ -96,7 +96,6 @@ public:
   void visitMethodInvocation(ast::MethodInvocation &invocation) override;
   void visitFieldAccess(ast::FieldAccess &access) override;
   void visitIfStatement(ast::IfStatement &ifStatement) override;
-  void visitExpressionStatement(ast::ExpressionStatement &stmt) override;
   void visitUnaryExpression(ast::UnaryExpression &expr) override;
   void visitArrayAccess(ast::ArrayAccess &access) override;
   void visitNewObjectExpression(ast::NewObjectExpression &expr) override;

@@ -4,7 +4,7 @@
 
 void DotVisitor::start(ast::Program &program) {
   s << "digraph G {" << std::endl;
-  program.accept(this);
+  program.acceptChildren(this);
   s << "}" << std::endl;
   assert(this->nodeStack.size() == 0);
 }
@@ -14,7 +14,7 @@ void DotVisitor::visitClass(ast::Class &klass) {
   auto nodeLabel = "Class " + klass.getName();
   auto nodeName = toplevelDecl(nodeLabel);
   pushNode(nodeName);
-  klass.accept(this);
+  klass.acceptChildren(this);
   popNode();
 }
 
@@ -58,20 +58,13 @@ void DotVisitor::visitMainMethod(ast::MainMethod &method) {
   auto nodeName = nodeDecl(nodeLabel);
 
   pushNode(nodeName);
-  method.getBlock()->accept(this);
+  method.acceptChildren(this);
   popNode();
 }
 
 void DotVisitor::visitBlock(ast::Block &block) {
   auto stmts = block.getStatements();
-  for (auto &stmt : stmts) {
-    if (stmt) {
-      stmt->accept(this);
-    } else {
-//       auto nodeLabel = ";";
-//       auto nodeName = nodeDecl(nodeLabel, SHAPE_NONE);
-    }
-  }
+  block.acceptChildren(this);
 }
 
 void DotVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
@@ -96,10 +89,7 @@ void DotVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
   auto nodeName = nodeDecl(nodeLabel, SHAPE_BOX);
 
   pushNode(nodeName);
-  auto expr = stmt.getExpression();
-  if (expr) {
-    expr->accept(this);
-  }
+  stmt.acceptChildren(this);
   popNode();
 }
 
@@ -150,10 +140,7 @@ void DotVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   auto nodeName = nodeDecl(nodeLabel);
 
   pushNode(nodeName);
-  {
-    expr.getLeft()->accept(this);
-    expr.getRight()->accept(this);
-  }
+  expr.acceptChildren(this);
   popNode();
 }
 
@@ -184,12 +171,7 @@ void DotVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
   auto nodeName = nodeDecl(nodeLabel);
 
   pushNode(nodeName);
-  {
-    invocation.getLeft()->accept(this);
-    for (auto &arg : invocation.getArguments()) {
-      arg->accept(this);
-    }
-  }
+  invocation.acceptChildren(this);
   popNode();
 }
 
@@ -198,11 +180,7 @@ void DotVisitor::visitFieldAccess(ast::FieldAccess &access) {
   auto nodeName = nodeDecl(nodeLabel);
 
   pushNode(nodeName);
-  {
-    auto l = access.getLeft();
-    if (l != nullptr)
-      l->accept(this);
-  }
+  access.acceptChildren(this);
   popNode();
 }
 
@@ -231,10 +209,6 @@ void DotVisitor::visitIfStatement(ast::IfStatement &stmt) {
   popNode();
 }
 
-void DotVisitor::visitExpressionStatement(ast::ExpressionStatement &stmt) {
-  stmt.getExpression()->accept(this);
-}
-
 void DotVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
   std::string nodeLabel = "UnaryExpression(";
   switch (expr.getOperation()) {
@@ -249,7 +223,7 @@ void DotVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
   auto nodeName = nodeDecl(nodeLabel);
 
   pushNode(nodeName);
-  expr.getExpression()->accept(this);
+  expr.acceptChildren(this);
   popNode();
 }
 
@@ -291,8 +265,7 @@ void DotVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
   pushNode(nodeName);
   {
     edgeLabel("Condition");
-    stmt.getCondition()->accept(this);
-    stmt.getStatement()->accept(this);
+    stmt.acceptChildren(this);
   }
   popNode();
 }

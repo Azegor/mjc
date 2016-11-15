@@ -75,57 +75,33 @@ using ClassPtr = std::unique_ptr<Class>;
 class Visitor {
 public:
   virtual ~Visitor() {}
-  virtual void visitProgram(Program &program) { (void)program; }
-  // virtual void visitBlock(Block &block) { (void)block; }
-  // virtual void visitBlockStatement(BlockStatement &stmt) { (void)stmt; }
-  virtual void visitClass(Class &klass) { (void)klass; }
-  virtual void visitField(Field &field) { (void)field; }
-  virtual void visitMethod(Method &method) { (void)method; }
-  virtual void visitMainMethod(MainMethod &mainMethod) { (void)mainMethod; }
-  virtual void visitParameter(Parameter &parameter) { (void)parameter; }
-  virtual void visitPrimitiveType(PrimitiveType &primitiveType) {
-    (void)primitiveType;
-  }
-  virtual void visitClassType(ClassType &classType) { (void)classType; }
-  virtual void visitArrayType(ArrayType &arrayType) { (void)arrayType; }
-  virtual void visitBlock(Block &block) { (void)block; }
-  virtual void
-  visitVariableDeclaration(VariableDeclaration &variableDeclartion) {
-    (void)variableDeclartion;
-  }
-  virtual void visitExpressionStatement(ExpressionStatement &exprStmt) {
-    (void)exprStmt;
-  }
-  virtual void visitIfStatement(IfStatement &ifStatement) { (void)ifStatement; }
-  virtual void visitWhileStatement(WhileStatement &whileStatement) {
-    (void)whileStatement;
-  }
-  virtual void visitReturnStatement(ReturnStatement &returnStatement) {
-    (void)returnStatement;
-  }
-  virtual void visitNewArrayExpression(NewArrayExpression &newArrayExpression) {
-    (void)newArrayExpression;
-  }
-  virtual void
-  visitNewObjectExpression(NewObjectExpression &newObjectExpression) {
-    (void)newObjectExpression;
-  }
-  virtual void visitIntLiteral(IntLiteral &intLiteral) { (void)intLiteral; }
-  virtual void visitBoolLiteral(BoolLiteral &boolLiteral) { (void)boolLiteral; }
-  virtual void visitNullLiteral(NullLiteral &nullLiteral) { (void)nullLiteral; }
-  virtual void visitThisLiteral(ThisLiteral &thisLiteral) { (void)thisLiteral; }
-  virtual void visitVarRef(VarRef &ident) { (void)ident; }
-  virtual void visitMethodInvocation(MethodInvocation &methodInvocation) {
-    (void)methodInvocation;
-  }
-  virtual void visitFieldAccess(FieldAccess &fieldAccess) { (void)fieldAccess; }
-  virtual void visitArrayAccess(ArrayAccess &arrayAccess) { (void)arrayAccess; }
-  virtual void visitBinaryExpression(BinaryExpression &binaryExpression) {
-    (void)binaryExpression;
-  }
-  virtual void visitUnaryExpression(UnaryExpression &unaryExpression) {
-    (void)unaryExpression;
-  }
+  virtual void visitProgram(Program &program);
+  virtual void visitClass(Class &klass);
+  virtual void visitField(Field &field);
+  virtual void visitMethod(Method &method);
+  virtual void visitMainMethod(MainMethod &mainMethod);
+  virtual void visitParameter(Parameter &parameter);
+  virtual void visitPrimitiveType(PrimitiveType &primitiveType);
+  virtual void visitClassType(ClassType &classType);
+  virtual void visitArrayType(ArrayType &arrayType);
+  virtual void visitBlock(Block &block);
+  virtual void visitVariableDeclaration(VariableDeclaration &variableDeclartion);
+  virtual void visitExpressionStatement(ExpressionStatement &exprStmt);
+  virtual void visitIfStatement(IfStatement &ifStatement);
+  virtual void visitWhileStatement(WhileStatement &whileStatement);
+  virtual void visitReturnStatement(ReturnStatement &returnStatement);
+  virtual void visitNewArrayExpression(NewArrayExpression &newArrayExpression);
+  virtual void visitNewObjectExpression(NewObjectExpression &newObjectExpression);
+  virtual void visitIntLiteral(IntLiteral &intLiteral);
+  virtual void visitBoolLiteral(BoolLiteral &boolLiteral);
+  virtual void visitNullLiteral(NullLiteral &nullLiteral);
+  virtual void visitThisLiteral(ThisLiteral &thisLiteral);
+  virtual void visitVarRef(VarRef &ident);
+  virtual void visitMethodInvocation(MethodInvocation &methodInvocation);
+  virtual void visitFieldAccess(FieldAccess &fieldAccess);
+  virtual void visitArrayAccess(ArrayAccess &arrayAccess);
+  virtual void visitBinaryExpression(BinaryExpression &binaryExpression);
+  virtual void visitUnaryExpression(UnaryExpression &unaryExpression);
 };
 
 class Node {
@@ -136,6 +112,7 @@ protected:
 
 public:
   virtual void accept(Visitor *visitor) { (void)visitor; }
+  virtual void acceptChildren(Visitor *visitor) { (void) visitor; }
   virtual ~Node() = default;
   const SourceLocation &getLoc() const { return location; }
 };
@@ -189,6 +166,12 @@ public:
   }
 
   void accept(Visitor *visitor) override { visitor->visitBlock(*this); }
+  void acceptChildren(Visitor *visitor) override {
+    for (auto &stmt : statements) {
+      if (stmt != nullptr)
+        stmt->accept(visitor);
+    }
+  }
 };
 using BlockPtr = std::unique_ptr<Block>;
 
@@ -250,6 +233,9 @@ public:
   int getDimension() const { return dimension; }
 
   void accept(Visitor *visitor) override { visitor->visitArrayType(*this); }
+  void acceptChildren(Visitor *visitor) override {
+    elementType->accept(visitor);
+  }
 };
 using ArrayTypePtr = std::unique_ptr<ArrayType>;
 
@@ -264,6 +250,10 @@ public:
 
   void accept(Visitor *visitor) override {
     visitor->visitExpressionStatement(*this);
+  }
+
+  void acceptChildren(Visitor *visitor) override {
+    this->expr->accept(visitor);
   }
 };
 
@@ -283,6 +273,14 @@ public:
   Statement *getElseStatement() { return elseStmt.get(); }
 
   void accept(Visitor *visitor) override { visitor->visitIfStatement(*this); }
+  void acceptChildren(Visitor *visitor) override {
+    condition->accept(visitor);
+    if (thenStmt != nullptr)
+      thenStmt->accept(visitor);
+
+    if (elseStmt != nullptr)
+      elseStmt->accept(visitor);
+  }
 };
 
 class WhileStatement : public Statement {
@@ -300,6 +298,12 @@ public:
   void accept(Visitor *visitor) override {
     visitor->visitWhileStatement(*this);
   }
+
+  void acceptChildren(Visitor *visitor) override {
+    condition->accept(visitor);
+    if (statement != nullptr)
+      statement->accept(visitor);
+  }
 };
 
 class ReturnStatement : public Statement {
@@ -313,6 +317,11 @@ public:
 
   void accept(Visitor *visitor) override {
     visitor->visitReturnStatement(*this);
+  }
+
+  void acceptChildren(Visitor *visitor) override {
+    if (expr != nullptr)
+      expr->accept(visitor);
   }
 };
 
@@ -331,6 +340,15 @@ public:
     return name < other.name;
     // include type
   }
+
+  void accept(Visitor *visitor) override {
+    visitor->visitField(*this);
+  }
+
+  void acceptChildren(Visitor *visitor) override {
+    type->accept(visitor);
+  }
+
 };
 using FieldPtr = std::unique_ptr<Field>;
 
@@ -343,6 +361,9 @@ public:
       : Node(std::move(loc)), type(std::move(type)), name(std::move(name)) {}
 
   void accept(Visitor *visitor) override { visitor->visitParameter(*this); }
+  void acceptChildren(Visitor *visitor) override {
+    type->accept(visitor);
+  }
   const std::string &getName() { return name; }
   Type *getType() const { return type.get(); }
 };
@@ -379,6 +400,17 @@ public:
     return name < other.name;
     // TODO include parameters
   }
+
+  void accept(Visitor *visitor) override {
+    visitor->visitMethod(*this);
+  }
+
+  void acceptChildren(Visitor *visitor) override {
+    for (auto &param : parameters)
+      param->accept(visitor);
+
+    block->accept(visitor);
+  }
 };
 using MethodPtr = std::unique_ptr<Method>;
 
@@ -394,6 +426,9 @@ public:
         argName(std::move(argName)), block(std::move(block)) {}
 
   void accept(Visitor *visitor) override { visitor->visitMainMethod(*this); }
+  void acceptChildren(Visitor *visitor) override {
+    block->accept(visitor);
+  }
 
   const std::string &getName() { return name; }
   const std::string &getArgName() { return argName; }
@@ -418,6 +453,10 @@ public:
         methods(std::move(methods)), mainMethods(std::move(mainMethods)) {}
 
   void accept(Visitor *visitor) override {
+    visitor->visitClass(*this);
+  }
+
+  void acceptChildren(Visitor *visitor) override {
     std::sort(methods.begin(), methods.end(), SortUniquePtrPred());
     for (auto &mp : methods) {
       visitor->visitMethod(*mp);
@@ -447,11 +486,14 @@ public:
       : Node(loc), classes(std::move(classes)) {}
 
   void accept(Visitor *visitor) override {
+    visitor->visitProgram(*this);
+  }
+
+  void acceptChildren(Visitor *visitor) override {
     std::sort(classes.begin(), classes.end(), SortUniquePtrPred());
     for (auto &cp : classes) {
       visitor->visitClass(*cp);
     }
-    visitor->visitProgram(*this);
   }
 };
 using ProgramPtr = std::unique_ptr<Program>;
@@ -470,6 +512,12 @@ public:
 
   void accept(Visitor *visitor) override {
     visitor->visitVariableDeclaration(*this);
+  }
+
+  void acceptChildren(Visitor *visitor) override {
+    type->accept(visitor);
+    if (initializer != nullptr)
+      initializer->accept(visitor);
   }
 
   const std::string &getName() { return name; }
@@ -493,6 +541,10 @@ public:
 
   void accept(Visitor *visitor) override {
     visitor->visitNewArrayExpression(*this);
+  }
+  void acceptChildren(Visitor *visitor) override {
+    arrayType->accept(visitor);
+    size->accept(visitor);
   }
 
   ArrayType *getArrayType() const { return arrayType.get(); }
@@ -578,6 +630,14 @@ public:
     visitor->visitMethodInvocation(*this);
   }
 
+  void acceptChildren(Visitor *visitor) override {
+    if (left != nullptr)
+      left->accept(visitor);
+
+    for (auto &arg : arguments)
+      arg->accept(visitor);
+  }
+
   std::vector<Expression *> getArguments() {
     std::vector<Expression *> result;
     for (std::vector<ExprPtr>::size_type i = 0; i < arguments.size(); i++) {
@@ -601,6 +661,10 @@ public:
         name(std::move(memberName)) {}
 
   void accept(Visitor *visitor) override { visitor->visitFieldAccess(*this); }
+  void acceptChildren(Visitor *visitor) override {
+    if (left != nullptr)
+      left->accept(visitor);
+  }
 
   Expression *getLeft() const { return left.get(); }
   const std::string &getName() { return name; }
@@ -616,6 +680,10 @@ public:
         index(std::move(index)) {}
 
   void accept(Visitor *visitor) override { visitor->visitArrayAccess(*this); }
+  void acceptChildren(Visitor *visitor) override {
+    array->accept(visitor);
+    index->accept(visitor);
+  }
 
   Expression *getArray() const { return array.get(); }
   Expression *getIndex() const { return index.get(); }
@@ -691,6 +759,11 @@ public:
     visitor->visitBinaryExpression(*this);
   }
 
+  void acceptChildren(Visitor *visitor) override {
+    left->accept(visitor);
+    right->accept(visitor);
+  }
+
   Expression *getLeft() const { return left.get(); }
   Expression *getRight() const { return right.get(); }
   const Op &getOperation() { return operation; }
@@ -721,6 +794,10 @@ public:
   }
   void accept(Visitor *visitor) override {
     visitor->visitUnaryExpression(*this);
+  }
+
+  void acceptChildren(Visitor *visitor) override {
+    expression->accept(visitor);
   }
 
   Expression *getExpression() const { return expression.get(); }

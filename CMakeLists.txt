@@ -34,7 +34,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/thirdparty/cmake)
 
 find_package(JeMalloc)
 
-add_executable(mjc src/main.cpp src/compiler.cpp src/lexer.cpp src/parser.cpp src/dotvisitor.cpp)
+add_executable(mjc src/main.cpp src/compiler.cpp src/lexer.cpp src/parser.cpp src/dotvisitor.cpp src/ast.cpp)
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")
 
