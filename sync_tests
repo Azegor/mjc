@@ -73,8 +73,8 @@ _main() {
 
     [[ -d ${mypath}/${our_testpath} ]] || { echo "Couldn't find our test dir. How did you run this script?"; exit 2; }
 
-    _export_tests "${dir}" "${mypath}"
     _import_tests "${dir}" "${mypath}"
+    _export_tests "${dir}" "${mypath}"
 
     exit 0
 }

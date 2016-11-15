@@ -24,9 +24,6 @@ class A {
     ;
     Type IDENT;
     Type IDENT = ((((4 + x * 3 + t[x+4]))));
-    return;
-    return;
-    return;
   }
 
   public void methodBlock3() {
@@ -34,23 +31,12 @@ class A {
     y = a || b && c == d != e < f <= g > h >= i + j - k * j / l % m * !n / -o + !!!!!!!!p - - - - - - - - -q;
     y = a[x] || b[y][z] && c == d != e < f <= g > h >= i + j - k * j / l % m * !n / -o + !!!!!!!!p - - - - - - - - -q;
     z = z % !y - - -x * w || a != b && xyz;;;;;
-    return a.b.c.d.e().f.g.h();
+    a.b.c.d.e().f.g.h();
   }
 
   public int mx(void y, boolean[] z) {
     a = true || false + this - null * 1234567890 % abc().def.g();
     ((((((((((x)))))))*(x+(x)))));
-    return 42;
-  }
 
-  public void New() {
-    while(true) {
-      return new Object();
-      return new Array[42];
-      if (true)
-        return 0;
-      else
-        return method(1, foo(), bar(x, y, z), 1+2+3+4+5);
-    }
   }
 }
