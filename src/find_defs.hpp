@@ -4,6 +4,8 @@
 #include "ast.hpp"
 #include "error.hpp"
 
+#include <algorithm>
+
 class SemanticError : public CompilerError {
 public:
   const SourceLocation srcLoc;
@@ -27,6 +29,20 @@ class FindDefsVisitor : public ast::Visitor {
   std::string fileName;
   ast::Program *currentProgram = nullptr;
   ast::Class *currentClass = nullptr;
+
+  ast::Class *findClassByName(const std::string &className) {
+    // implemented with binary search. TODO: maybe consider a set instead
+    auto &classes = currentProgram->getClasses();
+    auto pos =
+        std::lower_bound(classes.begin(), classes.end(), className,
+                         [](const ast::ClassPtr &cls, const std::string &str) {
+                           return *cls < str;
+                         });
+    if ((pos == classes.end()) || (className < **pos)) {
+      return nullptr;
+    }
+    return pos->get();
+  }
 
 public:
   FindDefsVisitor(std::string fileName) : fileName(std::move(fileName)) {}
