@@ -2,6 +2,7 @@
 
 void FindDefsVisitor::visitProgram(ast::Program &program) {
   currentProgram = &program;
+  checkForDuplicates(program.getClasses());
   program.acceptChildren(this);
 }
 

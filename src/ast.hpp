@@ -518,7 +518,8 @@ public:
 
   const std::string &getName() { return name; }
 
-  bool operator<(Class &other) { return name < other.name; }
+  bool operator<(const Class &o) const { return name < o.name; }
+  bool operator==(const Class &o) const { return name == o.name; }
 };
 
 class Program : public Node {
@@ -536,6 +537,8 @@ public:
       visitor->visitClass(*cp);
     }
   }
+
+  std::vector<ClassPtr>& getClasses() { return classes; }
 };
 using ProgramPtr = std::unique_ptr<Program>;
 
