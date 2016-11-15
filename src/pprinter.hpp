@@ -40,19 +40,37 @@ public:
       : stream(stream), indentWith(std::move(indentWith)), indentLevel(0) {}
 
   void visitProgram(ast::Program &program) override {
-    newline();
     program.acceptChildren(this);
   }
 
   void visitClass(ast::Class &klass) override {
-    newline();
     stream << "class " << klass.getName() << " {";
     indentLevel++;
-    newline();
     klass.acceptChildren(this);
     indentLevel--;
     newline();
     stream << "}";
+    newline();
+  }
+
+  void visitFieldList(ast::FieldList &fieldList) override {
+    newline();
+    stream << "/* fields: */";
+    fieldList.acceptChildren(this);
+  }
+
+  void visitMethodList(ast::MethodList &methodList) override {
+    stream << "\n"; // extra new line
+    newline();
+    stream << "/* methods: */";
+    methodList.acceptChildren(this);
+  }
+
+  void visitMainMethodList(ast::MainMethodList &mainMethodList) override {
+    stream << "\n"; // extra new line
+    newline();
+    stream << "/* main methods: */";
+    mainMethodList.acceptChildren(this);
   }
 
   void visitField(ast::Field &field) override {
