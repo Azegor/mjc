@@ -284,9 +284,12 @@ ast::BlockPtr Parser::parseBlock() {
     case TT::Semicolon:
     case TT::This:
     case TT::Void:
-    case TT::While:
-      statements.push_back(parseBlockStatement());
+    case TT::While: {
+      if (auto stmt = parseBlockStatement()) {
+        statements.emplace_back(std::move(stmt));
+      }
       break;
+    }
     default:
       errorExpectedAnyOf({TT::RBrace, TT::Bang, TT::Boolean, TT::False,
                           TT::Identifier, TT::If, TT::Int, TT::IntLiteral,
