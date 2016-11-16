@@ -290,18 +290,14 @@ class Lexer {
     throw LexError(filename, line, column, std::move(msg),
                    getCurrentLineFromInput(line));
   }
-  [[noreturn]] void errorAtTokenStart(std::string msg) {
-    throw LexError(filename, tokenLine, tokenCol, std::move(msg),
-                   getCurrentLineFromInput(tokenLine));
-  }
 
-  [[noreturn]] void invalidCharError(char errorChar) {
+  [[noreturn]] void invalidCharError(int errorChar) {
     if (std::isspace(errorChar) || std::isprint(errorChar)) {
-      errorAtTokenStart("Invalid input character: '"s + errorChar + "'");
+      error("Invalid input character: '"s + (char)errorChar + "'");
     }
     std::stringstream invalidChar;
-    invalidChar << "\\0x" << std::hex << errorChar;
-    errorAtTokenStart("Invalid input character: '"s + invalidChar.str() + "'");
+    invalidChar << "\\0x" << std::hex << (int)((unsigned char)errorChar);
+    error("Invalid input character: '"s + invalidChar.str() + "'");
   }
 
 public:

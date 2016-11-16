@@ -371,6 +371,8 @@ std::string Lexer::getCurrentLineFromInput(int lineNr) {
          ++lineLength < maxLineLength) {
     if (c == '\t') {
       res += "  "; // use 2 spaces for tabs
+    } else if (!std::isprint(c)){
+      res += "·";
     } else {
       res.push_back(c);
     }
