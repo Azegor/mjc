@@ -422,6 +422,7 @@ public:
   void accept(Visitor *visitor) override { visitor->visitMethod(*this); }
 
   void acceptChildren(Visitor *visitor) override {
+    returnType->accept(visitor);
     for (auto &param : parameters) {
       param->accept(visitor);
     }
