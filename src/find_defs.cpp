@@ -13,6 +13,9 @@ void FindDefsVisitor::visitClass(ast::Class &klass) {
 
 void FindDefsVisitor::visitFieldList(ast::FieldList &fieldList) {
   checkForDuplicates(fieldList.fields);
+  for (auto& f : fieldList.fields) {
+    symTbl.insert(f->getSymbol(), f.get());
+  }
   fieldList.acceptChildren(this);
 }
 

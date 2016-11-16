@@ -341,7 +341,7 @@ public:
   }
 };
 
-class Field : public Node {
+class Field : public Node, public SymbolTable::Definition {
   TypePtr type;
   SymbolTable::Symbol &symbol;
 
@@ -350,7 +350,8 @@ public:
       : Node(std::move(loc)), type(std::move(type)), symbol(sym) {}
 
   const std::string &getName() { return symbol.name; }
-  Type *getType() const { return type.get(); }
+  SymbolTable::Symbol &getSymbol() const override { return symbol; }
+  Type *getType() const override { return type.get(); }
 
   bool operator<(const Field &other) {
     return symbol.name < other.symbol.name;
