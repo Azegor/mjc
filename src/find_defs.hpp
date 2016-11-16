@@ -58,6 +58,8 @@ public:
   void visitVariableDeclaration(ast::VariableDeclaration &decl) override;
   void visitVarRef(ast::VarRef &varRef) override;
   void visitParameter(ast::Parameter &param) override;
+  void visitNewObjectExpression(ast::NewObjectExpression &expr) override;
+//   void visitNewArrayExpression(ast::NewArrayExpression &expr) override;
   //   void visitField(ast::Field &field) override;
   //   void visitReturnStatement(ast::ReturnStatement &stmt) override;
   //   void visitBinaryExpression(ast::BinaryExpression &expr) override;
@@ -71,8 +73,6 @@ public:
   //   void visitIfStatement(ast::IfStatement &ifStatement) override;
   //   void visitUnaryExpression(ast::UnaryExpression &expr) override;
   //   void visitArrayAccess(ast::ArrayAccess &access) override;
-  //   void visitNewObjectExpression(ast::NewObjectExpression &expr) override;
-  //   void visitNewArrayExpression(ast::NewArrayExpression &expr) override;
   //   void visitWhileStatement(ast::WhileStatement &stmt) override;
   //   void visitArrayType(ast::ArrayType &type) override;
   //   void visitPrimitiveType(ast::PrimitiveType &type) override;

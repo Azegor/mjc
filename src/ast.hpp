@@ -607,6 +607,7 @@ public:
 
 class NewObjectExpression : public PrimaryExpression {
   std::string name;
+  Class *classDef;
 
 public:
   NewObjectExpression(SourceLocation loc, std::string name)
@@ -617,6 +618,8 @@ public:
   }
 
   const std::string &getName() { return name; }
+
+  void setDef(Class *def) { classDef = def; }
 };
 class IntLiteral : public PrimaryExpression {
   int32_t value;

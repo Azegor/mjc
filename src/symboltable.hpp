@@ -49,13 +49,14 @@ class Scope {
 };
 
 class Symbol {
+  friend class StringTable;
   friend class SymbolTable;
   Scope *currentScope = nullptr;
   Definition *currentDef = nullptr;
+  explicit Symbol(std::string name) : name(std::move(name)) {}
 
 public:
   std::string name;
-  explicit Symbol(std::string name) : name(std::move(name)) {}
   Symbol(const Symbol &) = delete;
   Symbol(Symbol &&o)
       : currentScope(o.currentScope), currentDef(o.currentDef),

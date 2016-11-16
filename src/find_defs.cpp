@@ -77,3 +77,12 @@ void FindDefsVisitor::visitParameter(ast::Parameter& param)
   }
   symTbl.insert(sym, &param);
 }
+
+void FindDefsVisitor::visitNewObjectExpression(ast::NewObjectExpression& expr)
+{
+  auto *def = findClassByName(expr.getName());
+  if (!def) {
+    error(expr, "Undefined class '" + expr.getName() + "'");
+  }
+  expr.setDef(def);
+}
