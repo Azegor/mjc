@@ -1,18 +1,19 @@
 #include "ast.hpp"
 
 namespace ast {
-void Visitor::visitProgram(ast::Program& program) {
-  program.acceptChildren(this);
+void Visitor::visitProgram(Program &program) { program.acceptChildren(this); }
+void Visitor::visitClass(Class &klass) { klass.acceptChildren(this); }
+void Visitor::visitFieldList(FieldList &fieldList) {
+  fieldList.acceptChildren(this);
 }
-void Visitor::visitClass(ast::Class& klass) {
-  klass.acceptChildren(this);
+void Visitor::visitMethodList(MethodList &methodList) {
+  methodList.acceptChildren(this);
 }
-void Visitor::visitField(Field &field) {
-  field.acceptChildren(this);
+void Visitor::visitMainMethodList(MainMethodList &mainMethodList) {
+  mainMethodList.acceptChildren(this);
 }
-void Visitor::visitMethod(Method &method) {
-  method.acceptChildren(this);
-}
+void Visitor::visitField(Field &field) { field.acceptChildren(this); }
+void Visitor::visitMethod(Method &method) { method.acceptChildren(this); }
 void Visitor::visitMainMethod(MainMethod &mainMethod) {
   mainMethod.acceptChildren(this);
 }
@@ -28,17 +29,16 @@ void Visitor::visitClassType(ClassType &classType) {
 void Visitor::visitArrayType(ArrayType &arrayType) {
   arrayType.acceptChildren(this);
 }
-void Visitor::visitBlock(Block &block) {
-  block.acceptChildren(this);
-}
-void Visitor::visitVariableDeclaration(VariableDeclaration &variableDeclaration) {
+void Visitor::visitBlock(Block &block) { block.acceptChildren(this); }
+void Visitor::visitVariableDeclaration(
+    VariableDeclaration &variableDeclaration) {
   variableDeclaration.acceptChildren(this);
 }
 void Visitor::visitExpressionStatement(ExpressionStatement &exprStmt) {
   exprStmt.acceptChildren(this);
 }
 void Visitor::visitIfStatement(IfStatement &ifStatement) {
-  ifStatement.acceptChildren (this);
+  ifStatement.acceptChildren(this);
 }
 void Visitor::visitWhileStatement(WhileStatement &whileStatement) {
   whileStatement.acceptChildren(this);
@@ -49,7 +49,8 @@ void Visitor::visitReturnStatement(ReturnStatement &returnStatement) {
 void Visitor::visitNewArrayExpression(NewArrayExpression &newArrayExpression) {
   newArrayExpression.acceptChildren(this);
 }
-void Visitor::visitNewObjectExpression(NewObjectExpression &newObjectExpression) {
+void Visitor::visitNewObjectExpression(
+    NewObjectExpression &newObjectExpression) {
   newObjectExpression.acceptChildren(this);
 }
 void Visitor::visitIntLiteral(IntLiteral &intLiteral) {
@@ -64,9 +65,7 @@ void Visitor::visitNullLiteral(NullLiteral &nullLiteral) {
 void Visitor::visitThisLiteral(ThisLiteral &thisLiteral) {
   thisLiteral.acceptChildren(this);
 }
-void Visitor::visitVarRef(VarRef &ident) {
-  ident.acceptChildren(this);
-}
+void Visitor::visitVarRef(VarRef &varRef) { varRef.acceptChildren(this); }
 void Visitor::visitMethodInvocation(MethodInvocation &methodInvocation) {
   methodInvocation.acceptChildren(this);
 }
@@ -76,13 +75,11 @@ void Visitor::visitFieldAccess(FieldAccess &fieldAccess) {
 void Visitor::visitArrayAccess(ArrayAccess &arrayAccess) {
   arrayAccess.acceptChildren(this);
 }
-void Visitor::visitBinaryExpression(BinaryExpression &binaryExpression){
+void Visitor::visitBinaryExpression(BinaryExpression &binaryExpression) {
   binaryExpression.acceptChildren(this);
 }
 void Visitor::visitUnaryExpression(UnaryExpression &unaryExpression) {
   unaryExpression.acceptChildren(this);
 }
-
-
 
 } /* namespace ast */

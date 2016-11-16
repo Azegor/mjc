@@ -26,9 +26,14 @@
 #ifndef SYMBOLTABLE_H
 #define SYMBOLTABLE_H
 
-#include "ast.hpp"
+#include <deque>
+#include <memory>
 #include <stdexcept>
 #include <unordered_map>
+
+namespace ast {
+class Type;
+}
 
 namespace SymbolTable {
 
@@ -37,39 +42,43 @@ class Definition;
 class Scope {
   friend class SymbolTable;
   std::unique_ptr<Scope> parent;
-  int oldSize;
+  size_t oldSize;
 
   Scope(std::unique_ptr<Scope> parent, int parentSize)
       : parent(std::move(parent)), oldSize(parentSize) {}
 };
 
 class Symbol {
+  friend class StringTable;
   friend class SymbolTable;
   Scope *currentScope = nullptr;
   Definition *currentDef = nullptr;
+  explicit Symbol(std::string name) : name(std::move(name)) {}
 
 public:
   std::string name;
-  Symbol(std::string name) : name(std::move(name)) {}
+  Symbol(const Symbol &) = delete;
+  Symbol(Symbol &&o)
+      : currentScope(o.currentScope), currentDef(o.currentDef),
+        name(std::move(o.name)) {}
 };
 
 class StringTable {
   std::unordered_map<std::string, Symbol> symbols;
 
 public:
-  Symbol &findOrInsert(std::string name) {
-    try {
-      return symbols.at(name);
-    } catch (const std::out_of_range &err) {
-      symbols.insert({name, Symbol{name}});
-      return symbols.at(name);
+  Symbol &findOrInsert(const std::string &name) {
+    auto pos = symbols.find(name);
+    if (pos == symbols.end()) {
+      pos = symbols.emplace(name, Symbol{name}).first;
     }
+    return pos->second;
   }
 };
 
 class Definition {
-  virtual Symbol &getSymbol(){}; // TODO: should be = 0
-  virtual ast::Type getType(){}; // TODO: should be = 0
+  virtual Symbol &getSymbol() const = 0;
+  virtual ast::Type *getType() const = 0;
 };
 
 class SymbolTable {

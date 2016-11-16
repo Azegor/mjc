@@ -33,6 +33,7 @@
 #include "error.hpp"
 #include "input_file.hpp"
 #include "lexer.hpp"
+#include "symboltable.hpp"
 #include "util.hpp"
 
 class ParseError : public CompilerError {
@@ -89,12 +90,14 @@ public:
 
 class Parser {
   const InputFile &inputFile;
-
   Lexer lexer;
+  SymbolTable::StringTable &strTbl;
+
   Token curTok;
 
 public:
-  Parser(const InputFile &inputFile) : inputFile(inputFile), lexer(inputFile) {
+  Parser(const InputFile &inputFile, SymbolTable::StringTable &strTbl)
+      : inputFile(inputFile), lexer(inputFile), strTbl(strTbl) {
     readNextToken();
   }
 

@@ -25,6 +25,7 @@
  */
 
 #include "parser.hpp"
+
 #include "ast.hpp"
 #include "dotvisitor.hpp"
 #include "lexer.hpp"
@@ -37,8 +38,8 @@ using TT = Token::Type;
 void Parser::parseFileOnly() { parseProgram(); }
 void Parser::parseAndPrintAst() {
   auto program = parseProgram();
-  auto v = std::make_unique<PrettyPrinterVisitor>(std::cout, "\t");
-  program->accept(v.get());
+  PrettyPrinterVisitor v(std::cout, "\t");
+  program->accept(&v);
 }
 void Parser::parseAndDotAst() {
   auto program = parseProgram();
@@ -68,17 +69,20 @@ ast::ClassPtr Parser::parseClassDeclaration() {
   std::vector<ast::MethodPtr> methods;
   std::vector<ast::MainMethodPtr> mainMethods;
 
+  auto startPos = curTok.startPos();
   expectAndNext(TT::Class);
   name = expectGetIdentAndNext(TT::Identifier);
   expectAndNext(TT::LBrace);
   // parse class members:
   while (true) {
     switch (curTok.type) {
-    case TT::RBrace:
+    case TT::RBrace: {
+      auto endPos = curTok.endPos();
       readNextToken();
-      return ast::make_Ptr<ast::Class>(SourceLocation{}, std::move(name),
+      return ast::make_Ptr<ast::Class>({startPos, endPos}, std::move(name),
                                        std::move(fields), std::move(methods),
                                        std::move(mainMethods));
+    }
     case TT::Public:
       parseClassMember(fields, methods, mainMethods);
       break;
@@ -110,6 +114,7 @@ void Parser::parseClassMember(std::vector<ast::FieldPtr> &fields,
 }
 
 ast::MainMethodPtr Parser::parseMainMethod() {
+  auto startPos = curTok.startPos();
   expectAndNext(TT::Public);
   expectAndNext(TT::Static);
   expectAndNext(TT::Void);
@@ -127,7 +132,8 @@ ast::MainMethodPtr Parser::parseMainMethod() {
   auto paramName = expectGetIdentAndNext(TT::Identifier);
   expectAndNext(TT::RParen);
   auto block = parseBlock();
-  return ast::make_Ptr<ast::MainMethod>(SourceLocation{}, std::move(methodName),
+  return ast::make_Ptr<ast::MainMethod>({startPos, curTok.endPos()},
+                                        std::move(methodName),
                                         std::move(paramName), std::move(block));
 }
 
@@ -139,8 +145,9 @@ void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
   auto name = expectGetIdentAndNext(TT::Identifier);
   switch (curTok.type) {
   case TT::Semicolon: // field
-    fields.emplace_back(ast::make_Ptr<ast::Field>(
-        {startPos, curTok.endPos()}, std::move(type), std::move(name)));
+    fields.emplace_back(ast::make_Ptr<ast::Field>({startPos, curTok.endPos()},
+                                                  std::move(type),
+                                                  strTbl.findOrInsert(name)));
     readNextToken();
     return;
   case TT::LParen: { // method
@@ -189,7 +196,7 @@ ast::ParameterPtr Parser::parseParameter() {
   auto endPos = curTok.endPos();
   auto ident = expectGetIdentAndNext(TT::Identifier);
   return ast::make_Ptr<ast::Parameter>({startPos, endPos}, std::move(type),
-                                       std::move(ident));
+                                       strTbl.findOrInsert(ident));
 }
 
 ast::TypePtr Parser::parseType() {
@@ -349,14 +356,15 @@ ast::BlockStmtPtr Parser::parseLocalVarDeclStmt() {
     auto endPos = curTok.endPos();
     expectAndNext(TT::Semicolon);
     return ast::make_Ptr<ast::VariableDeclaration>(
-        {startPos, endPos}, std::move(type), std::move(ident),
+        {startPos, endPos}, std::move(type), strTbl.findOrInsert(ident),
         std::move(initializer));
   }
   case TT::Semicolon: {
     auto endPos = curTok.endPos();
     readNextToken();
     return ast::make_Ptr<ast::VariableDeclaration>(
-        {startPos, endPos}, std::move(type), std::move(ident), nullptr);
+        {startPos, endPos}, std::move(type), strTbl.findOrInsert(ident),
+        nullptr);
   }
   default:
     errorExpectedAnyOf({TT::Eq, TT::Semicolon});
@@ -615,7 +623,7 @@ ast::ExprPtr Parser::parsePrimary() {
           std::move(args));
     } else {
       SourceLocation loc{startPos, fieldEndPos};
-      return ast::make_EPtr<ast::VarRef>(loc, std::move(ident));
+      return ast::make_EPtr<ast::VarRef>(loc, strTbl.findOrInsert(ident));
     }
   }
   case TT::New:
