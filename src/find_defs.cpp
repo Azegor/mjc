@@ -26,7 +26,17 @@ void FindDefsVisitor::visitMainMethodList(ast::MainMethodList &mainMethodList) {
   mainMethodList.acceptChildren(this);
 }
 
+void FindDefsVisitor::visitMethod(ast::Method& method)
+{
+  symTbl.enterScope(); // for parameters
+  method.acceptChildren(this);
+  symTbl.leaveScope();
+}
+
 void FindDefsVisitor::visitBlock(ast::Block &block) {
+  // TODO: this currently adds an extra block for the outmost block,
+  // the parameters therefore being alone in the outpust block.
+  // since shadowing is forbidden this should be no problem
   symTbl.enterScope();
   block.acceptChildren(this);
   symTbl.leaveScope();
@@ -43,7 +53,20 @@ void FindDefsVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
 void FindDefsVisitor::visitVarRef(ast::VarRef &varRef) {
   auto *def = symTbl.lookup(varRef.getSymbol());
   if (!def) {
-    error(varRef, "Unknown variable '" + varRef.getSymbol().name + "'");
+    if (varRef.getName() == "System") {
+      // TODO
+    } else {
+      error(varRef, "Unknown variable '" + varRef.getSymbol().name + "'");
+    }
   }
   varRef.setDef(def);
+}
+
+void FindDefsVisitor::visitParameter(ast::Parameter& param)
+{
+  auto &sym = param.getSymbol();
+  if (symTbl.isDefinedInCurrentScope(sym)) {
+    error(param, "Parameter '" + param.getSymbol().name + "' already defined");
+  }
+  symTbl.insert(sym, &param);
 }

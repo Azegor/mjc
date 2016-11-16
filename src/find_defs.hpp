@@ -53,12 +53,13 @@ public:
   void visitFieldList(ast::FieldList &fieldList) override;
   void visitMethodList(ast::MethodList &methodList) override;
   void visitMainMethodList(ast::MainMethodList &mainMethodList) override;
-  //   void visitField(ast::Field &field) override;
-  //   void visitMethod(ast::Method &method) override;
+  void visitMethod(ast::Method &method) override;
   void visitBlock(ast::Block &block) override;
   void visitVariableDeclaration(ast::VariableDeclaration &decl) override;
-  //   void visitReturnStatement(ast::ReturnStatement &stmt) override;
   void visitVarRef(ast::VarRef &varRef) override;
+  void visitParameter(ast::Parameter &param) override;
+  //   void visitField(ast::Field &field) override;
+  //   void visitReturnStatement(ast::ReturnStatement &stmt) override;
   //   void visitBinaryExpression(ast::BinaryExpression &expr) override;
   //   void visitIntLiteral(ast::IntLiteral &lit) override;
   //   void visitBoolLiteral(ast::BoolLiteral &lit) override;
@@ -76,7 +77,6 @@ public:
   //   void visitArrayType(ast::ArrayType &type) override;
   //   void visitPrimitiveType(ast::PrimitiveType &type) override;
   //   void visitClassType(ast::ClassType &type) override;
-  //   void visitParameter(ast::Parameter &param) override;
 
   virtual ~FindDefsVisitor() {}
 
@@ -99,4 +99,4 @@ private:
   }
 };
 
-#endif
+#endif // FIND_DEFS_H

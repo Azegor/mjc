@@ -366,7 +366,7 @@ public:
 };
 using FieldPtr = std::unique_ptr<Field>;
 
-class Parameter : public Node {
+class Parameter : public Node, public SymbolTable::Definition {
   TypePtr type;
   SymbolTable::Symbol &symbol;
 
@@ -377,7 +377,8 @@ public:
   void accept(Visitor *visitor) override { visitor->visitParameter(*this); }
   void acceptChildren(Visitor *visitor) override { type->accept(visitor); }
   const std::string &getName() { return symbol.name; }
-  Type *getType() const { return type.get(); }
+  SymbolTable::Symbol &getSymbol() const override { return symbol; }
+  Type *getType() const override { return type.get(); }
 };
 using ParameterPtr = std::unique_ptr<Parameter>;
 using ParameterList = std::vector<ParameterPtr>;
