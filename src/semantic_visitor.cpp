@@ -83,3 +83,11 @@ void SemanticVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
   }
   expr.setDef(def);
 }
+
+void SemanticVisitor::visitClassType(ast::ClassType &type) {
+  auto *def = findClassByName(type.getName());
+  if (!def) {
+    error(type, "Undefined class '" + type.getName() + "'");
+  }
+  type.setDef(def);
+}

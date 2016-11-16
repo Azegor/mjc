@@ -227,6 +227,7 @@ public:
 
 class ClassType : public BasicType {
   std::string name;
+  Class* classDef = nullptr;
 
 public:
   ClassType(SourceLocation loc, std::string name)
@@ -235,6 +236,7 @@ public:
   const std::string &getName() { return name; }
 
   void accept(Visitor *visitor) override { visitor->visitClassType(*this); }
+  void setDef(Class *def) { classDef = def; }
 };
 
 class ArrayType : public Type {

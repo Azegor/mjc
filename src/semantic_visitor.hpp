@@ -59,6 +59,7 @@ public:
   void visitVarRef(ast::VarRef &varRef) override;
   void visitParameter(ast::Parameter &param) override;
   void visitNewObjectExpression(ast::NewObjectExpression &expr) override;
+  void visitClassType(ast::ClassType &type) override;
   //   void visitNewArrayExpression(ast::NewArrayExpression &expr) override;
   //   void visitField(ast::Field &field) override;
   //   void visitReturnStatement(ast::ReturnStatement &stmt) override;
@@ -76,7 +77,6 @@ public:
   //   void visitWhileStatement(ast::WhileStatement &stmt) override;
   //   void visitArrayType(ast::ArrayType &type) override;
   //   void visitPrimitiveType(ast::PrimitiveType &type) override;
-  //   void visitClassType(ast::ClassType &type) override;
 
   virtual ~SemanticVisitor() {}
 
