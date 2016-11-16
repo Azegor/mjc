@@ -4,8 +4,8 @@
 #include "ast.hpp"
 #include <cassert>
 #include <ostream>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 class DotVisitor : public ast::Visitor {
 private:
@@ -18,7 +18,7 @@ private:
   std::string parentNode;
   std::string nextEdgeLabel;
 
-  std::unordered_map<const ast::Node*, std::string> nodeNames;
+  std::unordered_map<const ast::Node *, std::string> nodeNames;
 
   std::vector<std::string> nodeStack;
 
@@ -30,7 +30,9 @@ private:
     return ss.str();
   }
 
-  std::string nodeDecl(const std::string &nodeLabel, const ast::Node* node = nullptr, int shape = SHAPE_NONE) {
+  std::string nodeDecl(const std::string &nodeLabel,
+                       const ast::Node *node = nullptr,
+                       int shape = SHAPE_NONE) {
     auto nodeName = newNodeName();
     if (node) {
       nodeNames[node] = nodeName;
@@ -49,7 +51,7 @@ private:
     s << parentNode << " -> " << nodeName;
 
     if (nextEdgeLabel != "") {
-      s << " [label=\"" << nextEdgeLabel << "\"];" << '\n';
+      s << " [label=\"" << nextEdgeLabel << "\"];\n";
       nextEdgeLabel = "";
     } else {
       s << " [label=\"\"];" << '\n';
@@ -60,11 +62,11 @@ private:
     return nodeName;
   }
 
-  void weakEdgeToNode(const std::string& nodeName, const std::string& targetNodeName)
-  {
+  void weakEdgeToNode(const std::string &nodeName,
+                      const std::string &targetNodeName) {
     s << nodeName << " -> " << targetNodeName;
     if (nextEdgeLabel != "") {
-      s << " [label=\"" << nextEdgeLabel << "\" weight=0 style=dashed];" << '\n';
+      s << " [label=\"" << nextEdgeLabel << "\" weight=0 style=dashed];\n";
       nextEdgeLabel = "";
     } else {
       s << " [label=\"\" weight=0 style=dashed];" << '\n';
@@ -72,12 +74,10 @@ private:
     s << '\n';
   }
 
-  std::string toplevelDecl(const std::string &nodeLabel, const ast::Node* node = nullptr) {
-    auto nodeName = newNodeName();
+  std::string toplevelDecl(const ast::Node *node,
+                           const std::string &nodeLabel) {
+    auto nodeName = nodeNames[node];
     s << nodeName << "[label=\"" << nodeLabel << "\"]" << '\n';
-    if (node) {
-      nodeNames[node] = nodeName;
-    }
     return nodeName;
   }
 

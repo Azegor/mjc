@@ -1,10 +1,15 @@
 
 #include "dotvisitor.hpp"
+#include <iostream>
 #include <sstream>
 
 void DotVisitor::visitProgram(ast::Program &program) {
   s << "digraph G {\n";
   // s << "rankdir=LR\n"; // TODO worth considering
+  // first add all class node names:
+  for (auto &klass : program.getClasses()) {
+    nodeNames[klass.get()] = newNodeName();
+  }
   program.acceptChildren(this);
   s << "}" << '\n';
   assert(this->nodeStack.size() == 0);
@@ -13,7 +18,7 @@ void DotVisitor::visitProgram(ast::Program &program) {
 void DotVisitor::visitClass(ast::Class &klass) {
   this->parentNode = newNodeName();
   auto nodeLabel = "Class " + klass.getName();
-  auto nodeName = toplevelDecl(nodeLabel, &klass);
+  auto nodeName = toplevelDecl(&klass, nodeLabel);
   pushNode(nodeName);
   klass.acceptChildren(this);
   popNode();
@@ -313,7 +318,13 @@ void DotVisitor::visitPrimitiveType(ast::PrimitiveType &type) {
 
 void DotVisitor::visitClassType(ast::ClassType &type) {
   auto nodeLabel = "ClassType(" + type.getName() + ")";
-  nodeDecl(nodeLabel);
+  auto nodeName = nodeDecl(nodeLabel);
+  auto targetNode = nodeNames.find(dynamic_cast<ast::Node *>(type.getDef()));
+  if (targetNode != nodeNames.end()) {
+    weakEdgeToNode(nodeName, targetNode->second);
+  } else {
+    std::cerr << "no def found" << std::endl;
+  }
 }
 
 void DotVisitor::visitParameter(ast::Parameter &param) {

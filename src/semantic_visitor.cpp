@@ -54,6 +54,7 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
     error(decl, "Variable '" + decl.getSymbol().name + "' already defined");
   }
   symTbl.insert(sym, &decl);
+  decl.acceptChildren(this);
 }
 
 void SemanticVisitor::visitVarRef(ast::VarRef &varRef) {
@@ -66,6 +67,7 @@ void SemanticVisitor::visitVarRef(ast::VarRef &varRef) {
     }
   }
   varRef.setDef(def);
+  varRef.acceptChildren(this);
 }
 
 void SemanticVisitor::visitParameter(ast::Parameter &param) {
@@ -74,6 +76,7 @@ void SemanticVisitor::visitParameter(ast::Parameter &param) {
     error(param, "Parameter '" + param.getSymbol().name + "' already defined");
   }
   symTbl.insert(sym, &param);
+  param.acceptChildren(this);
 }
 
 void SemanticVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
@@ -82,6 +85,7 @@ void SemanticVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
     error(expr, "Undefined class '" + expr.getName() + "'");
   }
   expr.setDef(def);
+  expr.acceptChildren(this);
 }
 
 void SemanticVisitor::visitClassType(ast::ClassType &type) {
@@ -90,4 +94,5 @@ void SemanticVisitor::visitClassType(ast::ClassType &type) {
     error(type, "Undefined class '" + type.getName() + "'");
   }
   type.setDef(def);
+  type.acceptChildren(this);
 }

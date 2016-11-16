@@ -227,7 +227,7 @@ public:
 
 class ClassType : public BasicType {
   std::string name;
-  Class* classDef = nullptr;
+  Class *classDef = nullptr;
 
 public:
   ClassType(SourceLocation loc, std::string name)
@@ -237,6 +237,7 @@ public:
 
   void accept(Visitor *visitor) override { visitor->visitClassType(*this); }
   void setDef(Class *def) { classDef = def; }
+  Class *getDef() const { return classDef; }
 };
 
 class ArrayType : public Type {
@@ -622,7 +623,7 @@ public:
   const std::string &getName() { return name; }
 
   void setDef(Class *def) { classDef = def; }
-  Class* getDef() const { return classDef; }
+  Class *getDef() const { return classDef; }
 };
 class IntLiteral : public PrimaryExpression {
   int32_t value;
@@ -677,7 +678,7 @@ public:
   const std::string &getName() { return symbol.name; }
 
   void setDef(SymbolTable::Definition *def) { definition = def; }
-  SymbolTable::Definition* getDef() const { return definition; }
+  SymbolTable::Definition *getDef() const { return definition; }
 };
 
 class MethodInvocation : public Expression {
