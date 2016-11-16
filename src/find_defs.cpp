@@ -47,6 +47,10 @@ void FindDefsVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
   if (symTbl.isDefinedInCurrentScope(sym)) {
     error(decl, "Variable '" + decl.getSymbol().name + "' already defined");
   }
+  auto prev = symTbl.lookup(sym);
+  if (prev && dynamic_cast<ast::Field*>(prev) == nullptr) {
+    error(decl, "Variable '" + decl.getSymbol().name + "' already defined");
+  }
   symTbl.insert(sym, &decl);
 }
 
