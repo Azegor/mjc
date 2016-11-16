@@ -31,10 +31,10 @@
 #include <fcntl.h>
 
 #include "error.hpp"
-#include "find_defs.hpp"
 #include "input_file.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
+#include "semantic_visitor.hpp"
 
 co::color_ostream<std::ostream> Compiler::cl_cout{std::cout};
 co::color_ostream<std::ostream> Compiler::cl_cerr{std::cerr};
@@ -137,8 +137,8 @@ int Compiler::checkSemantic() {
 }
 
 void Compiler::analyzeAstSemantic(ast::Program *astRoot) {
-  FindDefsVisitor v(inputFile.getFilename());
-  astRoot->accept(&v);
+  SemanticVisitor semantic_visitor(inputFile.getFilename());
+  astRoot->accept(&semantic_visitor);
 }
 
 static int exclusiveOptionsSum(bool b) { return b ? 1 : 0; }

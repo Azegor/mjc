@@ -26,7 +26,7 @@ public:
   }
 };
 
-class FindDefsVisitor : public ast::Visitor {
+class SemanticVisitor : public ast::Visitor {
   std::string fileName;
   ast::Program *currentProgram = nullptr;
   ast::Class *currentClass = nullptr;
@@ -47,7 +47,7 @@ class FindDefsVisitor : public ast::Visitor {
   }
 
 public:
-  FindDefsVisitor(std::string fileName) : fileName(std::move(fileName)) {}
+  SemanticVisitor(std::string fileName) : fileName(std::move(fileName)) {}
   void visitProgram(ast::Program &program) override;
   void visitClass(ast::Class &klass) override;
   void visitFieldList(ast::FieldList &fieldList) override;
@@ -59,7 +59,7 @@ public:
   void visitVarRef(ast::VarRef &varRef) override;
   void visitParameter(ast::Parameter &param) override;
   void visitNewObjectExpression(ast::NewObjectExpression &expr) override;
-//   void visitNewArrayExpression(ast::NewArrayExpression &expr) override;
+  //   void visitNewArrayExpression(ast::NewArrayExpression &expr) override;
   //   void visitField(ast::Field &field) override;
   //   void visitReturnStatement(ast::ReturnStatement &stmt) override;
   //   void visitBinaryExpression(ast::BinaryExpression &expr) override;
@@ -78,7 +78,7 @@ public:
   //   void visitPrimitiveType(ast::PrimitiveType &type) override;
   //   void visitClassType(ast::ClassType &type) override;
 
-  virtual ~FindDefsVisitor() {}
+  virtual ~SemanticVisitor() {}
 
 private:
   [[noreturn]] void error(const ast::Node &node, std::string msg) {
