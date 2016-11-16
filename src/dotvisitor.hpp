@@ -5,6 +5,7 @@
 #include <cassert>
 #include <ostream>
 #include <vector>
+#include <unordered_map>
 
 class DotVisitor : public ast::Visitor {
 private:
@@ -17,6 +18,8 @@ private:
   std::string parentNode;
   std::string nextEdgeLabel;
 
+  std::unordered_map<const ast::Node*, std::string> nodeNames;
+
   std::vector<std::string> nodeStack;
 
   void edgeLabel(const std::string &label) { nextEdgeLabel = label; }
@@ -27,8 +30,11 @@ private:
     return ss.str();
   }
 
-  std::string nodeDecl(const std::string &nodeLabel, int shape = SHAPE_NONE) {
+  std::string nodeDecl(const std::string &nodeLabel, const ast::Node* node = nullptr, int shape = SHAPE_NONE) {
     auto nodeName = newNodeName();
+    if (node) {
+      nodeNames[node] = nodeName;
+    }
 
     s << nodeName << "[label=\"" << nodeLabel;
     switch (shape) {
@@ -38,23 +44,40 @@ private:
     case SHAPE_NONE:
       s << "\"";
     }
-    s << "]" << std::endl;
+    s << "]" << '\n';
+
+    s << parentNode << " -> " << nodeName;
 
     if (nextEdgeLabel != "") {
-      s << "edge[label=\"" << nextEdgeLabel << "\"];" << std::endl;
+      s << " [label=\"" << nextEdgeLabel << "\"];" << '\n';
       nextEdgeLabel = "";
     } else {
-      s << "edge[label=\"\"];" << std::endl;
+      s << " [label=\"\"];" << '\n';
     }
 
-    s << parentNode << " -> " << nodeName << std::endl;
+    s << '\n';
 
     return nodeName;
   }
 
-  std::string toplevelDecl(const std::string &nodeLabel) {
+  void weakEdgeToNode(const std::string& nodeName, const std::string& targetNodeName)
+  {
+    s << nodeName << " -> " << targetNodeName;
+    if (nextEdgeLabel != "") {
+      s << " [label=\"" << nextEdgeLabel << "\" weight=0 style=dashed];" << '\n';
+      nextEdgeLabel = "";
+    } else {
+      s << " [label=\"\" weight=0 style=dashed];" << '\n';
+    }
+    s << '\n';
+  }
+
+  std::string toplevelDecl(const std::string &nodeLabel, const ast::Node* node = nullptr) {
     auto nodeName = newNodeName();
-    s << nodeName << "[label=\"" << nodeLabel << "\"]" << std::endl;
+    s << nodeName << "[label=\"" << nodeLabel << "\"]" << '\n';
+    if (node) {
+      nodeNames[node] = nodeName;
+    }
     return nodeName;
   }
 
@@ -78,8 +101,7 @@ private:
 public:
   DotVisitor(std::ostream &stream) : s(stream) {}
 
-  void start(ast::Program &program);
-
+  void visitProgram(ast::Program &program) override;
   void visitClass(ast::Class &klass) override;
   void visitField(ast::Field &field) override;
   void visitMethod(ast::Method &method) override;

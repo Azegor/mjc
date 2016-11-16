@@ -2,17 +2,18 @@
 #include "dotvisitor.hpp"
 #include <sstream>
 
-void DotVisitor::start(ast::Program &program) {
-  s << "digraph G {" << std::endl;
+void DotVisitor::visitProgram(ast::Program &program) {
+  s << "digraph G {\n";
+  // s << "rankdir=LR\n"; // TODO worth considering
   program.acceptChildren(this);
-  s << "}" << std::endl;
+  s << "}" << '\n';
   assert(this->nodeStack.size() == 0);
 }
 
 void DotVisitor::visitClass(ast::Class &klass) {
   this->parentNode = newNodeName();
   auto nodeLabel = "Class " + klass.getName();
-  auto nodeName = toplevelDecl(nodeLabel);
+  auto nodeName = toplevelDecl(nodeLabel, &klass);
   pushNode(nodeName);
   klass.acceptChildren(this);
   popNode();
@@ -20,7 +21,7 @@ void DotVisitor::visitClass(ast::Class &klass) {
 
 void DotVisitor::visitField(ast::Field &field) {
   auto nodeLabel = "Field(" + field.getName() + ")";
-  auto nodeName = nodeDecl(nodeLabel);
+  auto nodeName = nodeDecl(nodeLabel, &field);
 
   pushNode(nodeName);
   edgeLabel("Type");
@@ -69,7 +70,7 @@ void DotVisitor::visitBlock(ast::Block &block) {
 
 void DotVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
   auto nodeLabel = "Variable Declaration(" + decl.getName() + ")";
-  auto nodeName = nodeDecl(nodeLabel);
+  auto nodeName = nodeDecl(nodeLabel, &decl);
 
   pushNode(nodeName);
   {
@@ -86,7 +87,7 @@ void DotVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
 
 void DotVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
   auto nodeLabel = "Return";
-  auto nodeName = nodeDecl(nodeLabel, SHAPE_BOX);
+  auto nodeName = nodeDecl(nodeLabel, nullptr, SHAPE_BOX);
 
   pushNode(nodeName);
   stmt.acceptChildren(this);
@@ -96,6 +97,10 @@ void DotVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
 void DotVisitor::visitVarRef(ast::VarRef &ident) {
   auto nodeLabel = "VarRef " + ident.getName();
   auto nodeName = nodeDecl(nodeLabel);
+  auto targetNode = nodeNames.find(dynamic_cast<ast::Node *>(ident.getDef()));
+  if (targetNode != nodeNames.end()) {
+    weakEdgeToNode(nodeName, targetNode->second);
+  }
 }
 
 static std::string
@@ -241,7 +246,11 @@ void DotVisitor::visitArrayAccess(ast::ArrayAccess &access) {
 
 void DotVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
   auto nodeLabel = "New(" + expr.getName() + ")";
-  nodeDecl(nodeLabel);
+  auto nodeName = nodeDecl(nodeLabel);
+  auto targetNode = nodeNames.find(dynamic_cast<ast::Node *>(expr.getDef()));
+  if (targetNode != nodeNames.end()) {
+    weakEdgeToNode(nodeName, targetNode->second);
+  }
 }
 
 void DotVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
@@ -308,7 +317,7 @@ void DotVisitor::visitClassType(ast::ClassType &type) {
 }
 
 void DotVisitor::visitParameter(ast::Parameter &param) {
-  auto nodeName = nodeDecl("Param(" + param.getName() + ")");
+  auto nodeName = nodeDecl("Param(" + param.getName() + ")", &param);
 
   pushNode(nodeName);
   param.getType()->accept(this);

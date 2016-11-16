@@ -43,8 +43,8 @@ void Parser::parseAndPrintAst() {
 }
 void Parser::parseAndDotAst() {
   auto program = parseProgram();
-  DotVisitor v{std::cout};
-  v.start(*program);
+  DotVisitor dotVisitor{std::cout};
+  program->accept(&dotVisitor);
 }
 
 ast::ProgramPtr Parser::parseProgram() {

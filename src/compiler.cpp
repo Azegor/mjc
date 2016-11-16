@@ -143,8 +143,8 @@ int Compiler::attrAstDot() {
   try {
     auto ast = parser.parseProgram();
     analyzeAstSemantic(ast.get());
-    DotVisitor v{std::cout};
-    v.start(*ast);
+    DotVisitor dotVisitor{std::cout};
+    ast->accept(&dotVisitor);
     return EXIT_SUCCESS;
   } catch (CompilerError &e) {
     e.writeErrorMessage(std::cerr);
@@ -191,6 +191,8 @@ int Compiler::run() {
     return astDot();
   } else if (options.checkSemantic) {
     return checkSemantic();
+  } else if (options.dotAttrAst) {
+    return attrAstDot();
   }
   return EXIT_FAILURE;
 }
