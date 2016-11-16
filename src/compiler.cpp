@@ -30,6 +30,7 @@
 
 #include <fcntl.h>
 
+#include "dotvisitor.hpp"
 #include "error.hpp"
 #include "input_file.hpp"
 #include "lexer.hpp"
@@ -136,6 +137,21 @@ int Compiler::checkSemantic() {
   }
 }
 
+int Compiler::attrAstDot() {
+  SymbolTable::StringTable strTbl;
+  Parser parser{inputFile, strTbl};
+  try {
+    auto ast = parser.parseProgram();
+    analyzeAstSemantic(ast.get());
+    DotVisitor v{std::cout};
+    v.start(*ast);
+    return EXIT_SUCCESS;
+  } catch (CompilerError &e) {
+    e.writeErrorMessage(std::cerr);
+    return EXIT_FAILURE;
+  }
+}
+
 void Compiler::analyzeAstSemantic(ast::Program *astRoot) {
   SemanticVisitor semantic_visitor(inputFile.getFilename());
   astRoot->accept(&semantic_visitor);
@@ -154,8 +170,8 @@ void Compiler::checkOptions() {
                           options.fuzzParser, options.printAst,
                           options.dotAst) > 1)
     throw ArgumentError("Cannot have Options --echo, --lextext, --lexfuzz, "
-                        "--parsertest, --parserfuzz, --print-ast, --dot-ast or "
-                        "--check simultaneously");
+                        "--parsertest, --parserfuzz, --print-ast, --dot-ast, "
+                        "--check or --dot-attr-ast simultaneously");
 }
 
 int Compiler::run() {

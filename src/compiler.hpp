@@ -45,6 +45,7 @@ struct CompilerOptions {
   bool printAst = false;
   bool dotAst = false;
   bool checkSemantic = false;
+  bool dotAttrAst = false;
   // ...
 };
 
@@ -63,6 +64,7 @@ class Compiler {
   int astPrint();
   int astDot();
   int checkSemantic();
+  int attrAstDot();
 
   void checkOptions();
   bool sanityChecks();

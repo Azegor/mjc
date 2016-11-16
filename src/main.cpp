@@ -41,7 +41,9 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
       // create graphviz graph from AST
       ("dot-ast", "print AST to dot output")
       // check semantic of program
-      ("check", "check whether input program is semantically valid");
+      ("check", "check whether input program is semantically valid")
+      // check semantic of program
+      ("dot-attr-ast", "print attributed AST as dot output");
 
   bpo::variables_map var_map;
   try {
@@ -89,6 +91,9 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
     }
     if (var_map.count("check")) {
       compilerOptions.checkSemantic = true;
+    }
+    if (var_map.count("dot-attr-ast")) {
+      compilerOptions.dotAttrAst = true;
     }
   } catch (bpo::required_option &e) {
     cl_cerr << co::mode(co::bold) << co::color(co::red)
