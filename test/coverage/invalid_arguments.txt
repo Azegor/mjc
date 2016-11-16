@@ -5,6 +5,9 @@ bla
 --lexfuzz /nonexisting/file
 --parsetest /nonexisting/file
 --parsefuzz /nonexisting/file
+--print-ast /nonexisting/file
+--dot-ast /nonexisting/file
+--dot-attr-ast /nonexisting/file
 --lextest --parsetest /dev/null
 --lextest ../test/lextest/nonascii.java
 --lexfuzz ../test/lextest/nonascii.java

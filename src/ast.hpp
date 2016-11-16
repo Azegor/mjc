@@ -609,7 +609,7 @@ public:
 
 class NewObjectExpression : public PrimaryExpression {
   std::string name;
-  Class *classDef;
+  Class *classDef = nullptr;
 
 public:
   NewObjectExpression(SourceLocation loc, std::string name)
@@ -664,7 +664,7 @@ public:
 
 class VarRef : public PrimaryExpression, public SymbolTable::Definition {
   SymbolTable::Symbol &symbol;
-  SymbolTable::Definition *definition;
+  SymbolTable::Definition *definition = nullptr;
 
 public:
   VarRef(SourceLocation loc, SymbolTable::Symbol &sym)
