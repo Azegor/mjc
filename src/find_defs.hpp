@@ -55,10 +55,10 @@ public:
   void visitMainMethodList(ast::MainMethodList &mainMethodList) override;
   //   void visitField(ast::Field &field) override;
   //   void visitMethod(ast::Method &method) override;
-  //   void visitBlock(ast::Block &block) override;
-  //   void visitVariableDeclaration(ast::VariableDeclaration &decl) override;
+  void visitBlock(ast::Block &block) override;
+  void visitVariableDeclaration(ast::VariableDeclaration &decl) override;
   //   void visitReturnStatement(ast::ReturnStatement &stmt) override;
-  //   void visitVarRef(ast::VarRef &ident) override;
+  void visitVarRef(ast::VarRef &varRef) override;
   //   void visitBinaryExpression(ast::BinaryExpression &expr) override;
   //   void visitIntLiteral(ast::IntLiteral &lit) override;
   //   void visitBoolLiteral(ast::BoolLiteral &lit) override;

@@ -65,7 +65,7 @@ void Visitor::visitNullLiteral(NullLiteral &nullLiteral) {
 void Visitor::visitThisLiteral(ThisLiteral &thisLiteral) {
   thisLiteral.acceptChildren(this);
 }
-void Visitor::visitVarRef(VarRef &ident) { ident.acceptChildren(this); }
+void Visitor::visitVarRef(VarRef &varRef) { varRef.acceptChildren(this); }
 void Visitor::visitMethodInvocation(MethodInvocation &methodInvocation) {
   methodInvocation.acceptChildren(this);
 }

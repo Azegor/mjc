@@ -32,6 +32,7 @@
 #include <memory>
 
 #include "lexer.hpp"
+#include "symboltable.hpp"
 
 namespace ast {
 
@@ -111,7 +112,7 @@ public:
   virtual void visitBoolLiteral(BoolLiteral &boolLiteral);
   virtual void visitNullLiteral(NullLiteral &nullLiteral);
   virtual void visitThisLiteral(ThisLiteral &thisLiteral);
-  virtual void visitVarRef(VarRef &ident);
+  virtual void visitVarRef(VarRef &varRef);
   virtual void visitMethodInvocation(MethodInvocation &methodInvocation);
   virtual void visitFieldAccess(FieldAccess &fieldAccess);
   virtual void visitArrayAccess(ArrayAccess &arrayAccess);
@@ -342,17 +343,17 @@ public:
 
 class Field : public Node {
   TypePtr type;
-  std::string name;
+  SymbolTable::Symbol &symbol;
 
 public:
-  Field(SourceLocation loc, TypePtr type, std::string name)
-      : Node(std::move(loc)), type(std::move(type)), name(std::move(name)) {}
+  Field(SourceLocation loc, TypePtr type, SymbolTable::Symbol &sym)
+      : Node(std::move(loc)), type(std::move(type)), symbol(sym) {}
 
-  const std::string &getName() { return name; }
+  const std::string &getName() { return symbol.name; }
   Type *getType() const { return type.get(); }
 
   bool operator<(const Field &other) {
-    return name < other.name;
+    return symbol.name < other.symbol.name;
     // include type
   }
 
@@ -360,22 +361,22 @@ public:
 
   void acceptChildren(Visitor *visitor) override { type->accept(visitor); }
 
-  bool operator<(const Field &o) const { return name < o.name; }
-  bool operator==(const Field &o) const { return name == o.name; }
+  bool operator<(const Field &o) const { return symbol.name < o.symbol.name; }
+  bool operator==(const Field &o) const { return symbol.name == o.symbol.name; }
 };
 using FieldPtr = std::unique_ptr<Field>;
 
 class Parameter : public Node {
   TypePtr type;
-  std::string name;
+  SymbolTable::Symbol &symbol;
 
 public:
-  Parameter(SourceLocation loc, TypePtr type, std::string name)
-      : Node(std::move(loc)), type(std::move(type)), name(std::move(name)) {}
+  Parameter(SourceLocation loc, TypePtr type, SymbolTable::Symbol &sym)
+      : Node(std::move(loc)), type(std::move(type)), symbol(sym) {}
 
   void accept(Visitor *visitor) override { visitor->visitParameter(*this); }
   void acceptChildren(Visitor *visitor) override { type->accept(visitor); }
-  const std::string &getName() { return name; }
+  const std::string &getName() { return symbol.name; }
   Type *getType() const { return type.get(); }
 };
 using ParameterPtr = std::unique_ptr<Parameter>;
@@ -416,9 +417,9 @@ public:
   void accept(Visitor *visitor) override { visitor->visitMethod(*this); }
 
   void acceptChildren(Visitor *visitor) override {
-    for (auto &param : parameters)
+    for (auto &param : parameters) {
       param->accept(visitor);
-
+    }
     block->accept(visitor);
   }
 };
@@ -547,17 +548,18 @@ public:
 };
 using ProgramPtr = std::unique_ptr<Program>;
 
-class VariableDeclaration : public BlockStatement {
+class VariableDeclaration : public BlockStatement,
+                            public SymbolTable::Definition {
   TypePtr type;
-  std::string name;
+  SymbolTable::Symbol &symbol;
   // might be nullptr
   ExprPtr initializer;
 
 public:
-  VariableDeclaration(SourceLocation loc, TypePtr type, std::string name,
-                      ExprPtr initializer)
-      : BlockStatement(std::move(loc)), type(std::move(type)),
-        name(std::move(name)), initializer(std::move(initializer)) {}
+  VariableDeclaration(SourceLocation loc, TypePtr type,
+                      SymbolTable::Symbol &sym, ExprPtr initializer)
+      : BlockStatement(std::move(loc)), type(std::move(type)), symbol(sym),
+        initializer(std::move(initializer)) {}
 
   void accept(Visitor *visitor) override {
     visitor->visitVariableDeclaration(*this);
@@ -569,8 +571,9 @@ public:
       initializer->accept(visitor);
   }
 
-  const std::string &getName() { return name; }
-  Type *getType() const { return type.get(); }
+  SymbolTable::Symbol &getSymbol() const override { return symbol; }
+  const std::string &getName() { return symbol.name; }
+  Type *getType() const override { return type.get(); }
   Expression *getInitializer() const { return initializer.get(); }
 };
 
@@ -651,16 +654,21 @@ public:
   void accept(Visitor *visitor) override { visitor->visitThisLiteral(*this); }
 };
 
-class VarRef : public PrimaryExpression {
-  std::string name;
+class VarRef : public PrimaryExpression, public SymbolTable::Definition {
+  SymbolTable::Symbol &symbol;
+  SymbolTable::Definition *definition;
 
 public:
-  VarRef(SourceLocation loc, std::string name)
-      : PrimaryExpression(std::move(loc)), name(std::move(name)) {}
+  VarRef(SourceLocation loc, SymbolTable::Symbol &sym)
+      : PrimaryExpression(std::move(loc)), symbol(sym) {}
 
   void accept(Visitor *visitor) override { visitor->visitVarRef(*this); }
 
-  const std::string &getName() { return name; }
+  SymbolTable::Symbol &getSymbol() const override { return symbol; }
+  ast::Type *getType() const override { return nullptr; /* TODO */ }
+  const std::string &getName() { return symbol.name; }
+
+  void setDef(SymbolTable::Definition *def) { definition = def; }
 };
 
 class MethodInvocation : public Expression {

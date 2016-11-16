@@ -145,8 +145,9 @@ void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
   auto name = expectGetIdentAndNext(TT::Identifier);
   switch (curTok.type) {
   case TT::Semicolon: // field
-    fields.emplace_back(ast::make_Ptr<ast::Field>(
-        {startPos, curTok.endPos()}, std::move(type), std::move(name)));
+    fields.emplace_back(ast::make_Ptr<ast::Field>({startPos, curTok.endPos()},
+                                                  std::move(type),
+                                                  strTbl.findOrInsert(name)));
     readNextToken();
     return;
   case TT::LParen: { // method
@@ -195,7 +196,7 @@ ast::ParameterPtr Parser::parseParameter() {
   auto endPos = curTok.endPos();
   auto ident = expectGetIdentAndNext(TT::Identifier);
   return ast::make_Ptr<ast::Parameter>({startPos, endPos}, std::move(type),
-                                       std::move(ident));
+                                       strTbl.findOrInsert(ident));
 }
 
 ast::TypePtr Parser::parseType() {
@@ -355,14 +356,15 @@ ast::BlockStmtPtr Parser::parseLocalVarDeclStmt() {
     auto endPos = curTok.endPos();
     expectAndNext(TT::Semicolon);
     return ast::make_Ptr<ast::VariableDeclaration>(
-        {startPos, endPos}, std::move(type), std::move(ident),
+        {startPos, endPos}, std::move(type), strTbl.findOrInsert(ident),
         std::move(initializer));
   }
   case TT::Semicolon: {
     auto endPos = curTok.endPos();
     readNextToken();
     return ast::make_Ptr<ast::VariableDeclaration>(
-        {startPos, endPos}, std::move(type), std::move(ident), nullptr);
+        {startPos, endPos}, std::move(type), strTbl.findOrInsert(ident),
+        nullptr);
   }
   default:
     errorExpectedAnyOf({TT::Eq, TT::Semicolon});
@@ -621,7 +623,7 @@ ast::ExprPtr Parser::parsePrimary() {
           std::move(args));
     } else {
       SourceLocation loc{startPos, fieldEndPos};
-      return ast::make_EPtr<ast::VarRef>(loc, std::move(ident));
+      return ast::make_EPtr<ast::VarRef>(loc, strTbl.findOrInsert(ident));
     }
   }
   case TT::New:

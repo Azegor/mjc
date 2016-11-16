@@ -76,7 +76,8 @@ int Compiler::lexFuzz() {
 }
 
 int Compiler::parserTest() {
-  Parser parser{inputFile};
+  SymbolTable::StringTable strTbl;
+  Parser parser{inputFile, strTbl};
   try {
     parser.parseFileOnly();
     return EXIT_SUCCESS;
@@ -87,7 +88,8 @@ int Compiler::parserTest() {
 }
 
 int Compiler::parserFuzz() {
-  Parser parser{inputFile};
+  SymbolTable::StringTable strTbl;
+  Parser parser{inputFile, strTbl};
   try {
     parser.parseFileOnly();
     return EXIT_SUCCESS;
@@ -98,7 +100,8 @@ int Compiler::parserFuzz() {
 }
 
 int Compiler::astPrint() {
-  Parser parser{inputFile};
+  SymbolTable::StringTable strTbl;
+  Parser parser{inputFile, strTbl};
   try {
     parser.parseAndPrintAst();
     return EXIT_SUCCESS;
@@ -109,7 +112,8 @@ int Compiler::astPrint() {
 }
 
 int Compiler::astDot() {
-  Parser parser{inputFile};
+  SymbolTable::StringTable strTbl;
+  Parser parser{inputFile, strTbl};
   try {
     parser.parseAndDotAst();
     return EXIT_SUCCESS;
@@ -120,7 +124,8 @@ int Compiler::astDot() {
 }
 
 int Compiler::checkSemantic() {
-  Parser parser{inputFile};
+  SymbolTable::StringTable strTbl;
+  Parser parser{inputFile, strTbl};
   try {
     auto ast = parser.parseProgram();
     analyzeAstSemantic(ast.get());

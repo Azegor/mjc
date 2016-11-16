@@ -282,9 +282,9 @@ public:
     stream << "this";
   }
 
-  void visitVarRef(ast::VarRef &ident) override {
+  void visitVarRef(ast::VarRef &varRef) override {
     requireParenthesis = false;
-    stream << ident.getName();
+    stream << varRef.getName();
   }
 
   void visitMethodInvocation(ast::MethodInvocation &methodInvocation) override {
