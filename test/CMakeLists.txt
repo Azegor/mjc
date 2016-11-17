@@ -128,3 +128,27 @@ foreach(file ${lexer_input_files})
            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/semantic_invalid.sh" $<TARGET_FILE:mjc> "${file}")
 endforeach()
 MESSAGE(STATUS "  Added ${Count} invalid semantic tests")
+
+set(Count 0)
+file(GLOB lexer_input_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/exec/*.java")
+foreach(file ${lexer_input_files})
+  math(EXPR Count "${Count} + 1")
+#   MESSAGE(STATUS "Parser test file: ${file}")
+get_filename_component(dirname "${file}" DIRECTORY)
+  add_custom_command(
+    PRE_BUILD
+    COMMAND "mkdir"
+    ARGS "-p" "${dirname}"
+    COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/preprocess.sh"
+    ARGS "${CMAKE_CURRENT_SOURCE_DIR}/${file}" "${CMAKE_CURRENT_SOURCE_DIR}/testlib" "${file}"
+    DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${file}"
+    OUTPUT "${file}"
+  )
+  # HACK: can't add dependencies to tests, sp just always preprocess them in `make all`
+  add_custom_target("generated_${Count}" ALL DEPENDS "${file}")
+  get_filename_component(filename "${file}" NAME)
+  add_test(NAME "Semantics_exec_valid_${filename}"
+      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/semantic_valid.sh" $<TARGET_FILE:mjc> "${file}")
+endforeach()
+MESSAGE(STATUS "  Added ${Count} executable tests")
+
