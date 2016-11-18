@@ -1,0 +1,21 @@
+#!/bin/sh
+
+scriptpath=$(readlink -f "${0}")
+basedir=$(dirname "${scriptpath}")
+builddir=${basedir}/builddir
+
+
+edo() {
+    [ -z ${DEBUG_SCRIPTS} ] || echo "${@}"
+    "${@}" || exit 100
+}
+
+_check() {
+    edo make -j -C "${builddir}" CTEST_OUTPUT_ON_FAILURE=1 test "${@}"
+}
+
+_main() {
+    _check "${@}"
+}
+
+_main "${@}"
