@@ -138,6 +138,7 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
       }
       expr.targetType.setInt();
       break;
+
     case ast::BinaryExpression::Op::Or:
     case ast::BinaryExpression::Op::And:
       if (!expr.getRight()->targetType.isBool() ||
@@ -145,6 +146,16 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
         error(expr, "operands must both be bool");
       }
       expr.targetType.setBool();
+      break;
+
+    case ast::BinaryExpression::Op::Assign:
+      if (expr.getLeft()->targetType != expr.getRight()->targetType) {
+        std::stringstream ss;
+        ss << "Can't assign value of type " << expr.getRight()->targetType
+           << " to variable of type " << expr.getLeft()->targetType;
+        error(expr, ss.str());
+      }
+      expr.targetType = expr.getLeft()->targetType;
       break;
 
     default:
