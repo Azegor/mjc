@@ -8,6 +8,7 @@ bla
 --print-ast /nonexisting/file
 --dot-ast /nonexisting/file
 --dot-attr-ast /nonexisting/file
+--dot-attr-ast /dev/null
 --lextest --parsetest /dev/null
 --lextest ../test/lextest/nonascii.java
 --lexfuzz ../test/lextest/nonascii.java
