@@ -61,6 +61,8 @@ struct Type {
   void setNull() { kind = TypeKind::Class; this->name = "null"; }
   void setVoid() { kind = TypeKind::Void; }
 
+  void setFromAstType(ast::Type *astType);
+
   bool isInt() { return kind == TypeKind::Int; }
   bool isBool() { return kind == TypeKind::Bool; }
 };

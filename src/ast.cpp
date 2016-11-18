@@ -1,5 +1,20 @@
 #include "ast.hpp"
 
+namespace sem {
+  void Type::setFromAstType(ast::Type *astType) {
+    if (auto t = dynamic_cast<ast::PrimitiveType*>(astType)) {
+      if (t->getType() == ast::PrimitiveType::TypeType::Boolean)
+        setBool();
+      else if (t->getType() == ast::PrimitiveType::TypeType::Int)
+        setInt();
+      else if (t->getType() == ast::PrimitiveType::TypeType::Void)
+        setVoid();
+      else
+        assert(false);
+    }
+  }
+}
+
 namespace ast {
 void Visitor::visitProgram(Program &program) { program.acceptChildren(this); }
 void Visitor::visitClass(Class &klass) { klass.acceptChildren(this); }
