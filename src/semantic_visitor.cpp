@@ -162,6 +162,13 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   case ast::BinaryExpression::Op::Mul:
   case ast::BinaryExpression::Op::Div:
   case ast::BinaryExpression::Op::Mod:
+    if (!right->targetType.isInt() ||
+        !left->targetType.isInt()) {
+      error(expr, "operands must both be int");
+    }
+    expr.targetType.setInt();
+    break;
+
   case ast::BinaryExpression::Op::Less:
   case ast::BinaryExpression::Op::LessEquals:
   case ast::BinaryExpression::Op::Greater:
@@ -170,7 +177,7 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
         !left->targetType.isInt()) {
       error(expr, "operands must both be int");
     }
-    expr.targetType.setInt();
+    expr.targetType.setBool();
     break;
 
   case ast::BinaryExpression::Op::Or:
