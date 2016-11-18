@@ -53,47 +53,22 @@ struct Type {
   std::string name;
   int dimension;
   Type() { kind = TypeKind::Unresolved; }
-  ~Type() { destroy(); }
 
-  void destroy() {
-    switch (kind) {
-    case TypeKind::Class:
-      (&this->name)->~basic_string<char>();
-      break;
-    default:
-      break;
-    }
-    kind = TypeKind::Unresolved;
-  }
-
-  void setInt() {
-    destroy();
-    kind = TypeKind::Int;
-  }
-  void setBool() {
-    destroy();
-    kind = TypeKind::Bool;
-  }
+  void setInt() { kind = TypeKind::Int; }
+  void setBool() { kind = TypeKind::Bool; }
   void setArray(TypeKind innerKind, int dimension, std::string name = "") {
-    destroy();
-    kind = TypeKind::Array;
-    new (&this->name) std::string(std::move(name));
+    assert(innerKind != TypeKind::Array);
+    this->kind = TypeKind::Array;
+    this->name = name;
     this->innerKind = innerKind;
     this->dimension = dimension;
   }
   void setClass(std::string name) {
-    destroy();
-    kind = TypeKind::Class;
-    new (&this->name) std::string(std::move(name));
+    this->kind = TypeKind::Class;
+    this->name = name;
   }
-  void setNull() {
-    destroy();
-    kind = TypeKind::Null;
-  }
-  void setVoid() {
-    destroy();
-    kind = TypeKind::Void;
-  }
+  void setNull() { kind = TypeKind::Null; }
+  void setVoid() { kind = TypeKind::Void; }
 
   void setFromAstType(ast::Type *astType);
   bool conformsToAstType(ast::Type *astType) const;
