@@ -57,7 +57,7 @@ struct Type {
   void destroy() {
     switch (kind) {
     case TypeKind::Class:
-      (&this->name)->std::string::~string();
+      (&this->name)->~basic_string<char>();
       break;
     default:
       break;
