@@ -410,3 +410,13 @@ void SemanticVisitor::visitArrayAccess(ast::ArrayAccess &access) {
     error(*access.getArray(), "Array access on non-array expression");
   }
 }
+
+void SemanticVisitor::visitField(ast::Field &field) {
+  field.acceptChildren(this);
+
+  if (auto t = dynamic_cast<ast::PrimitiveType*>(field.getType())) {
+    if (t->getType() == ast::PrimitiveType::TypeType::Void) {
+      error(*t, "'void' is not a valid type in this context");
+    }
+  }
+}

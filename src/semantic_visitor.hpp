@@ -77,7 +77,7 @@ public:
   void visitMethodInvocation(ast::MethodInvocation &invocation) override;
   void visitIfStatement(ast::IfStatement &ifStatement) override;
   void visitWhileStatement(ast::WhileStatement &stmt) override;
-  //   void visitField(ast::Field &field) override;
+  void visitField(ast::Field &field) override;
   void visitReturnStatement(ast::ReturnStatement &stmt) override;
   void visitBinaryExpression(ast::BinaryExpression &expr) override;
   void visitIntLiteral(ast::IntLiteral &lit) override;
