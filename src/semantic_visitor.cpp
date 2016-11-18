@@ -191,6 +191,7 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
     break;
 
   case ast::BinaryExpression::Op::Equals:
+  case ast::BinaryExpression::Op::NotEquals:
     if (expr.getLeft()->targetType != expr.getRight()->targetType) {
       // class types of different classes can still be compared
       if (left->targetType.isClass() && right->targetType.isClass()) {
