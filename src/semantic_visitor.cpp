@@ -261,6 +261,9 @@ void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
   if (!cls) {
     error(*access.getLeft(), "Unknown class type'" + lhsType.name + '\'');
   }
+
+  // TODO find method in class!
+  // access.setDef(field);
 }
 
 void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
@@ -286,6 +289,7 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
       // point?
       // Valid method, valid class, propagate type!
       invocation.targetType = method->getReturnType()->getSemaType();
+      invocation.setDef(method);
     } else {
       error(invocation, "Methods can only be invoked on class types");
     }

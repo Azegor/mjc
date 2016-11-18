@@ -9,6 +9,12 @@ void DotVisitor::visitProgram(ast::Program &program) {
   // first add all class node names:
   for (auto &klass : program.getClasses()) {
     nodeNames[klass.get()] = newNodeName();
+    for (auto &f : klass->getFields()->fields) {
+      nodeNames[f.get()] = newNodeName();
+    }
+    for (auto &m : klass->getMethods()->methods) {
+      nodeNames[m.get()] = newNodeName();
+    }
   }
   program.acceptChildren(this);
   s << "}" << '\n';
@@ -26,7 +32,8 @@ void DotVisitor::visitClass(ast::Class &klass) {
 
 void DotVisitor::visitField(ast::Field &field) {
   auto nodeLabel = "Field(" + field.getName() + ")";
-  auto nodeName = nodeDecl(nodeLabel, &field);
+  auto nodeName = nodeNames[&field];
+  nodeDeclForExistingName(nodeName, nodeLabel);
 
   pushNode(nodeName);
   edgeLabel("Type");
@@ -36,7 +43,8 @@ void DotVisitor::visitField(ast::Field &field) {
 
 void DotVisitor::visitMethod(ast::Method &method) {
   auto nodeLabel = "Method(" + method.getName() + ")";
-  auto nodeName = nodeDecl(nodeLabel);
+  auto nodeName = nodeNames[&method];
+  nodeDeclForExistingName(nodeName, nodeLabel);
 
   pushNode(nodeName);
   {
@@ -179,6 +187,12 @@ void DotVisitor::visitThisLiteral(ast::ThisLiteral &lit) {
 void DotVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
   auto nodeLabel = "MethodInvocation(" + invocation.getName() + ")";
   auto nodeName = nodeDecl(nodeLabel);
+  auto targetNode = nodeNames.find(invocation.getDef());
+  if (targetNode != nodeNames.end()) {
+    weakEdgeToNode(nodeName, targetNode->second);
+  } else {
+    std::cerr << "Method Decl not found!" << std::endl;
+  }
 
   pushNode(nodeName);
   invocation.acceptChildren(this);
@@ -188,6 +202,12 @@ void DotVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
 void DotVisitor::visitFieldAccess(ast::FieldAccess &access) {
   auto nodeLabel = "FieldAccess(" + access.getName() + ")";
   auto nodeName = nodeDecl(nodeLabel);
+  auto targetNode = nodeNames.find(access.getDef());
+  if (targetNode != nodeNames.end()) {
+    weakEdgeToNode(nodeName, targetNode->second);
+  } else {
+    std::cerr << "Field Decl not found!" << std::endl;
+  }
 
   pushNode(nodeName);
   access.acceptChildren(this);

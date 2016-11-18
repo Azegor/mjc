@@ -619,6 +619,7 @@ public:
     visitor->visitMainMethodList(mainMethods);
   }
 
+  const FieldList *getFields() const { return &fields; }
   const MethodList *getMethods() const { return &methods; }
 
   const std::string &getName() const { return name; }
@@ -785,6 +786,7 @@ class MethodInvocation : public Expression {
   std::string name;
   // might be empty
   std::vector<ExprPtr> arguments;
+  Method* methodDef;
 
 public:
   MethodInvocation(SourceLocation loc, ExprPtr lhs, std::string methodName,
@@ -815,12 +817,16 @@ public:
 
   Expression *getLeft() const { return left.get(); }
   const std::string &getName() const { return name; }
+
+  void setDef(Method* def) { methodDef = def; }
+  Method* getDef() const { return methodDef; }
 };
 
 class FieldAccess : public Expression {
   // left.field_name
   ExprPtr left; // set to this if call from within function
   std::string name;
+  Field* fieldDef;
 
 public:
   FieldAccess(SourceLocation loc, ExprPtr lhs, std::string memberName)
@@ -835,6 +841,9 @@ public:
 
   Expression *getLeft() const { return left.get(); }
   const std::string &getName() const { return name; }
+
+  void setDef(Field* def) { fieldDef = def; }
+  Field* getDef() const { return fieldDef; }
 };
 
 class ArrayAccess : public Expression {

@@ -62,6 +62,24 @@ private:
     return nodeName;
   }
 
+    std::string nodeDeclForExistingName(const std::string &nodeName, const std::string &nodeLabel) {
+    s << nodeName << "[label=\"" << nodeLabel;
+    s << "\"]" << '\n';
+
+    s << parentNode << " -> " << nodeName;
+
+    if (nextEdgeLabel != "") {
+      s << " [label=\"" << nextEdgeLabel << "\"];\n";
+      nextEdgeLabel = "";
+    } else {
+      s << " [label=\"\"];" << '\n';
+    }
+
+    s << '\n';
+
+    return nodeName;
+  }
+
   void weakEdgeToNode(const std::string &nodeName,
                       const std::string &targetNodeName) {
     s << nodeName << " -> " << targetNodeName;
