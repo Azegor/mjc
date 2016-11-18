@@ -18,11 +18,12 @@ if [[ ${compiler_retval1} -ne 0 ]]; then
 
   if [[ ${compiler_out1} != *"error"* ]]; then
     echo "ERROR: Compiler (pass 1) return value is != 0 but output doesn't contain 'error'"
-    echo "Output:"
-    echo "${compiler_out1}"
   fi
 
   echo "ERROR: Compiler (pass 1) returned ${compiler_retval1} but ${in_file} is supposed to be valid"
+
+  echo "Output:"
+  echo "${compiler_out1}"
 
   exit 1
 fi
