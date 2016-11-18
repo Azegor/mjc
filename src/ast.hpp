@@ -59,6 +59,7 @@ struct Type {
   void setArray() { kind = TypeKind::Array; }
   void setClass(const std::string &name) { kind = TypeKind::Class; this->name = name; }
   void setNull() { kind = TypeKind::Class; this->name = "null"; }
+  void setVoid() { kind = TypeKind::Void; }
 
   bool isInt() { return kind == TypeKind::Int; }
   bool isBool() { return kind == TypeKind::Bool; }

@@ -66,6 +66,21 @@ void SemanticVisitor::visitVarRef(ast::VarRef &varRef) {
     } else {
       error(varRef, "Unknown variable '" + varRef.getSymbol().name + "'");
     }
+  } else {
+    // Look at local variables first
+    if (auto decl = dynamic_cast<ast::VariableDeclaration*>(def)) {
+      auto t = decl->getType();
+      if (auto tt = dynamic_cast<ast::PrimitiveType*>(t)) {
+        if (tt->getType() == ast::PrimitiveType::TypeType::Boolean)
+          varRef.targetType.setBool();
+        else if (tt->getType() == ast::PrimitiveType::TypeType::Int)
+          varRef.targetType.setInt();
+        else if (tt->getType() == ast::PrimitiveType::TypeType::Void)
+          varRef.targetType.setVoid();
+        else
+          assert(false);
+      }
+    }
   }
   varRef.setDef(def);
   varRef.acceptChildren(this);
