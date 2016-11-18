@@ -5,8 +5,12 @@ in_file=${2}
 
 compiler_out1=$("${compiler}" --print-ast "${in_file}" 2>&1)
 compiler_retval1=$?
+# Strip profiling file output from first line if present.
+# e.g.  "LLVM Profile Note: Set profile file path to "default.profraw" via default setting."
+compiler_out1=$(sed -e '/^LLVM Profile Note.*\.$/d'  <(echo "${compiler_out1}"))
 compiler_out2=$("${compiler}" --print-ast <(echo "${compiler_out1}") 2>&1)
 compiler_retval2=$?
+compiler_out2=$(sed -e '/^LLVM Profile Note.*\.$/d'  <(echo "${compiler_out2}"))
 
 
 # if the return code not 0, "error" must be in the output
