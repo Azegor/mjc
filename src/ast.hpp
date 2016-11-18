@@ -91,19 +91,8 @@ struct Type {
     }
   }
   bool operator!=(const sem::Type &other) const { return !(*this == other); }
-
-  Type &operator=(const Type &o) {
-    switch (o.kind) {
-    case TypeKind::Class:
-      setClass(o.name);
-      break;
-    default:
-      kind = o.kind;
-      break;
-    }
-    return *this;
-  }
 };
+
 } // namespace sem
 std::ostream &operator<<(std::ostream &o, const sem::Type &t);
 
@@ -209,6 +198,9 @@ using NodePtr = std::unique_ptr<Node>;
 class Type : public Node {
 protected:
   Type(SourceLocation loc) : Node(std::move(loc)) {}
+
+public:
+  virtual sem::Type getSemaType() const = 0;
 };
 using TypePtr = std::unique_ptr<Type>;
 
@@ -295,7 +287,26 @@ public:
       return TypeType::None;
     }
   }
+
   const TypeType &getType() const { return type; }
+
+  sem::Type getSemaType() const override {
+    sem::Type res;
+    switch (type) {
+    case TypeType::Boolean:
+      res.setBool();
+      break;
+    case TypeType::Int:
+      res.setInt();
+      break;
+    case TypeType::Void:
+      res.setVoid();
+      break;
+    default:
+      break;
+    }
+    return res;
+  }
 
   void accept(Visitor *visitor) override { visitor->visitPrimitiveType(*this); }
 };
@@ -313,6 +324,12 @@ public:
   void accept(Visitor *visitor) override { visitor->visitClassType(*this); }
   void setDef(Class *def) { classDef = def; }
   Class *getDef() const { return classDef; }
+
+  sem::Type getSemaType() const override {
+    sem::Type res;
+    res.setClass(getName());
+    return res;
+  }
 };
 
 class ArrayType : public Type {
@@ -329,6 +346,13 @@ public:
   void accept(Visitor *visitor) override { visitor->visitArrayType(*this); }
   void acceptChildren(Visitor *visitor) override {
     elementType->accept(visitor);
+  }
+
+  sem::Type getSemaType() const override {
+    sem::Type res;
+    auto innerType = elementType->getSemaType();
+    res.setArray(innerType.kind, dimension, innerType.name);
+    return res;
   }
 };
 using ArrayTypePtr = std::unique_ptr<ArrayType>;
