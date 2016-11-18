@@ -62,6 +62,7 @@ struct Type {
   void setVoid() { kind = TypeKind::Void; }
 
   void setFromAstType(ast::Type *astType);
+  bool conformsToAstType(ast::Type *astType);
 
   bool isInt() { return kind == TypeKind::Int; }
   bool isBool() { return kind == TypeKind::Bool; }

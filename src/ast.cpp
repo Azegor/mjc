@@ -15,7 +15,25 @@ namespace sem {
       setClass(t->getName());
     }
   }
+
+bool Type::conformsToAstType(ast::Type *astType) {
+  if (auto t = dynamic_cast<ast::PrimitiveType*>(astType)) {
+    switch(this->kind) {
+      case TypeKind::Int:
+        return t->getType() == ast::PrimitiveType::TypeType::Int;
+      case TypeKind::Bool:
+        return t->getType() == ast::PrimitiveType::TypeType::Boolean;
+      case TypeKind::Void:
+        return t->getType() == ast::PrimitiveType::TypeType::Void;
+      default:
+        return false;
+    }
+  }
+
+  return false;
 }
+}
+
 std::ostream& operator << (std::ostream &o, const sem::Type& t)
 {
   switch(t.kind) {

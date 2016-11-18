@@ -46,6 +46,15 @@ void SemanticVisitor::visitBlock(ast::Block &block) {
 
 void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
   decl.acceptChildren(this);
+
+  if (decl.getInitializer() != nullptr &&
+      !decl.getInitializer()->targetType.conformsToAstType(decl.getType())) {
+    std::stringstream ss;
+    ss << "Can't assign from " << decl.getInitializer()->targetType << " to "
+       << "umm"; // TODO: Write toStr() or stream op for ast::Type variants
+    error(decl, ss.str());
+  }
+
   auto &sym = decl.getSymbol();
   if (symTbl.isDefinedInCurrentScope(sym)) {
     error(decl, "Variable '" + decl.getSymbol().name + "' already defined");
