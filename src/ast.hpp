@@ -48,10 +48,10 @@ enum class TypeKind {
 struct Type {
   TypeKind kind;
   // For arrays, e.g. int[] -> innerKind=int
-  TypeKind innerKind;
+  TypeKind innerKind = TypeKind::Unresolved;
   // Both class types and arrays need a name
   std::string name;
-  int dimension;
+  int dimension = 0;
   Type() { kind = TypeKind::Unresolved; }
 
   void setInt() { kind = TypeKind::Int; }

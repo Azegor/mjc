@@ -404,11 +404,19 @@ void SemanticVisitor::visitArrayAccess(ast::ArrayAccess &access) {
   access.acceptChildren(this);
 
   if (!access.getIndex()->targetType.isInt()) {
-    error(*access.getIndex(), "Array indices must be integers");
+    error(*access.getIndex(), "Array indices must be integer expressions");
   }
 
   if (!access.getArray()->targetType.isArray()) {
     error(*access.getArray(), "Array access on non-array expression");
+  }
+
+  // access.targetType is array type -> decrease dimension by one
+  access.targetType = access.getArray()->targetType;
+  access.targetType.dimension -= 1;
+  if (access.targetType.dimension == 0) {
+    // array no more -> inner type surfaces
+    access.targetType.kind = access.targetType.innerKind;
   }
 }
 
