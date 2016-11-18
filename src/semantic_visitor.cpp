@@ -36,10 +36,10 @@ void SemanticVisitor::visitMainMethodList(ast::MainMethodList &mainMethodList) {
 void SemanticVisitor::visitMainMethod(ast::MainMethod &mm) {
   mm.acceptChildren(this);
 
-  if (mm.getName() == "main" &&
-      mm.getArgName() == "args") {
+  if (mm.getName() == "main") {
     this->mainMethodFound = true;
   }
+  // INFO: check for >1 "main"-methods already done in visitMainMethodList
 }
 
 void SemanticVisitor::visitMethod(ast::Method &method) {
