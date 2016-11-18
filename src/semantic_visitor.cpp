@@ -136,6 +136,9 @@ void SemanticVisitor::visitThisLiteral(ast::ThisLiteral &lit) {
 void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   expr.acceptChildren(this);
 
+  auto left  = expr.getLeft();
+  auto right = expr.getRight();
+
   switch (expr.getOperation()) {
   case ast::BinaryExpression::Op::Plus:
   case ast::BinaryExpression::Op::Minus:
@@ -146,8 +149,8 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   case ast::BinaryExpression::Op::LessEquals:
   case ast::BinaryExpression::Op::Greater:
   case ast::BinaryExpression::Op::GreaterEquals:
-    if (!expr.getRight()->targetType.isInt() ||
-        !expr.getLeft()->targetType.isInt()) {
+    if (!right->targetType.isInt() ||
+        !left->targetType.isInt()) {
       error(expr, "operands must both be int");
     }
     expr.targetType.setInt();
@@ -155,21 +158,38 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
 
   case ast::BinaryExpression::Op::Or:
   case ast::BinaryExpression::Op::And:
-    if (!expr.getRight()->targetType.isBool() ||
-        !expr.getLeft()->targetType.isBool()) {
+    if (!right->targetType.isBool() ||
+        !left->targetType.isBool()) {
       error(expr, "operands must both be bool");
     }
     expr.targetType.setBool();
     break;
 
   case ast::BinaryExpression::Op::Assign:
-    if (expr.getLeft()->targetType != expr.getRight()->targetType) {
+    if (left->targetType != right->targetType) {
       std::stringstream ss;
-      ss << "Can't assign value of type " << expr.getRight()->targetType
-         << " to variable of type " << expr.getLeft()->targetType;
+      ss << "Can't assign value of type " << right->targetType
+         << " to variable of type " << left->targetType;
       error(expr, ss.str());
     }
-    expr.targetType = expr.getLeft()->targetType;
+    expr.targetType = left->targetType;
+    break;
+
+  case ast::BinaryExpression::Op::Equals:
+    if (expr.getLeft()->targetType != expr.getRight()->targetType) {
+      // class types of different classes can still be compared
+      if (left->targetType.isClass() && right->targetType.isClass()) {
+        // Fine.
+        expr.targetType.setBool();
+      } else {
+        std::stringstream ss;
+        ss << "Can't compare expression of type '" << left->targetType
+           << "' to expression of type '" << right->targetType << "'";
+        error(expr, ss.str());
+      }
+    } else {
+      expr.targetType.setBool();
+    }
     break;
 
   default:
