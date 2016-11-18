@@ -8,4 +8,4 @@
 --print-ast /dev/null
 --dot-ast /dev/null
 --dot-ast parsetest/valid/all.java
---dot-attr-ast sematest/valid/lcg.java
+--dot-attr-ast exec/bubblesort.java
