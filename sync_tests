@@ -14,6 +14,8 @@ suffixes=(
 our_testpath='test'
 mjt_testpath='tests'
 
+shopt -s globstar
+
 edo() {
     echo "${@}"
     "${@}" || exit 100
@@ -44,6 +46,20 @@ _export_tests() {
         done
     done
 
+    for f in "${mypath}/${our_testpath}/exec/"*.java; do
+        base=${f##*/}
+        _copy_if_different "${f}" "${mjt}/${mjt_testpath}/exec/${base%.java}.mj" \
+            && exported=1
+    done
+
+    for f in "${mypath}/${our_testpath}/testlib/lib/"**/*.java; do
+        base=${f#"${mypath}/${our_testpath}/testlib/"}
+        p="${mjt}/${mjt_testpath}/exec/${base%/*}"
+        [[ ${base%/*} != */* || -d ${p} ]] || edo mkdir -p "${p}"
+        _copy_if_different "${f}" "${mjt}/${mjt_testpath}/exec/${base}" \
+            && exported=1
+    done
+
     [[ ${exported} -gt 0 ]] && echo -e "\e[1;31m!!!\e[0m Exported tests, please add, commit and submit in mjtests"
 }
 
@@ -62,6 +78,20 @@ _import_tests() {
                 fi
             done
         done
+    done
+
+    for f in "${mjt}/${mjt_testpath}/exec/"*.mj; do
+        base=${f##*/}
+        _copy_if_different "${f}" "${mypath}/${our_testpath}/exec/${base%.mj}.java" \
+            && imported=1
+    done
+
+    for f in "${mjt}/${mjt_testpath}/exec/lib/"**/*.java; do
+        base=${f#"${mjt}/${mjt_testpath}/exec/"}
+        p="${mypath}/${our_testpath}/testlib/${base%/*}"
+        [[ ${base%/*} != */* || -d ${p} ]] || edo mkdir -p "${p}"
+        _copy_if_different "${f}" "${mypath}/${our_testpath}/testlib/${base}" \
+            && imported=1
     done
 
     [[ ${imported} -gt 0 ]] && echo -e "\e[1;31m!!!\e[0m Imported tests, please add and commit"
