@@ -116,6 +116,8 @@ void SemanticVisitor::visitVarRef(ast::VarRef &varRef) {
     } else if (auto decl = dynamic_cast<ast::Field *>(def)) {
       auto t = decl->getType();
       varRef.targetType.setFromAstType(t);
+    } else {
+      std::cout << __FUNCTION__ << ": Unhandled VarRef decl type" << std::endl;
     }
   }
   varRef.setDef(def);
@@ -246,7 +248,7 @@ void SemanticVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
     error(*expr.getSize(), "Array indices must be ints");
   }
 
-  expr.targetType.setArray(); // TODO: Proagate name (and dimension?)
+  expr.targetType.setFromAstType(expr.getArrayType());
 }
 
 void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {

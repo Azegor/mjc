@@ -13,6 +13,22 @@ void Type::setFromAstType(ast::Type *astType) {
       assert(false);
   } else if (auto t = dynamic_cast<ast::ClassType *>(astType)) {
     setClass(t->getName());
+  } else if (auto t = dynamic_cast<ast::ArrayType *>(astType)) {
+    TypeKind innerKind = TypeKind::Unresolved;
+    auto arrType = t->getElementType();
+    std::string name;
+    if (auto p = dynamic_cast<ast::ClassType *>(arrType)) {
+      innerKind = TypeKind::Class;
+      name = p->getName();
+    } else if (auto p = dynamic_cast<ast::PrimitiveType *>(arrType)) {
+      if (p->getType() == ast::PrimitiveType::TypeType::Boolean)
+        innerKind = TypeKind::Bool;
+      else if (p->getType() == ast::PrimitiveType::TypeType::Int)
+        innerKind = TypeKind::Int;
+      else
+        assert(false);
+    }
+    setArray(innerKind, t->getDimension(), name);
   }
 }
 
@@ -32,6 +48,9 @@ bool Type::conformsToAstType(ast::Type *astType) {
     return (kind == TypeKind::Class &&
             name == t->getName()) ||
             kind == TypeKind::Null;
+  } else if (auto t = dynamic_cast<ast::ArrayType*>(astType)) {
+    return kind == TypeKind::Array;
+    // TODO: Check dimension?
   } else {
     std::cout << __FUNCTION__ << ": Unhandled astType" << std::endl;
   }
@@ -40,23 +59,45 @@ bool Type::conformsToAstType(ast::Type *astType) {
 }
 }
 
+static const char* typeKindToString(sem::TypeKind kind) {
+  switch (kind) {
+  case sem::TypeKind::Bool:
+    return "bool";
+  case sem::TypeKind::Int:
+    return "int";
+  case sem::TypeKind::Class:
+    return "Class";
+  case sem::TypeKind::Array:
+    assert(false);
+    return "";
+  case sem::TypeKind::Void:
+    return "void";
+  case sem::TypeKind::Null:
+    return "null";
+  case sem::TypeKind::Unresolved:
+    // Print these anyway for easier debugging
+    return "Unresolved";
+  }
+
+  return "";
+}
+
 std::ostream &operator<<(std::ostream &o, const sem::Type &t) {
   switch (t.kind) {
   case sem::TypeKind::Bool:
-    return o << "bool";
   case sem::TypeKind::Int:
-    return o << "int";
-  case sem::TypeKind::Class:
-    return o << "Class(" << t.name << ")";
-  case sem::TypeKind::Array:
-    return o << "Array[" << t.dimension << "]";
   case sem::TypeKind::Void:
-    return o << "void";
   case sem::TypeKind::Null:
-    return o << "null";
   case sem::TypeKind::Unresolved:
-    // Print these anyway for easier debugging
-    return o << "Unresolved";
+    return o << typeKindToString(t.kind);
+
+  case sem::TypeKind::Class:
+    return o << typeKindToString(t.kind) << "(" <<  t.name << ")";
+  case sem::TypeKind::Array:
+    o << typeKindToString(t.innerKind);
+    for (int i = 0; i < t.dimension; i ++)
+      o << "[]";
+    return o;
   }
   return o;
 }

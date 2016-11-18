@@ -47,10 +47,11 @@ enum class TypeKind {
 
 struct Type {
   TypeKind kind;
-  union {
-    std::string name; // For kind == Unresolved
-    int dimension;    // For Kind == Array TODO: Needed?!
-  };
+  // For arrays, e.g. int[] -> innerKind=int
+  TypeKind innerKind;
+  // Both class types and arrays need a name
+  std::string name;
+  int dimension;
   Type() { kind = TypeKind::Unresolved; }
   ~Type() { destroy(); }
 
@@ -73,9 +74,12 @@ struct Type {
     destroy();
     kind = TypeKind::Bool;
   }
-  void setArray() {
+  void setArray(TypeKind innerKind, int dimension, std::string name = "") {
     destroy();
     kind = TypeKind::Array;
+    new (&this->name) std::string(std::move(name));
+    this->innerKind = innerKind;
+    this->dimension = dimension;
   }
   void setClass(std::string name) {
     destroy();
