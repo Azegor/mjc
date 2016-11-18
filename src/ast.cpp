@@ -1,32 +1,32 @@
 #include "ast.hpp"
 
 namespace sem {
-  void Type::setFromAstType(ast::Type *astType) {
-    if (auto t = dynamic_cast<ast::PrimitiveType*>(astType)) {
-      if (t->getType() == ast::PrimitiveType::TypeType::Boolean)
-        setBool();
-      else if (t->getType() == ast::PrimitiveType::TypeType::Int)
-        setInt();
-      else if (t->getType() == ast::PrimitiveType::TypeType::Void)
-        setVoid();
-      else
-        assert(false);
-    } else if (auto t = dynamic_cast<ast::ClassType*>(astType)) {
-      setClass(t->getName());
-    }
+void Type::setFromAstType(ast::Type *astType) {
+  if (auto t = dynamic_cast<ast::PrimitiveType *>(astType)) {
+    if (t->getType() == ast::PrimitiveType::TypeType::Boolean)
+      setBool();
+    else if (t->getType() == ast::PrimitiveType::TypeType::Int)
+      setInt();
+    else if (t->getType() == ast::PrimitiveType::TypeType::Void)
+      setVoid();
+    else
+      assert(false);
+  } else if (auto t = dynamic_cast<ast::ClassType *>(astType)) {
+    setClass(t->getName());
   }
+}
 
 bool Type::conformsToAstType(ast::Type *astType) {
-  if (auto t = dynamic_cast<ast::PrimitiveType*>(astType)) {
-    switch(this->kind) {
-      case TypeKind::Int:
-        return t->getType() == ast::PrimitiveType::TypeType::Int;
-      case TypeKind::Bool:
-        return t->getType() == ast::PrimitiveType::TypeType::Boolean;
-      case TypeKind::Void:
-        return t->getType() == ast::PrimitiveType::TypeType::Void;
-      default:
-        return false;
+  if (auto t = dynamic_cast<ast::PrimitiveType *>(astType)) {
+    switch (this->kind) {
+    case TypeKind::Int:
+      return t->getType() == ast::PrimitiveType::TypeType::Int;
+    case TypeKind::Bool:
+      return t->getType() == ast::PrimitiveType::TypeType::Boolean;
+    case TypeKind::Void:
+      return t->getType() == ast::PrimitiveType::TypeType::Void;
+    default:
+      return false;
     }
   }
 
@@ -34,24 +34,23 @@ bool Type::conformsToAstType(ast::Type *astType) {
 }
 }
 
-std::ostream& operator << (std::ostream &o, const sem::Type& t)
-{
-  switch(t.kind) {
-    case sem::TypeKind::Bool:
-      return o << "bool";
-    case sem::TypeKind::Int:
-      return o << "int";
-    case sem::TypeKind::Class:
-      return o << "Class(" << t.name << ")";
-    case sem::TypeKind::Array:
-      return o << "Array[" << t.dimension << "]";
-    case sem::TypeKind::Void:
-      return o << "void";
-    case sem::TypeKind::Null:
-      return o << "null";
-    case sem::TypeKind::Unresolved:
-      // Print these anyway for easier debugging
-      return o << "Unresolved";
+std::ostream &operator<<(std::ostream &o, const sem::Type &t) {
+  switch (t.kind) {
+  case sem::TypeKind::Bool:
+    return o << "bool";
+  case sem::TypeKind::Int:
+    return o << "int";
+  case sem::TypeKind::Class:
+    return o << "Class(" << t.name << ")";
+  case sem::TypeKind::Array:
+    return o << "Array[" << t.dimension << "]";
+  case sem::TypeKind::Void:
+    return o << "void";
+  case sem::TypeKind::Null:
+    return o << "null";
+  case sem::TypeKind::Unresolved:
+    // Print these anyway for easier debugging
+    return o << "Unresolved";
   }
   return o;
 }

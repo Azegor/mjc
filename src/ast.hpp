@@ -35,15 +35,15 @@
 #include "symboltable.hpp"
 
 namespace sem {
-  enum class TypeKind {
-    Array,
-    Class,
-    Bool,
-    Int,
-    Void,
-    Null, // Umm?
-    Unresolved
-  };
+enum class TypeKind {
+  Array,
+  Class,
+  Bool,
+  Int,
+  Void,
+  Null, // Umm?
+  Unresolved
+};
 
 struct Type {
   TypeKind kind;
@@ -82,47 +82,44 @@ struct Type {
     new (&name) std::string(std::move(name));
   }
   void setNull() { setClass("null"); }
-  }
-  void setVoid() {
-    destroy();
-    kind = TypeKind::Void;
-  }
+} void setVoid() {
+  destroy();
+  kind = TypeKind::Void;
+}
 
-  void setFromAstType(ast::Type *astType);
-  bool conformsToAstType(ast::Type *astType);
+void setFromAstType(ast::Type *astType);
+bool conformsToAstType(ast::Type *astType);
 
-  bool isInt() { return kind == TypeKind::Int; }
-  bool isBool() { return kind == TypeKind::Bool; }
+bool isInt() { return kind == TypeKind::Int; }
+bool isBool() { return kind == TypeKind::Bool; }
 
-  bool operator == (const sem::Type& other) {
-    switch(this->kind) {
-      case TypeKind::Class:
-        return other.kind == TypeKind::Class && this->name == other.name;
-      case TypeKind::Array:
-        return other.kind == TypeKind::Array && this->dimension == other.dimension;
-      default:
-        return this->kind == other.kind;
-    }
+bool operator==(const sem::Type &other) {
+  switch (this->kind) {
+  case TypeKind::Class:
+    return other.kind == TypeKind::Class && this->name == other.name;
+  case TypeKind::Array:
+    return other.kind == TypeKind::Array && this->dimension == other.dimension;
+  default:
+    return this->kind == other.kind;
   }
-  bool operator != (const sem::Type& other) {
-    return !(*this == other);
-  }
+}
+bool operator!=(const sem::Type &other) { return !(*this == other); }
 
-  Type &operator=(const Type &o) {
-    destroy();
-    switch (o.kind) {
-    case TypeKind::Class:
-      setClass(o.name);
-      break;
-    default:
-      kind = o.kind;
-      break;
-    }
-    return *this;
+Type &operator=(const Type &o) {
+  destroy();
+  switch (o.kind) {
+  case TypeKind::Class:
+    setClass(o.name);
+    break;
+  default:
+    kind = o.kind;
+    break;
   }
+  return *this;
+}
 };
 } // namespace sem
-std::ostream& operator << (std::ostream &o, const sem::Type& t);
+std::ostream &operator<<(std::ostream &o, const sem::Type &t);
 
 namespace ast {
 struct SortUniquePtrPred {
@@ -244,6 +241,7 @@ using StmtPtr = std::unique_ptr<Statement>;
 class Expression : public Node {
 public:
   sem::Type targetType;
+
 protected:
   Expression(SourceLocation loc) : Node(std::move(loc)) {}
 };
