@@ -265,3 +265,11 @@ void SemanticVisitor::visitIfStatement(ast::IfStatement &ifStatement) {
     error(*ifStatement.getCondition(), "if condition must be boolean");
   }
 }
+
+void SemanticVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
+  stmt.acceptChildren(this);
+
+  if (!stmt.getCondition()->targetType.isBool()) {
+    error(*stmt.getCondition(), "while condition must be boolean");
+  }
+}

@@ -63,6 +63,7 @@ public:
   void visitNewArrayExpression(ast::NewArrayExpression &expr) override;
   void visitMethodInvocation(ast::MethodInvocation &invocation) override;
   void visitIfStatement(ast::IfStatement &ifStatement) override;
+  void visitWhileStatement(ast::WhileStatement &stmt) override;
   //   void visitField(ast::Field &field) override;
   //   void visitReturnStatement(ast::ReturnStatement &stmt) override;
   void visitBinaryExpression(ast::BinaryExpression &expr) override;
@@ -74,7 +75,6 @@ public:
   void visitFieldAccess(ast::FieldAccess &access) override;
   //   void visitUnaryExpression(ast::UnaryExpression &expr) override;
   //   void visitArrayAccess(ast::ArrayAccess &access) override;
-  //   void visitWhileStatement(ast::WhileStatement &stmt) override;
   //   void visitArrayType(ast::ArrayType &type) override;
   //   void visitPrimitiveType(ast::PrimitiveType &type) override;
 
