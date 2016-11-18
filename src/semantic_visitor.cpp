@@ -257,3 +257,11 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     error(invocation, "Can't access method " + invocation.getName());
   }
 }
+
+void SemanticVisitor::visitIfStatement(ast::IfStatement &ifStatement) {
+  ifStatement.acceptChildren(this);
+
+  if (!ifStatement.getCondition()->targetType.isBool()) {
+    error(*ifStatement.getCondition(), "if condition must be boolean");
+  }
+}
