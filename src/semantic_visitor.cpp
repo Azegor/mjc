@@ -331,6 +331,13 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     }
 
     invocation.targetType.setFromAstType(method->getReturnType());
+  } else if (auto t = dynamic_cast<ast::NewObjectExpression*>(invocation.getLeft())) {
+    ast::Method *method = findMethodInClass(t->getDef(), invocation.getName());
+    if (method == nullptr) {
+      error(invocation, "Class " + t->getDef()->getName() + " does not have a "
+                        "method called '" + invocation.getName() + "'");
+    }
+    invocation.targetType.setFromAstType(method->getReturnType());
   } else {
     error(invocation, "Can't access method " + invocation.getName());
   }
