@@ -34,8 +34,38 @@
 #include "lexer.hpp"
 #include "symboltable.hpp"
 
-namespace ast {
+namespace sem {
+  enum class TypeKind {
+    Array,
+    Class,
+    Bool,
+    Int,
+    Void,
+    Null, // Umm?
+    Unresolved
+  };
 
+struct Type {
+  TypeKind kind;
+  std::string name; // For kind == Unresolved
+  int dimension;    // For Kind == Array TODO: Needed?!
+  Type() {
+    kind = TypeKind::Unresolved;
+  }
+  ~Type(){}
+
+  void setInt() { kind = TypeKind::Int; }
+  void setBool() { kind = TypeKind::Bool; }
+  void setArray() { kind = TypeKind::Array; }
+  void setClass(const std::string &name) { kind = TypeKind::Class; this->name = name; }
+  void setNull() { kind = TypeKind::Class; this->name = "null"; }
+
+  bool isInt() { return kind == TypeKind::Int; }
+  bool isBool() { return kind == TypeKind::Bool; }
+};
+} // namespace sem
+
+namespace ast {
 struct SortUniquePtrPred {
   template <typename T>
   bool operator()(const std::unique_ptr<T> &lhs,
@@ -153,6 +183,8 @@ protected:
 using StmtPtr = std::unique_ptr<Statement>;
 
 class Expression : public Node {
+public:
+  sem::Type targetType;
 protected:
   Expression(SourceLocation loc) : Node(std::move(loc)) {}
 };
