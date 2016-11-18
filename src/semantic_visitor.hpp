@@ -31,6 +31,7 @@ class SemanticVisitor : public ast::Visitor {
   ast::Program *currentProgram = nullptr;
   ast::Class *currentClass = nullptr;
   ast::Method *currentMethod = nullptr;
+  bool mainMethodFound = false;
   SymbolTable::SymbolTable symTbl;
 
   ast::Class *findClassByName(const std::string &className) {
@@ -72,7 +73,7 @@ public:
   void visitBoolLiteral(ast::BoolLiteral &lit) override;
   void visitNullLiteral(ast::NullLiteral &lit) override;
   void visitThisLiteral(ast::ThisLiteral &lit) override;
-  //   void visitMainMethod(ast::MainMethod &mainMethod) override;
+  void visitMainMethod(ast::MainMethod &mainMethod) override;
   void visitFieldAccess(ast::FieldAccess &access) override;
   //   void visitUnaryExpression(ast::UnaryExpression &expr) override;
   //   void visitArrayAccess(ast::ArrayAccess &access) override;

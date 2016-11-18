@@ -4,6 +4,10 @@ void SemanticVisitor::visitProgram(ast::Program &program) {
   currentProgram = &program;
   checkForDuplicates(program.getClasses());
   program.acceptChildren(this);
+
+  if (!this->mainMethodFound) {
+    error(program, "Program does not contain a valid main method");
+  }
 }
 
 void SemanticVisitor::visitClass(ast::Class &klass) {
@@ -27,6 +31,15 @@ void SemanticVisitor::visitMethodList(ast::MethodList &methodList) {
 void SemanticVisitor::visitMainMethodList(ast::MainMethodList &mainMethodList) {
   checkForDuplicates(mainMethodList.mainMethods);
   mainMethodList.acceptChildren(this);
+}
+
+void SemanticVisitor::visitMainMethod(ast::MainMethod &mm) {
+  mm.acceptChildren(this);
+
+  if (mm.getName() == "main" &&
+      mm.getArgName() == "args") {
+    this->mainMethodFound = true;
+  }
 }
 
 void SemanticVisitor::visitMethod(ast::Method &method) {
