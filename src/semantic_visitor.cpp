@@ -45,6 +45,7 @@ void SemanticVisitor::visitBlock(ast::Block &block) {
 }
 
 void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
+  decl.acceptChildren(this);
   auto &sym = decl.getSymbol();
   if (symTbl.isDefinedInCurrentScope(sym)) {
     error(decl, "Variable '" + decl.getSymbol().name + "' already defined");
