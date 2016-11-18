@@ -75,6 +75,14 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
     if (t->getType() == ast::PrimitiveType::TypeType::Void) {
       error (decl, "'void' is not a valid type in this context");
     }
+  } else if (auto t = dynamic_cast<ast::ArrayType*>(decl.getType())) {
+    // void[] types are not allowed either
+    auto elementType = t->getElementType();
+    if (auto p = dynamic_cast<ast::PrimitiveType*>(elementType)) {
+      if (p->getType() == ast::PrimitiveType::TypeType::Void) {
+        error(decl, "'void' is not a valid type in this context");
+      }
+    }
   }
 
   auto &sym = decl.getSymbol();
