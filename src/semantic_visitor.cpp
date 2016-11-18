@@ -227,8 +227,17 @@ void SemanticVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
 
 void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
   access.acceptChildren(this);
+
+  // Handle System.out.println separately here...
+  if (auto ref = dynamic_cast<ast::VarRef*>(access.getLeft())) {
+    if (ref->getName() == "System" && access.getName() == "out") {
+      // System.out, .println might follow but don't further check this
+      return;
+    }
+  }
+
   auto &lhsType = access.getLeft()->targetType;
-  if (lhsType.kind != sem::TypeKind::Class) {
+  if (!lhsType.isClass()) {
     error(access, "Left hand side of field access must be class type object");
   }
   auto cls = findClassByName(lhsType.name);
@@ -270,6 +279,25 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
       invocation.targetType.setFromAstType(method->getReturnType());
     } else {
       error(invocation, "Methods can only be invoked on class types");
+    }
+  } else if (auto left = dynamic_cast<ast::FieldAccess*>(invocation.getLeft())) {
+    // System.out.println special case: VarRef(System) - FieldAccess(out) - MethodInvocation(println)
+    if (invocation.getName() == "println") {
+      auto system = dynamic_cast<ast::VarRef*>(left->getLeft());
+      if (system != nullptr) {
+        auto args = invocation.getArguments();
+        if (args.size() != 1) {
+          error(invocation, "System.out.println takes exactly one int argument, " +
+                            std::to_string(args.size()) + " given");
+        } else if (!args.at(0)->targetType.isInt()) {
+          std::stringstream ss;
+          ss << "System.out.println takes one int argument, but argument is of type " << args.at(0)->targetType;
+          error(invocation, ss.str());
+        }
+
+        // Yep, System.out.println call
+        return;
+      }
     }
   } else {
     error(invocation, "Can't access method " + invocation.getName());
