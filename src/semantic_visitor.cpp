@@ -146,7 +146,9 @@ void SemanticVisitor::visitNullLiteral(ast::NullLiteral &lit) {
   lit.targetType.setNull();
 }
 void SemanticVisitor::visitThisLiteral(ast::ThisLiteral &lit) {
-  assert(this->currentClass != nullptr);
+  if (currentClass == nullptr) {
+    error(lit, "'this' can't be used outside of classes");
+  }
   lit.targetType.setClass(this->currentClass->getName());
 }
 
@@ -303,9 +305,27 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
         }
 
         // Yep, System.out.println call
+        invocation.targetType.setVoid();
         return;
       }
     }
+    // TODO: Check if function exists in class
+
+
+  } else if (dynamic_cast<ast::ThisLiteral*>(invocation.getLeft())) {
+    ast::Method *method = nullptr;
+    for (auto &m : currentClass->getMethods()->methods) {
+      if (m->getName() == invocation.getName()) {
+        method = m.get();
+        break;
+      }
+    }
+    if (method == nullptr) {
+      error(invocation, "Class " + currentClass->getName() + " does not have a "
+                        "method called '" + invocation.getName() + "'");
+    }
+
+    invocation.targetType.setFromAstType(method->getReturnType());
   } else {
     error(invocation, "Can't access method " + invocation.getName());
   }
