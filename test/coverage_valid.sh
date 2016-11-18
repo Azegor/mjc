@@ -14,11 +14,12 @@ if [[ ${compiler_retval} -ne 0 ]]; then
 
   if [[ ${compiler_out} != *"error"* ]]; then
     echo "ERROR: Compiler return value is != 0 but output doesn't contain 'error'"
-    echo "Output:"
-    echo "${compiler_out}"
   fi
 
   echo "ERROR: Compiler returned ${compiler_retval} but '${compiler} ${arguments}' is supposed to be valid"
+
+  echo "Output:"
+  echo "${compiler_out}"
 
   exit 1
 fi
