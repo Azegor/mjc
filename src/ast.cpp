@@ -49,8 +49,9 @@ bool Type::conformsToAstType(ast::Type *astType) {
             name == t->getName()) ||
             kind == TypeKind::Null;
   } else if (auto t = dynamic_cast<ast::ArrayType*>(astType)) {
+    (void) t;
+    // TODO: Check element type + dimension (+ name?)
     return kind == TypeKind::Array;
-    // TODO: Check dimension?
   } else {
     std::cout << __FUNCTION__ << ": Unhandled astType" << std::endl;
   }
