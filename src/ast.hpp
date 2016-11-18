@@ -101,6 +101,7 @@ struct Type {
   bool isInt() { return kind == TypeKind::Int; }
   bool isBool() { return kind == TypeKind::Bool; }
   bool isClass() { return kind == TypeKind::Class; }
+  bool isArray() { return kind == TypeKind::Array; }
 
   bool operator==(const sem::Type &other) {
     switch (this->kind) {

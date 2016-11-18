@@ -405,4 +405,8 @@ void SemanticVisitor::visitArrayAccess(ast::ArrayAccess &access) {
   if (!access.getIndex()->targetType.isInt()) {
     error(*access.getIndex(), "Array indices must be integers");
   }
+
+  if (!access.getArray()->targetType.isArray()) {
+    error(*access.getArray(), "Array access on non-array expression");
+  }
 }
