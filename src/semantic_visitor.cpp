@@ -133,17 +133,6 @@ void SemanticVisitor::visitThisLiteral(ast::ThisLiteral &lit) {
   lit.targetType.setClass(this->currentClass->getName());
 }
 
-void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
-  auto &lhsType = access.getLeft()->targetType;
-  if (lhsType.kind != sem::TypeKind::Class) {
-    error(access, "Left hand side of field access must be class type object");
-  }
-  auto cls = findClassByName(lhsType.name);
-  if (!cls) {
-    error(*access.getLeft(), "Unknown class type'" + lhsType.name + '\'');
-  }
-}
-
 void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   expr.acceptChildren(this);
 
@@ -198,15 +187,28 @@ void SemanticVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
   expr.targetType.setArray(); // TODO: Proagate name (and dimension?)
 }
 
+void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
+  access.acceptChildren(this);
+  auto &lhsType = access.getLeft()->targetType;
+  if (lhsType.kind != sem::TypeKind::Class) {
+    error(access, "Left hand side of field access must be class type object");
+  }
+  auto cls = findClassByName(lhsType.name);
+  if (!cls) {
+    error(*access.getLeft(), "Unknown class type'" + lhsType.name + '\'');
+  }
+}
+
 void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
   invocation.acceptChildren(this);
 
-  if (auto left = dynamic_cast<ast::VarRef*>(invocation.getLeft())) {
+  if (auto left = dynamic_cast<ast::VarRef *>(invocation.getLeft())) {
     auto *def = symTbl.lookup(left->getSymbol());
-     // left has already been visited so we should never arrive here with null definition
+    // left has already been visited so we should never arrive here with null
+    // definition
     assert(def != nullptr);
     auto defType = def->getType();
-    if (auto cl = dynamic_cast<ast::ClassType*>(defType)) {
+    if (auto cl = dynamic_cast<ast::ClassType *>(defType)) {
       auto *classDef = findClassByName(cl->getName());
       assert(classDef != nullptr);
 
@@ -220,14 +222,16 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
       }
 
       if (method == nullptr) {
-        error (invocation, "Class " + cl->getName() + " does not contain a method " +
-               invocation.getName());
+        error(invocation, "Class " + cl->getName() +
+                              " does not contain a method " +
+                              invocation.getName());
       }
-      // TODO: Can we even be sure that the return type has been visited at this point?
+      // TODO: Can we even be sure that the return type has been visited at this
+      // point?
       // Valid method, valid class, propagate type!
       invocation.targetType.setFromAstType(method->getReturnType());
     } else {
-      error (invocation, "Methods can only be invoked on class types");
+      error(invocation, "Methods can only be invoked on class types");
     }
   } else {
     error(invocation, "Can't access method " + invocation.getName());
