@@ -63,7 +63,7 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
   decl.acceptChildren(this);
 
   if (decl.getInitializer() != nullptr &&
-      !decl.getInitializer()->targetType.conformsToAstType(decl.getType())) {
+      decl.getInitializer()->targetType != decl.getType()->getSemaType()) {
     std::stringstream ss;
     ss << "Can't assign from " << decl.getInitializer()->targetType << " to "
        << "umm"; // TODO: Write toStr() or stream op for ast::Type variants
@@ -107,15 +107,8 @@ void SemanticVisitor::visitVarRef(ast::VarRef &varRef) {
     }
   } else {
     // Look at local variables first
-    if (auto decl = dynamic_cast<ast::VariableDeclaration *>(def)) {
-      auto t = decl->getType();
-      varRef.targetType.setFromAstType(t);
-    } else if (auto decl = dynamic_cast<ast::Parameter *>(def)) {
-      auto t = decl->getType();
-      varRef.targetType.setFromAstType(t);
-    } else if (auto decl = dynamic_cast<ast::Field *>(def)) {
-      auto t = decl->getType();
-      varRef.targetType.setFromAstType(t);
+    if (auto df = dynamic_cast<SymbolTable::Definition *>(def)) {
+      varRef.targetType = df->getType()->getSemaType();
     } else {
       std::cout << __FUNCTION__ << ": Unhandled VarRef decl type" << std::endl;
     }
@@ -250,7 +243,7 @@ void SemanticVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
     error(*expr.getSize(), "Array indices must be ints");
   }
 
-  expr.targetType.setFromAstType(expr.getArrayType());
+  expr.targetType = expr.getArrayType()->getSemaType();
 }
 
 void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
@@ -296,7 +289,7 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
       // TODO: Can we even be sure that the return type has been visited at this
       // point?
       // Valid method, valid class, propagate type!
-      invocation.targetType.setFromAstType(method->getReturnType());
+      invocation.targetType = method->getReturnType()->getSemaType();
     } else {
       error(invocation, "Methods can only be invoked on class types");
     }
@@ -330,14 +323,14 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
                         "method called '" + invocation.getName() + "'");
     }
 
-    invocation.targetType.setFromAstType(method->getReturnType());
+    invocation.targetType = method->getReturnType()->getSemaType();
   } else if (auto t = dynamic_cast<ast::NewObjectExpression*>(invocation.getLeft())) {
     ast::Method *method = findMethodInClass(t->getDef(), invocation.getName());
     if (method == nullptr) {
       error(invocation, "Class " + t->getDef()->getName() + " does not have a "
                         "method called '" + invocation.getName() + "'");
     }
-    invocation.targetType.setFromAstType(method->getReturnType());
+    invocation.targetType = method->getReturnType()->getSemaType();
   } else {
     error(invocation, "Can't access method " + invocation.getName());
   }
@@ -376,7 +369,7 @@ void SemanticVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
 
   auto methodReturnType = this->currentMethod->getReturnType();
 
-  if (!expr->targetType.conformsToAstType(methodReturnType)) {
+  if (expr->targetType != methodReturnType->getSemaType()) {
     std::stringstream ss;
     ss << "Can't return expression of type " << expr->targetType
        << " from method with return type " << "umm"; // TODO ast::Type toString()

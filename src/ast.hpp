@@ -70,9 +70,6 @@ struct Type {
   void setNull() { kind = TypeKind::Null; }
   void setVoid() { kind = TypeKind::Void; }
 
-  void setFromAstType(ast::Type *astType);
-  bool conformsToAstType(ast::Type *astType) const;
-
   bool isInt() const { return kind == TypeKind::Int; }
   bool isBool() const { return kind == TypeKind::Bool; }
   bool isClass() const { return kind == TypeKind::Class; }

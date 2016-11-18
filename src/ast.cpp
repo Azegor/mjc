@@ -1,65 +1,5 @@
 #include "ast.hpp"
 
-namespace sem {
-void Type::setFromAstType(ast::Type *astType) {
-  if (auto t = dynamic_cast<ast::PrimitiveType *>(astType)) {
-    if (t->getType() == ast::PrimitiveType::TypeType::Boolean)
-      setBool();
-    else if (t->getType() == ast::PrimitiveType::TypeType::Int)
-      setInt();
-    else if (t->getType() == ast::PrimitiveType::TypeType::Void)
-      setVoid();
-    else
-      assert(false);
-  } else if (auto t = dynamic_cast<ast::ClassType *>(astType)) {
-    setClass(t->getName());
-  } else if (auto t = dynamic_cast<ast::ArrayType *>(astType)) {
-    TypeKind innerKind = TypeKind::Unresolved;
-    auto arrType = t->getElementType();
-    std::string name;
-    if (auto p = dynamic_cast<ast::ClassType *>(arrType)) {
-      innerKind = TypeKind::Class;
-      name = p->getName();
-    } else if (auto p = dynamic_cast<ast::PrimitiveType *>(arrType)) {
-      if (p->getType() == ast::PrimitiveType::TypeType::Boolean)
-        innerKind = TypeKind::Bool;
-      else if (p->getType() == ast::PrimitiveType::TypeType::Int)
-        innerKind = TypeKind::Int;
-      else
-        assert(false);
-    }
-    setArray(innerKind, t->getDimension(), name);
-  }
-}
-
-bool Type::conformsToAstType(ast::Type *astType) const {
-  if (auto t = dynamic_cast<ast::PrimitiveType *>(astType)) {
-    switch (this->kind) {
-    case TypeKind::Int:
-      return t->getType() == ast::PrimitiveType::TypeType::Int;
-    case TypeKind::Bool:
-      return t->getType() == ast::PrimitiveType::TypeType::Boolean;
-    case TypeKind::Void:
-      return t->getType() == ast::PrimitiveType::TypeType::Void;
-    default:
-      return false;
-    }
-  } else if (auto t = dynamic_cast<ast::ClassType*>(astType)) {
-    return (kind == TypeKind::Class &&
-            name == t->getName()) ||
-            kind == TypeKind::Null;
-  } else if (auto t = dynamic_cast<ast::ArrayType*>(astType)) {
-    (void) t;
-    // TODO: Check element type + dimension (+ name?)
-    return kind == TypeKind::Array;
-  } else {
-    std::cout << __FUNCTION__ << ": Unhandled astType" << std::endl;
-  }
-
-  return false;
-}
-}
-
 static const char* typeKindToString(sem::TypeKind kind) {
   switch (kind) {
   case sem::TypeKind::Bool:
@@ -102,6 +42,7 @@ std::ostream &operator<<(std::ostream &o, const sem::Type &t) {
   }
   return o;
 }
+
 namespace ast {
 void Visitor::visitProgram(Program &program) { program.acceptChildren(this); }
 void Visitor::visitClass(Class &klass) { klass.acceptChildren(this); }
