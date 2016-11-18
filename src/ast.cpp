@@ -11,6 +11,8 @@ namespace sem {
         setVoid();
       else
         assert(false);
+    } else if (auto t = dynamic_cast<ast::ClassType*>(astType)) {
+      setClass(t->getName());
     }
   }
 }
