@@ -31,8 +31,10 @@ void SemanticVisitor::visitMainMethodList(ast::MainMethodList &mainMethodList) {
 
 void SemanticVisitor::visitMethod(ast::Method &method) {
   symTbl.enterScope(); // for parameters
+  currentMethod = &method;
   method.acceptChildren(this);
   symTbl.leaveScope();
+  currentMethod = nullptr;
 }
 
 void SemanticVisitor::visitBlock(ast::Block &block) {
@@ -271,5 +273,26 @@ void SemanticVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
 
   if (!stmt.getCondition()->targetType.isBool()) {
     error(*stmt.getCondition(), "while condition must be boolean");
+  }
+}
+
+void SemanticVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
+  stmt.acceptChildren(this);
+
+  if (currentMethod == nullptr) {
+    error(stmt, "Return statement outside of Method");
+  }
+
+  auto expr = stmt.getExpression();
+  if (expr == nullptr)
+    return;
+
+  auto methodReturnType = this->currentMethod->getReturnType();
+
+  if (!expr->targetType.conformsToAstType(methodReturnType)) {
+    std::stringstream ss;
+    ss << "Can't return expression of type " << expr->targetType
+       << " from method with return type " << "umm"; // TODO ast::Type toString()
+    error(*expr, ss.str());
   }
 }
