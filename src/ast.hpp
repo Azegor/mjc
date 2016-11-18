@@ -82,7 +82,7 @@ struct Type {
     new (&name) std::string(std::move(name));
   }
   void setNull() { setClass("null"); }
-} void setVoid() {
+  void setVoid() {
   destroy();
   kind = TypeKind::Void;
 }
