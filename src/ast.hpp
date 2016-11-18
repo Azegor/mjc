@@ -65,8 +65,24 @@ struct Type {
 
   bool isInt() { return kind == TypeKind::Int; }
   bool isBool() { return kind == TypeKind::Bool; }
+
+  bool operator == (const sem::Type& other) {
+    switch(this->kind) {
+      case TypeKind::Class:
+        return other.kind == TypeKind::Class && this->name == other.name;
+      case TypeKind::Array:
+        return other.kind == TypeKind::Array && this->dimension == other.dimension;
+      default:
+        return this->kind == other.kind;
+    }
+  }
+  bool operator != (const sem::Type& other) {
+    return !(*this == other);
+  }
+
 };
 } // namespace sem
+std::ostream& operator << (std::ostream &o, const sem::Type& t);
 
 namespace ast {
 struct SortUniquePtrPred {
