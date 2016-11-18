@@ -47,19 +47,46 @@ namespace sem {
 
 struct Type {
   TypeKind kind;
-  std::string name; // For kind == Unresolved
-  int dimension;    // For Kind == Array TODO: Needed?!
-  Type() {
-    kind = TypeKind::Unresolved;
-  }
-  ~Type(){}
+  union {
+    std::string name; // For kind == Unresolved
+    int dimension;    // For Kind == Array TODO: Needed?!
+  };
+  Type() { kind = TypeKind::Unresolved; }
+  ~Type() { destroy(); }
 
-  void setInt() { kind = TypeKind::Int; }
-  void setBool() { kind = TypeKind::Bool; }
-  void setArray() { kind = TypeKind::Array; }
-  void setClass(const std::string &name) { kind = TypeKind::Class; this->name = name; }
-  void setNull() { kind = TypeKind::Class; this->name = "null"; }
-  void setVoid() { kind = TypeKind::Void; }
+  void destroy() {
+    switch (kind) {
+    case TypeKind::Class:
+      (&name)->std::string::~string();
+      break;
+    default:
+      break;
+    }
+  }
+
+  void setInt() {
+    destroy();
+    kind = TypeKind::Int;
+  }
+  void setBool() {
+    destroy();
+    kind = TypeKind::Bool;
+  }
+  void setArray() {
+    destroy();
+    kind = TypeKind::Array;
+  }
+  void setClass(std::string name) {
+    destroy();
+    kind = TypeKind::Class;
+    new (&name) std::string(std::move(name));
+  }
+  void setNull() { setClass("null"); }
+  }
+  void setVoid() {
+    destroy();
+    kind = TypeKind::Void;
+  }
 
   void setFromAstType(ast::Type *astType);
   bool conformsToAstType(ast::Type *astType);
@@ -81,6 +108,18 @@ struct Type {
     return !(*this == other);
   }
 
+  Type &operator=(const Type &o) {
+    destroy();
+    switch (o.kind) {
+    case TypeKind::Class:
+      setClass(o.name);
+      break;
+    default:
+      kind = o.kind;
+      break;
+    }
+    return *this;
+  }
 };
 } // namespace sem
 std::ostream& operator << (std::ostream &o, const sem::Type& t);
