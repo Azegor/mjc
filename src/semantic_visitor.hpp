@@ -60,7 +60,7 @@ public:
   void visitParameter(ast::Parameter &param) override;
   void visitNewObjectExpression(ast::NewObjectExpression &expr) override;
   void visitClassType(ast::ClassType &type) override;
-  //   void visitNewArrayExpression(ast::NewArrayExpression &expr) override;
+  void visitNewArrayExpression(ast::NewArrayExpression &expr) override;
   //   void visitField(ast::Field &field) override;
   //   void visitReturnStatement(ast::ReturnStatement &stmt) override;
   void visitBinaryExpression(ast::BinaryExpression &expr) override;

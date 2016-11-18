@@ -168,3 +168,13 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
       assert(false);
   }
 }
+
+void SemanticVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
+  expr.acceptChildren(this);
+
+  if (!expr.getSize()->targetType.isInt()) {
+    error(*expr.getSize(), "Array indices must be ints");
+  }
+
+  expr.targetType.setArray(); // TODO: Proagate name (and dimension?)
+}
