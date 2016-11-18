@@ -612,6 +612,8 @@ public:
     visitor->visitMainMethodList(mainMethods);
   }
 
+  const MethodList *getMethods() { return &methods; }
+
   const std::string &getName() { return name; }
 
   bool operator<(const Class &o) const { return name < o.name; }

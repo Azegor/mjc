@@ -186,3 +186,39 @@ void SemanticVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
 
   expr.targetType.setArray(); // TODO: Proagate name (and dimension?)
 }
+
+void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
+  invocation.acceptChildren(this);
+
+  if (auto left = dynamic_cast<ast::VarRef*>(invocation.getLeft())) {
+    auto *def = symTbl.lookup(left->getSymbol());
+     // left has already been visited so we should never arrive here with null definition
+    assert(def != nullptr);
+    auto defType = def->getType();
+    if (auto cl = dynamic_cast<ast::ClassType*>(defType)) {
+      auto *classDef = findClassByName(cl->getName());
+      assert(classDef != nullptr);
+
+      // Find method in class
+      ast::Method *method = nullptr;
+      for (auto &m : classDef->getMethods()->methods) {
+        if (m->getName() == invocation.getName()) {
+          method = m.get();
+          break;
+        }
+      }
+
+      if (method == nullptr) {
+        error (invocation, "Class " + cl->getName() + " does not contain a method " +
+               invocation.getName());
+      }
+      // TODO: Can we even be sure that the return type has been visited at this point?
+      // Valid method, valid class, propagate type!
+      invocation.targetType.setFromAstType(method->getReturnType());
+    } else {
+      error (invocation, "Methods can only be invoked on class types");
+    }
+  } else {
+    error(invocation, "Can't access method " + invocation.getName());
+  }
+}

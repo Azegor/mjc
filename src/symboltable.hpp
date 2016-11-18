@@ -77,6 +77,7 @@ public:
 };
 
 class Definition {
+public:
   virtual Symbol &getSymbol() const = 0;
   virtual ast::Type *getType() const = 0;
 };
