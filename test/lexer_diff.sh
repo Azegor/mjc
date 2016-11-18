@@ -55,7 +55,7 @@ compiler_out=${compiler_out#LLVM Profile Note*.
 }
 
 # Only compare outputs if both return values were 0
-if [ "${compiler_retval}" -eq 0 ] && [ "${lexer_retval}" -eq 0 ]; then
+if [[ "${compiler_retval}" -eq 0 && "${lexer_retval}" -eq 0 ]]; then
   if [[ "${compiler_out}" != "${lexer_out}" ]]; then
       diff=$(diff <(echo "${compiler_out}") <(echo "${lexer_out}"))
       echo "================================="
