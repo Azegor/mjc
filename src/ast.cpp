@@ -28,6 +28,12 @@ bool Type::conformsToAstType(ast::Type *astType) {
     default:
       return false;
     }
+  } else if (auto t = dynamic_cast<ast::ClassType*>(astType)) {
+    return (kind == TypeKind::Class &&
+            name == t->getName()) ||
+            kind == TypeKind::Null;
+  } else {
+    std::cout << __FUNCTION__ << ": Unhandled astType" << std::endl;
   }
 
   return false;

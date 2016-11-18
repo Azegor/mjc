@@ -123,6 +123,8 @@ void SemanticVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
   }
   expr.setDef(def);
   expr.acceptChildren(this);
+
+  expr.targetType.setClass(expr.getName());
 }
 
 void SemanticVisitor::visitClassType(ast::ClassType &type) {
