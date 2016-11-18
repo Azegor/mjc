@@ -96,15 +96,15 @@ struct Type {
   }
 
   void setFromAstType(ast::Type *astType);
-  bool conformsToAstType(ast::Type *astType);
+  bool conformsToAstType(ast::Type *astType) const;
 
-  bool isInt() { return kind == TypeKind::Int; }
-  bool isBool() { return kind == TypeKind::Bool; }
-  bool isClass() { return kind == TypeKind::Class; }
-  bool isArray() { return kind == TypeKind::Array; }
-  bool isNull() { return kind == TypeKind::Null; }
+  bool isInt() const { return kind == TypeKind::Int; }
+  bool isBool() const { return kind == TypeKind::Bool; }
+  bool isClass() const { return kind == TypeKind::Class; }
+  bool isArray() const { return kind == TypeKind::Array; }
+  bool isNull() const { return kind == TypeKind::Null; }
 
-  bool operator==(const sem::Type &other) {
+  bool operator==(const sem::Type &other) const {
     switch (this->kind) {
     case TypeKind::Class:
       return other.kind == TypeKind::Class && this->name == other.name;
@@ -115,7 +115,7 @@ struct Type {
       return this->kind == other.kind;
     }
   }
-  bool operator!=(const sem::Type &other) { return !(*this == other); }
+  bool operator!=(const sem::Type &other) const { return !(*this == other); }
 
   Type &operator=(const Type &o) {
     switch (o.kind) {
@@ -136,14 +136,14 @@ namespace ast {
 struct SortUniquePtrPred {
   template <typename T>
   bool operator()(const std::unique_ptr<T> &lhs,
-                  const std::unique_ptr<T> &rhs) {
+                  const std::unique_ptr<T> &rhs) const {
     return *lhs < *rhs;
   }
 };
 struct UniquePtrEqPred {
   template <typename T>
   bool operator()(const std::unique_ptr<T> &lhs,
-                  const std::unique_ptr<T> &rhs) {
+                  const std::unique_ptr<T> &rhs) const {
     return *lhs == *rhs;
   }
 };
@@ -320,7 +320,7 @@ public:
       return TypeType::None;
     }
   }
-  const TypeType &getType() { return type; }
+  const TypeType &getType() const { return type; }
 
   void accept(Visitor *visitor) override { visitor->visitPrimitiveType(*this); }
 };
@@ -333,7 +333,7 @@ public:
   ClassType(SourceLocation loc, std::string name)
       : BasicType(std::move(loc)), name(std::move(name)) {}
 
-  const std::string &getName() { return name; }
+  const std::string &getName() const { return name; }
 
   void accept(Visitor *visitor) override { visitor->visitClassType(*this); }
   void setDef(Class *def) { classDef = def; }
@@ -388,8 +388,8 @@ public:
         thenStmt(std::move(thenStmt)), elseStmt(std::move(elseStmt)) {}
 
   Expression *getCondition() const { return condition.get(); }
-  Statement *getThenStatement() { return thenStmt.get(); }
-  Statement *getElseStatement() { return elseStmt.get(); }
+  Statement *getThenStatement() const { return thenStmt.get(); }
+  Statement *getElseStatement() const { return elseStmt.get(); }
 
   void accept(Visitor *visitor) override { visitor->visitIfStatement(*this); }
   void acceptChildren(Visitor *visitor) override {
@@ -412,7 +412,7 @@ public:
         statement(std::move(statement)) {}
 
   Expression *getCondition() const { return condition.get(); }
-  Statement *getStatement() { return statement.get(); }
+  Statement *getStatement() const { return statement.get(); }
 
   void accept(Visitor *visitor) override {
     visitor->visitWhileStatement(*this);
@@ -432,7 +432,7 @@ class ReturnStatement : public Statement {
 public:
   ReturnStatement(SourceLocation loc, ExprPtr expr)
       : Statement(std::move(loc)), expr(std::move(expr)) {}
-  Expression *getExpression() { return expr.get(); }
+  Expression *getExpression() const { return expr.get(); }
 
   void accept(Visitor *visitor) override {
     visitor->visitReturnStatement(*this);
@@ -452,11 +452,11 @@ public:
   Field(SourceLocation loc, TypePtr type, SymbolTable::Symbol &sym)
       : Node(std::move(loc)), type(std::move(type)), symbol(sym) {}
 
-  const std::string &getName() { return symbol.name; }
+  const std::string &getName() const { return symbol.name; }
   SymbolTable::Symbol &getSymbol() const override { return symbol; }
   Type *getType() const override { return type.get(); }
 
-  bool operator<(const Field &other) {
+  bool operator<(const Field &other) const {
     return symbol.name < other.symbol.name;
     // include type
   }
@@ -465,7 +465,7 @@ public:
 
   void acceptChildren(Visitor *visitor) override { type->accept(visitor); }
 
-  bool operator<(const Field &o) const { return symbol.name < o.symbol.name; }
+  bool operator<(const Field &o) { return symbol.name < o.symbol.name; }
   bool operator==(const Field &o) const { return symbol.name == o.symbol.name; }
 };
 using FieldPtr = std::unique_ptr<Field>;
@@ -480,7 +480,7 @@ public:
 
   void accept(Visitor *visitor) override { visitor->visitParameter(*this); }
   void acceptChildren(Visitor *visitor) override { type->accept(visitor); }
-  const std::string &getName() { return symbol.name; }
+  const std::string &getName() const { return symbol.name; }
   SymbolTable::Symbol &getSymbol() const override { return symbol; }
   Type *getType() const override { return type.get(); }
 };
@@ -501,7 +501,7 @@ public:
         name(std::move(name)), parameters(std::move(parameters)),
         block(std::move(block)) {}
 
-  const std::string &getName() { return name; }
+  const std::string &getName() const { return name; }
   Type *getReturnType() const { return returnType.get(); }
   Block *getBlock() const { return block.get(); }
 
@@ -545,8 +545,8 @@ public:
   void accept(Visitor *visitor) override { visitor->visitMainMethod(*this); }
   void acceptChildren(Visitor *visitor) override { block->accept(visitor); }
 
-  const std::string &getName() { return name; }
-  const std::string &getArgName() { return argName; }
+  const std::string &getName() const { return name; }
+  const std::string &getArgName() const { return argName; }
   Block *getBlock() const { return block.get(); }
   bool operator<(const MainMethod &other) const {
     return name < other.name;
@@ -623,9 +623,9 @@ public:
     visitor->visitMainMethodList(mainMethods);
   }
 
-  const MethodList *getMethods() { return &methods; }
+  const MethodList *getMethods() const { return &methods; }
 
-  const std::string &getName() { return name; }
+  const std::string &getName() const { return name; }
 
   bool operator<(const Class &o) const { return name < o.name; }
   bool operator<(const std::string &oName) const { return name < oName; }
@@ -680,7 +680,7 @@ public:
   }
 
   SymbolTable::Symbol &getSymbol() const override { return symbol; }
-  const std::string &getName() { return symbol.name; }
+  const std::string &getName() const { return symbol.name; }
   Type *getType() const override { return type.get(); }
   Expression *getInitializer() const { return initializer.get(); }
 };
@@ -723,7 +723,7 @@ public:
     visitor->visitNewObjectExpression(*this);
   }
 
-  const std::string &getName() { return name; }
+  const std::string &getName() const { return name; }
 
   void setDef(Class *def) { classDef = def; }
   Class *getDef() const { return classDef; }
@@ -737,7 +737,7 @@ public:
 
   void accept(Visitor *visitor) override { visitor->visitIntLiteral(*this); }
 
-  const int32_t &getValue() { return value; }
+  int32_t getValue() const { return value; }
 };
 
 class BoolLiteral : public PrimaryExpression {
@@ -749,7 +749,7 @@ public:
 
   void accept(Visitor *visitor) override { visitor->visitBoolLiteral(*this); }
 
-  const bool &getValue() { return value; }
+  bool getValue() const { return value; }
 };
 
 class NullLiteral : public PrimaryExpression {
@@ -778,7 +778,7 @@ public:
 
   SymbolTable::Symbol &getSymbol() const override { return symbol; }
   ast::Type *getType() const override { return nullptr; /* TODO */ }
-  const std::string &getName() { return symbol.name; }
+  const std::string &getName() const { return symbol.name; }
 
   void setDef(SymbolTable::Definition *def) { definition = def; }
   SymbolTable::Definition *getDef() const { return definition; }
@@ -804,8 +804,9 @@ public:
     if (left != nullptr)
       left->accept(visitor);
 
-    for (auto &arg : arguments)
+    for (auto &arg : arguments) {
       arg->accept(visitor);
+    }
   }
 
   std::vector<Expression *> getArguments() {
@@ -817,7 +818,7 @@ public:
   }
 
   Expression *getLeft() const { return left.get(); }
-  const std::string &getName() { return name; }
+  const std::string &getName() const { return name; }
 };
 
 class FieldAccess : public Expression {
@@ -837,7 +838,7 @@ public:
   }
 
   Expression *getLeft() const { return left.get(); }
-  const std::string &getName() { return name; }
+  const std::string &getName() const { return name; }
 };
 
 class ArrayAccess : public Expression {
@@ -936,7 +937,7 @@ public:
 
   Expression *getLeft() const { return left.get(); }
   Expression *getRight() const { return right.get(); }
-  const Op &getOperation() { return operation; }
+  Op getOperation() const { return operation; }
 };
 
 class UnaryExpression : public Expression {
@@ -971,7 +972,7 @@ public:
   }
 
   Expression *getExpression() const { return expression.get(); }
-  const Op &getOperation() { return operation; }
+  Op getOperation() const { return operation; }
 };
 
 template <typename St, typename... Args>

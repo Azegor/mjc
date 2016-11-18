@@ -32,7 +32,7 @@ void Type::setFromAstType(ast::Type *astType) {
   }
 }
 
-bool Type::conformsToAstType(ast::Type *astType) {
+bool Type::conformsToAstType(ast::Type *astType) const {
   if (auto t = dynamic_cast<ast::PrimitiveType *>(astType)) {
     switch (this->kind) {
     case TypeKind::Int:
