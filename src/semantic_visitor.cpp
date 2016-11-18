@@ -398,3 +398,11 @@ void SemanticVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
     assert(false);
   }
 }
+
+void SemanticVisitor::visitArrayAccess(ast::ArrayAccess &access) {
+  access.acceptChildren(this);
+
+  if (!access.getIndex()->targetType.isInt()) {
+    error(*access.getIndex(), "Array indices must be integers");
+  }
+}
