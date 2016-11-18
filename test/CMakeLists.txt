@@ -1,5 +1,26 @@
 MESSAGE(STATUS "Adding tests")
 
+# http://stackoverflow.com/questions/16158091/cmake-setting-an-environmental-variable-for-ctest-or-otherwise-getting-failed
+if (CMAKE_CONFIGURATION_TYPES)
+    add_custom_target(check
+        ${CMAKE_CTEST_COMMAND}
+            --force-new-ctest-process --quiet
+            --build-config "$<CONFIGURATION>"
+        && echo -e "\\\\e[1m\\\\e[32m::: All tests passed!\\\\e[39m\\\\e[0m"
+        || ${CMAKE_CTEST_COMMAND}
+            --force-new-ctest-process --rerun-failed --output-on-failure
+            --build-config "$<CONFIGURATION>"
+    )
+else()
+    add_custom_target(check
+        ${CMAKE_CTEST_COMMAND}
+            --force-new-ctest-process --quiet
+        && echo -e "\\\\e[1m\\\\e[32m::: All tests passed!\\\\e[39m\\\\e[0m"
+        || ${CMAKE_CTEST_COMMAND}
+            --force-new-ctest-process --rerun-failed --output-on-failure
+    )
+endif()
+
 add_test(NAME echo
          COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/echo_test.sh" $<TARGET_FILE:mjc>)
 add_test(NAME lextest
