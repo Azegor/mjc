@@ -18,22 +18,24 @@ namespace sem {
 }
 std::ostream& operator << (std::ostream &o, const sem::Type& t)
 {
-    switch(t.kind) {
-      case sem::TypeKind::Bool:
-        return o << "bool";
-      case sem::TypeKind::Int:
-        return o << "int";
-      case sem::TypeKind::Class:
-        return o << "Class(" << t.name << ")";
-      case sem::TypeKind::Array:
-        return o << "Array[" << t.dimension << "]";
-      case sem::TypeKind::Void:
-        return o << "void";
-      case sem::TypeKind::Null:
-        return o << "null";
-      default:
-        assert(false);
-    }
+  switch(t.kind) {
+    case sem::TypeKind::Bool:
+      return o << "bool";
+    case sem::TypeKind::Int:
+      return o << "int";
+    case sem::TypeKind::Class:
+      return o << "Class(" << t.name << ")";
+    case sem::TypeKind::Array:
+      return o << "Array[" << t.dimension << "]";
+    case sem::TypeKind::Void:
+      return o << "void";
+    case sem::TypeKind::Null:
+      return o << "null";
+    case sem::TypeKind::Unresolved:
+      // Print these anyway for easier debugging
+      return o << "Unresolved";
+  }
+  return o;
 }
 namespace ast {
 void Visitor::visitProgram(Program &program) { program.acceptChildren(this); }
