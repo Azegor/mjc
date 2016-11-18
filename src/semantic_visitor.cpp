@@ -94,10 +94,10 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
     error(decl, "Variable '" + decl.getSymbol().name + "' already defined");
   }
   symTbl.insert(sym, &decl);
-  decl.acceptChildren(this);
 }
 
 void SemanticVisitor::visitVarRef(ast::VarRef &varRef) {
+  varRef.acceptChildren(this);
   auto *def = symTbl.lookup(varRef.getSymbol());
   if (!def) {
     if (varRef.getName() == "System") {
@@ -114,36 +114,35 @@ void SemanticVisitor::visitVarRef(ast::VarRef &varRef) {
     }
   }
   varRef.setDef(def);
-  varRef.acceptChildren(this);
 }
 
 void SemanticVisitor::visitParameter(ast::Parameter &param) {
+  param.acceptChildren(this);
   auto &sym = param.getSymbol();
   if (symTbl.isDefinedInCurrentScope(sym)) {
     error(param, "Parameter '" + param.getSymbol().name + "' already defined");
   }
   symTbl.insert(sym, &param);
-  param.acceptChildren(this);
 }
 
 void SemanticVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
+  expr.acceptChildren(this);
   auto *def = findClassByName(expr.getName());
   if (!def) {
     error(expr, "Undefined class '" + expr.getName() + "'");
   }
   expr.setDef(def);
-  expr.acceptChildren(this);
 
   expr.targetType.setClass(expr.getName());
 }
 
 void SemanticVisitor::visitClassType(ast::ClassType &type) {
+  type.acceptChildren(this);
   auto *def = findClassByName(type.getName());
   if (!def) {
     error(type, "Undefined class '" + type.getName() + "'");
   }
   type.setDef(def);
-  type.acceptChildren(this);
 }
 
 void SemanticVisitor::visitIntLiteral(ast::IntLiteral &lit) {
