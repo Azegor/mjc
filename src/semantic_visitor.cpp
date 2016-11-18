@@ -308,7 +308,9 @@ void SemanticVisitor::visitIfStatement(ast::IfStatement &ifStatement) {
   ifStatement.acceptChildren(this);
 
   if (!ifStatement.getCondition()->targetType.isBool()) {
-    error(*ifStatement.getCondition(), "if condition must be boolean");
+    std::stringstream ss;
+    ss << "if condition must be boolean, not " << ifStatement.getCondition()->targetType;
+    error(*ifStatement.getCondition(), ss.str());
   }
 }
 
@@ -316,7 +318,9 @@ void SemanticVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
   stmt.acceptChildren(this);
 
   if (!stmt.getCondition()->targetType.isBool()) {
-    error(*stmt.getCondition(), "while condition must be boolean");
+    std::stringstream ss;
+    ss << "while condition must be boolean, not " << stmt.getCondition()->targetType;
+    error(*stmt.getCondition(), ss.str());
   }
 }
 
