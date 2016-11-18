@@ -133,6 +133,17 @@ void SemanticVisitor::visitThisLiteral(ast::ThisLiteral &lit) {
   lit.targetType.setClass(this->currentClass->getName());
 }
 
+void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
+  auto &lhsType = access.getLeft()->targetType;
+  if (lhsType.kind != sem::TypeKind::Class) {
+    error(access, "Left hand side of field access must be class type object");
+  }
+  auto cls = findClassByName(lhsType.name);
+  if (!cls) {
+    error(*access.getLeft(), "Unknown class type'" + lhsType.name + '\'');
+  }
+}
+
 void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   expr.acceptChildren(this);
 

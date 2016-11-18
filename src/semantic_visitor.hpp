@@ -70,7 +70,7 @@ public:
   void visitNullLiteral(ast::NullLiteral &lit) override;
   void visitThisLiteral(ast::ThisLiteral &lit) override;
   //   void visitMainMethod(ast::MainMethod &mainMethod) override;
-  //   void visitFieldAccess(ast::FieldAccess &access) override;
+  void visitFieldAccess(ast::FieldAccess &access) override;
   //   void visitIfStatement(ast::IfStatement &ifStatement) override;
   //   void visitUnaryExpression(ast::UnaryExpression &expr) override;
   //   void visitArrayAccess(ast::ArrayAccess &access) override;
