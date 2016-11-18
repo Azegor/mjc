@@ -70,6 +70,13 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
     error(decl, ss.str());
   }
 
+  // Filter out void types
+  if (auto t = dynamic_cast<ast::PrimitiveType*>(decl.getType())) {
+    if (t->getType() == ast::PrimitiveType::TypeType::Void) {
+      error (decl, "'void' is not a valid type in this context");
+    }
+  }
+
   auto &sym = decl.getSymbol();
   if (symTbl.isDefinedInCurrentScope(sym)) {
     error(decl, "Variable '" + decl.getSymbol().name + "' already defined");
