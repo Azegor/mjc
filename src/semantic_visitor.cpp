@@ -71,6 +71,12 @@ void SemanticVisitor::visitVarRef(ast::VarRef &varRef) {
     if (auto decl = dynamic_cast<ast::VariableDeclaration*>(def)) {
       auto t = decl->getType();
       varRef.targetType.setFromAstType(t);
+    } else if (auto decl = dynamic_cast<ast::Parameter*>(def)) {
+      auto t = decl->getType();
+      varRef.targetType.setFromAstType(t);
+    } else if (auto decl = dynamic_cast<ast::Field*>(def)) {
+      auto t = decl->getType();
+      varRef.targetType.setFromAstType(t);
     }
   }
   varRef.setDef(def);
