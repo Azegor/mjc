@@ -268,15 +268,7 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
       auto *classDef = findClassByName(cl->getName());
       assert(classDef != nullptr);
 
-      // Find method in class
-      ast::Method *method = nullptr;
-      for (auto &m : classDef->getMethods()->methods) {
-        if (m->getName() == invocation.getName()) {
-          method = m.get();
-          break;
-        }
-      }
-
+      ast::Method *method = findMethodInClass(classDef, invocation.getName());
       if (method == nullptr) {
         error(invocation, "Class " + cl->getName() +
                               " does not contain a method " +
@@ -313,13 +305,7 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
 
 
   } else if (dynamic_cast<ast::ThisLiteral*>(invocation.getLeft())) {
-    ast::Method *method = nullptr;
-    for (auto &m : currentClass->getMethods()->methods) {
-      if (m->getName() == invocation.getName()) {
-        method = m.get();
-        break;
-      }
-    }
+    ast::Method *method = findMethodInClass(currentClass, invocation.getName());
     if (method == nullptr) {
       error(invocation, "Class " + currentClass->getName() + " does not have a "
                         "method called '" + invocation.getName() + "'");

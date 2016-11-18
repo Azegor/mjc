@@ -48,6 +48,17 @@ class SemanticVisitor : public ast::Visitor {
     return pos->get();
   }
 
+  ast::Method *findMethodInClass(ast::Class *klass, const std::string& methodName) {
+    ast::Method *method = nullptr;
+    for (auto &m : currentClass->getMethods()->methods) {
+      if (m->getName() == methodName) {
+        method = m.get();
+        break;
+      }
+    }
+    return method;
+  }
+
 public:
   SemanticVisitor(std::string fileName) : fileName(std::move(fileName)) {}
   void visitProgram(ast::Program &program) override;
