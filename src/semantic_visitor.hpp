@@ -75,7 +75,7 @@ public:
   void visitThisLiteral(ast::ThisLiteral &lit) override;
   void visitMainMethod(ast::MainMethod &mainMethod) override;
   void visitFieldAccess(ast::FieldAccess &access) override;
-  //   void visitUnaryExpression(ast::UnaryExpression &expr) override;
+  void visitUnaryExpression(ast::UnaryExpression &expr) override;
   //   void visitArrayAccess(ast::ArrayAccess &access) override;
   //   void visitArrayType(ast::ArrayType &type) override;
   //   void visitPrimitiveType(ast::PrimitiveType &type) override;

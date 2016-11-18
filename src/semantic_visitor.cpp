@@ -351,3 +351,27 @@ void SemanticVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
     error(*expr, ss.str());
   }
 }
+
+void SemanticVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
+  expr.acceptChildren(this);
+
+  auto inner = expr.getExpression();
+
+  if (expr.getOperation() == ast::UnaryExpression::Op::Neg) {
+    if (!inner->targetType.isInt()) {
+      std::stringstream ss;
+      ss << "Negation requires int expression, not " << inner->targetType;
+      error(*inner, ss.str());
+    }
+    expr.targetType.setInt();
+  } else if (expr.getOperation() == ast::UnaryExpression::Op::Not) {
+    if (!inner->targetType.isBool()) {
+      std::stringstream ss;
+      ss << "Negation requires boolean expression, not " << inner->targetType;
+      error(*inner, ss.str());
+    }
+    expr.targetType.setBool();
+  } else {
+    assert(false);
+  }
+}
