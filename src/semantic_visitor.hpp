@@ -48,7 +48,8 @@ class SemanticVisitor : public ast::Visitor {
     return pos->get();
   }
 
-  ast::Method *findMethodInClass(ast::Class *klass, const std::string& methodName) {
+  ast::Method *findMethodInClass(ast::Class *klass,
+                                 const std::string &methodName) {
     ast::Method *method = nullptr;
     for (auto &m : klass->getMethods()->methods) {
       if (m->getName() == methodName) {

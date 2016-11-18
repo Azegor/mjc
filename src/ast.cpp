@@ -1,6 +1,6 @@
 #include "ast.hpp"
 
-static const char* typeKindToString(sem::TypeKind kind) {
+static const char *typeKindToString(sem::TypeKind kind) {
   switch (kind) {
   case sem::TypeKind::Bool:
     return "bool";
@@ -33,10 +33,10 @@ std::ostream &operator<<(std::ostream &o, const sem::Type &t) {
     return o << typeKindToString(t.kind);
 
   case sem::TypeKind::Class:
-    return o << typeKindToString(t.kind) << "(" <<  t.name << ")";
+    return o << typeKindToString(t.kind) << "(" << t.name << ")";
   case sem::TypeKind::Array:
     o << typeKindToString(t.innerKind);
-    for (int i = 0; i < t.dimension; i ++)
+    for (int i = 0; i < t.dimension; i++)
       o << "[]";
     return o;
   }

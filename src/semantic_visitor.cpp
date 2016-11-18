@@ -71,14 +71,14 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
   }
 
   // Filter out void types
-  if (auto t = dynamic_cast<ast::PrimitiveType*>(decl.getType())) {
+  if (auto t = dynamic_cast<ast::PrimitiveType *>(decl.getType())) {
     if (t->getPrimType() == ast::PrimitiveType::PrimType::Void) {
-      error (decl, "'void' is not a valid type in this context");
+      error(decl, "'void' is not a valid type in this context");
     }
-  } else if (auto t = dynamic_cast<ast::ArrayType*>(decl.getType())) {
+  } else if (auto t = dynamic_cast<ast::ArrayType *>(decl.getType())) {
     // void[] types are not allowed either
     auto elementType = t->getElementType();
-    if (auto p = dynamic_cast<ast::PrimitiveType*>(elementType)) {
+    if (auto p = dynamic_cast<ast::PrimitiveType *>(elementType)) {
       if (p->getPrimType() == ast::PrimitiveType::PrimType::Void) {
         error(decl, "'void' is not a valid type in this context");
       }
@@ -164,7 +164,7 @@ void SemanticVisitor::visitThisLiteral(ast::ThisLiteral &lit) {
 void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   expr.acceptChildren(this);
 
-  auto left  = expr.getLeft();
+  auto left = expr.getLeft();
   auto right = expr.getRight();
 
   switch (expr.getOperation()) {
@@ -173,8 +173,7 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   case ast::BinaryExpression::Op::Mul:
   case ast::BinaryExpression::Op::Div:
   case ast::BinaryExpression::Op::Mod:
-    if (!right->targetType.isInt() ||
-        !left->targetType.isInt()) {
+    if (!right->targetType.isInt() || !left->targetType.isInt()) {
       error(expr, "operands must both be int");
     }
     expr.targetType.setInt();
@@ -184,8 +183,7 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   case ast::BinaryExpression::Op::LessEquals:
   case ast::BinaryExpression::Op::Greater:
   case ast::BinaryExpression::Op::GreaterEquals:
-    if (!right->targetType.isInt() ||
-        !left->targetType.isInt()) {
+    if (!right->targetType.isInt() || !left->targetType.isInt()) {
       error(expr, "operands must both be int");
     }
     expr.targetType.setBool();
@@ -193,8 +191,7 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
 
   case ast::BinaryExpression::Op::Or:
   case ast::BinaryExpression::Op::And:
-    if (!right->targetType.isBool() ||
-        !left->targetType.isBool()) {
+    if (!right->targetType.isBool() || !left->targetType.isBool()) {
       error(expr, "operands must both be bool");
     }
     expr.targetType.setBool();
@@ -249,7 +246,7 @@ void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
   access.acceptChildren(this);
 
   // Handle System.out.println separately here...
-  if (auto ref = dynamic_cast<ast::VarRef*>(access.getLeft())) {
+  if (auto ref = dynamic_cast<ast::VarRef *>(access.getLeft())) {
     if (ref->getName() == "System" && access.getName() == "out") {
       // System.out, .println might follow but don't further check this
       return;
@@ -292,18 +289,23 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     } else {
       error(invocation, "Methods can only be invoked on class types");
     }
-  } else if (auto left = dynamic_cast<ast::FieldAccess*>(invocation.getLeft())) {
-    // System.out.println special case: VarRef(System) - FieldAccess(out) - MethodInvocation(println)
+  } else if (auto left =
+                 dynamic_cast<ast::FieldAccess *>(invocation.getLeft())) {
+    // System.out.println special case: VarRef(System) - FieldAccess(out) -
+    // MethodInvocation(println)
     if (invocation.getName() == "println") {
-      auto system = dynamic_cast<ast::VarRef*>(left->getLeft());
+      auto system = dynamic_cast<ast::VarRef *>(left->getLeft());
       if (system != nullptr) {
         auto args = invocation.getArguments();
         if (args.size() != 1) {
-          error(invocation, "System.out.println takes exactly one int argument, " +
-                            std::to_string(args.size()) + " given");
+          error(invocation,
+                "System.out.println takes exactly one int argument, " +
+                    std::to_string(args.size()) + " given");
         } else if (!args.at(0)->targetType.isInt()) {
           std::stringstream ss;
-          ss << "System.out.println takes one int argument, but argument is of type " << args.at(0)->targetType;
+          ss << "System.out.println takes one int argument, "
+                "but argument is of type "
+             << args.at(0)->targetType;
           error(invocation, ss.str());
         }
 
@@ -314,20 +316,22 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     }
     // TODO: Check if function exists in class
 
-
-  } else if (dynamic_cast<ast::ThisLiteral*>(invocation.getLeft())) {
+  } else if (dynamic_cast<ast::ThisLiteral *>(invocation.getLeft())) {
     ast::Method *method = findMethodInClass(currentClass, invocation.getName());
     if (method == nullptr) {
-      error(invocation, "Class " + currentClass->getName() + " does not have a "
-                        "method called '" + invocation.getName() + "'");
+      error(invocation, "Class " + currentClass->getName() +
+                            " does not have a method called '" +
+                            invocation.getName() + "'");
     }
 
     invocation.targetType = method->getReturnType()->getSemaType();
-  } else if (auto t = dynamic_cast<ast::NewObjectExpression*>(invocation.getLeft())) {
+  } else if (auto t = dynamic_cast<ast::NewObjectExpression *>(
+                 invocation.getLeft())) {
     ast::Method *method = findMethodInClass(t->getDef(), invocation.getName());
     if (method == nullptr) {
-      error(invocation, "Class " + t->getDef()->getName() + " does not have a "
-                        "method called '" + invocation.getName() + "'");
+      error(invocation, "Class " + t->getDef()->getName() +
+                            " does not have a method called '" +
+                            invocation.getName() + "'");
     }
     invocation.targetType = method->getReturnType()->getSemaType();
   } else {
@@ -340,7 +344,8 @@ void SemanticVisitor::visitIfStatement(ast::IfStatement &ifStatement) {
 
   if (!ifStatement.getCondition()->targetType.isBool()) {
     std::stringstream ss;
-    ss << "if condition must be boolean, not " << ifStatement.getCondition()->targetType;
+    ss << "if condition must be boolean, not "
+       << ifStatement.getCondition()->targetType;
     error(*ifStatement.getCondition(), ss.str());
   }
 }
@@ -350,7 +355,8 @@ void SemanticVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
 
   if (!stmt.getCondition()->targetType.isBool()) {
     std::stringstream ss;
-    ss << "while condition must be boolean, not " << stmt.getCondition()->targetType;
+    ss << "while condition must be boolean, not "
+       << stmt.getCondition()->targetType;
     error(*stmt.getCondition(), ss.str());
   }
 }
@@ -371,7 +377,8 @@ void SemanticVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
   if (expr->targetType != methodReturnType->getSemaType()) {
     std::stringstream ss;
     ss << "Can't return expression of type " << expr->targetType
-       << " from method with return type " << "umm"; // TODO ast::Type toString()
+       << " from method with return type "
+       << "umm"; // TODO ast::Type toString()
     error(*expr, ss.str());
   }
 }
@@ -423,7 +430,7 @@ void SemanticVisitor::visitArrayAccess(ast::ArrayAccess &access) {
 void SemanticVisitor::visitField(ast::Field &field) {
   field.acceptChildren(this);
 
-  if (auto t = dynamic_cast<ast::PrimitiveType*>(field.getType())) {
+  if (auto t = dynamic_cast<ast::PrimitiveType *>(field.getType())) {
     if (t->getPrimType() == ast::PrimitiveType::PrimType::Void) {
       error(*t, "'void' is not a valid type in this context");
     }
