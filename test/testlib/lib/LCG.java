@@ -1,20 +1,26 @@
-class LCG {
-  public static void main(String[] args) {
-    LCG lcg = new LCG();
-    lcg.init(2147483629, 2147483587, 2147483647);
-    lcg.runTest();
-  }
+package lib;
+
+/**
+ * Linear congruence generator for pseudo random numbers.
+ */
+public class LCG {
 
   public int a;
   public int c;
   public int m;
   public int val;
 
-  public void init(int a_, int c_, int m_) {
+  public LCG initWithDefault(){
+    init(2147483629, 2147483587, 2147483647);
+    return this;
+  }
+
+  public LCG init(int a_, int c_, int m_) {
     a = a_;
     c = c_;
     m = m_;
     val = 0;
+    return this;
   }
 
   public int nextVal() {
