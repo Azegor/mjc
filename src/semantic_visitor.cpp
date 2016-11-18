@@ -97,3 +97,51 @@ void SemanticVisitor::visitClassType(ast::ClassType &type) {
   type.setDef(def);
   type.acceptChildren(this);
 }
+
+void SemanticVisitor::visitIntLiteral(ast::IntLiteral &lit) {
+  lit.targetType.setInt();
+}
+void SemanticVisitor::visitBoolLiteral(ast::BoolLiteral &lit) {
+  lit.targetType.setBool();
+
+}
+void SemanticVisitor::visitNullLiteral(ast::NullLiteral &lit) {
+  lit.targetType.setNull();
+}
+void SemanticVisitor::visitThisLiteral(ast::ThisLiteral &lit) {
+  assert (this->currentClass != nullptr);
+  lit.targetType.setClass(this->currentClass->getName());
+}
+
+void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
+  expr.acceptChildren(this);
+
+  switch(expr.getOperation()) {
+    case ast::BinaryExpression::Op::Plus:
+    case ast::BinaryExpression::Op::Minus:
+    case ast::BinaryExpression::Op::Mul:
+    case ast::BinaryExpression::Op::Div:
+    case ast::BinaryExpression::Op::Mod:
+    case ast::BinaryExpression::Op::Less:
+    case ast::BinaryExpression::Op::LessEquals:
+    case ast::BinaryExpression::Op::Greater:
+    case ast::BinaryExpression::Op::GreaterEquals:
+      if (!expr.getRight()->targetType.isInt() ||
+          !expr.getLeft()->targetType.isInt()) {
+        error(expr, "operands must both be int");
+      }
+      expr.targetType.setInt();
+      break;
+    case ast::BinaryExpression::Op::Or:
+    case ast::BinaryExpression::Op::And:
+      if (!expr.getRight()->targetType.isBool() ||
+          !expr.getLeft()->targetType.isBool()) {
+        error(expr, "operands must both be bool");
+      }
+      expr.targetType.setBool();
+      break;
+
+    default:
+      assert(false);
+  }
+}

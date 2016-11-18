@@ -63,11 +63,11 @@ public:
   //   void visitNewArrayExpression(ast::NewArrayExpression &expr) override;
   //   void visitField(ast::Field &field) override;
   //   void visitReturnStatement(ast::ReturnStatement &stmt) override;
-  //   void visitBinaryExpression(ast::BinaryExpression &expr) override;
-  //   void visitIntLiteral(ast::IntLiteral &lit) override;
-  //   void visitBoolLiteral(ast::BoolLiteral &lit) override;
-  //   void visitNullLiteral(ast::NullLiteral &lit) override;
-  //   void visitThisLiteral(ast::ThisLiteral &lit) override;
+  void visitBinaryExpression(ast::BinaryExpression &expr) override;
+  void visitIntLiteral(ast::IntLiteral &lit) override;
+  void visitBoolLiteral(ast::BoolLiteral &lit) override;
+  void visitNullLiteral(ast::NullLiteral &lit) override;
+  void visitThisLiteral(ast::ThisLiteral &lit) override;
   //   void visitMainMethod(ast::MainMethod &mainMethod) override;
   //   void visitMethodInvocation(ast::MethodInvocation &invocation) override;
   //   void visitFieldAccess(ast::FieldAccess &access) override;
