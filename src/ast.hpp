@@ -263,40 +263,40 @@ using BasicTypePtr = std::unique_ptr<BasicType>;
 
 class PrimitiveType : public BasicType {
 public:
-  enum class TypeType { Boolean, Int, Void, None };
+  enum class PrimType { Boolean, Int, Void, None };
 
 private:
-  TypeType type;
+  PrimType type;
 
 public:
-  PrimitiveType(SourceLocation loc, TypeType type)
+  PrimitiveType(SourceLocation loc, PrimType type)
       : BasicType(std::move(loc)), type(type) {}
 
-  static TypeType getTypeForToken(Token::Type t) {
+  static PrimType getTypeForToken(Token::Type t) {
     switch (t) {
     case Token::Type::Boolean:
-      return TypeType::Boolean;
+      return PrimType::Boolean;
     case Token::Type::Int:
-      return TypeType::Int;
+      return PrimType::Int;
     case Token::Type::Void:
-      return TypeType::Void;
+      return PrimType::Void;
     default:
-      return TypeType::None;
+      return PrimType::None;
     }
   }
 
-  const TypeType &getType() const { return type; }
+  const PrimType &getPrimType() const { return type; }
 
   sem::Type getSemaType() const override {
     sem::Type res;
     switch (type) {
-    case TypeType::Boolean:
+    case PrimType::Boolean:
       res.setBool();
       break;
-    case TypeType::Int:
+    case PrimType::Int:
       res.setInt();
       break;
-    case TypeType::Void:
+    case PrimType::Void:
       res.setVoid();
       break;
     default:

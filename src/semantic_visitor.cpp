@@ -72,14 +72,14 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
 
   // Filter out void types
   if (auto t = dynamic_cast<ast::PrimitiveType*>(decl.getType())) {
-    if (t->getType() == ast::PrimitiveType::TypeType::Void) {
+    if (t->getPrimType() == ast::PrimitiveType::PrimType::Void) {
       error (decl, "'void' is not a valid type in this context");
     }
   } else if (auto t = dynamic_cast<ast::ArrayType*>(decl.getType())) {
     // void[] types are not allowed either
     auto elementType = t->getElementType();
     if (auto p = dynamic_cast<ast::PrimitiveType*>(elementType)) {
-      if (p->getType() == ast::PrimitiveType::TypeType::Void) {
+      if (p->getPrimType() == ast::PrimitiveType::PrimType::Void) {
         error(decl, "'void' is not a valid type in this context");
       }
     }
@@ -417,7 +417,7 @@ void SemanticVisitor::visitField(ast::Field &field) {
   field.acceptChildren(this);
 
   if (auto t = dynamic_cast<ast::PrimitiveType*>(field.getType())) {
-    if (t->getType() == ast::PrimitiveType::TypeType::Void) {
+    if (t->getPrimType() == ast::PrimitiveType::PrimType::Void) {
       error(*t, "'void' is not a valid type in this context");
     }
   }

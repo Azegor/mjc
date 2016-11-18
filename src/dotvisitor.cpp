@@ -299,14 +299,14 @@ void DotVisitor::visitArrayType(ast::ArrayType &type) {
 
 void DotVisitor::visitPrimitiveType(ast::PrimitiveType &type) {
   std::string nodeLabel;
-  switch (type.getType()) {
-  case ast::PrimitiveType::TypeType::Boolean:
+  switch (type.getPrimType()) {
+  case ast::PrimitiveType::PrimType::Boolean:
     nodeLabel = "boolean";
     break;
-  case ast::PrimitiveType::TypeType::Int:
+  case ast::PrimitiveType::PrimType::Int:
     nodeLabel = "int";
     break;
-  case ast::PrimitiveType::TypeType::Void:
+  case ast::PrimitiveType::PrimType::Void:
     nodeLabel = "void";
     break;
   default:

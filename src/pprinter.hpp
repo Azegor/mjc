@@ -111,14 +111,14 @@ public:
   }
 
   void visitPrimitiveType(ast::PrimitiveType &primitiveType) override {
-    switch (primitiveType.getType()) {
-    case ast::PrimitiveType::TypeType::Boolean:
+    switch (primitiveType.getPrimType()) {
+    case ast::PrimitiveType::PrimType::Boolean:
       stream << "boolean";
       break;
-    case ast::PrimitiveType::TypeType::Int:
+    case ast::PrimitiveType::PrimType::Int:
       stream << "int";
       break;
-    case ast::PrimitiveType::TypeType::Void:
+    case ast::PrimitiveType::PrimType::Void:
       stream << "void";
       break;
     default:
