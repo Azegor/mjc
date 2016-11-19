@@ -127,12 +127,7 @@ void SemanticVisitor::visitVarRef(ast::VarRef &varRef) {
       error(varRef, "Unknown variable '" + varRef.getSymbol().name + "'");
     }
   } else {
-    // Look at local variables first
-    if (auto df = dynamic_cast<SymbolTable::Definition *>(def)) {
-      varRef.targetType = df->getType()->getSemaType();
-    } else {
-      std::cout << __FUNCTION__ << ": Unhandled VarRef decl type" << std::endl;
-    }
+    varRef.targetType = def->getType()->getSemaType();
   }
   varRef.setDef(def);
 }
@@ -455,7 +450,6 @@ void SemanticVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
        << "' from method with return type '" << methodReturnType << "'";
     error(*expr, ss.str());
   }
-
 }
 
 void SemanticVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
