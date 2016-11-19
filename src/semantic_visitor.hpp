@@ -93,7 +93,7 @@ public:
 
 private:
   template <typename T> void checkForDuplicates(T &list) {
-    // std::stable_sort(list.begin(), list.end(), ast::SortUniquePtrPred());
+    std::stable_sort(list.begin(), list.end(), ast::SortUniquePtrPred());
     auto firstDuplicate =
         std::adjacent_find(list.begin(), list.end(), ast::UniquePtrEqPred());
     if (firstDuplicate != list.end()) {
