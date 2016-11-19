@@ -528,6 +528,11 @@ ast::ExprPtr Parser::parseUnary() {
       continue; // parseUnary();
       break;
     default:
+      if (curTok.type == TT::IntLiteral && !unaries.empty() &&
+          unaries.back().type == TT::Minus) {
+        curTok.str = "-" + curTok.str;
+        unaries.pop_back();
+      }
       auto expression = parsePostfixExpr();
       auto endPos = expression->getLoc().endToken;
       // result = ...

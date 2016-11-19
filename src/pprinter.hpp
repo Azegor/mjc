@@ -263,7 +263,12 @@ public:
   }
 
   void visitIntLiteral(ast::IntLiteral &intLiteral) override {
-    requireParenthesis = false;
+    maybePlaceParenthesis<ast::IntLiteral>(
+        intLiteral, &PrettyPrinterVisitor::visitIntLiteralHelper);
+  }
+
+  void visitIntLiteralHelper(ast::IntLiteral &intLiteral) {
+    requireParenthesis = intLiteral.getValue() < 0 ? true : false;
     stream << std::to_string(intLiteral.getValue());
   }
 
