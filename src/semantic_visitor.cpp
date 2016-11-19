@@ -50,6 +50,11 @@ void SemanticVisitor::visitRegularMethod(ast::RegularMethod &method) {
   method.acceptChildren(this);
   symTbl.leaveScope();
   currentMethod = nullptr;
+
+  if (!method.getReturnType()->getSemaType().isVoid() &&
+      method.getBlock()->cfb != sem::ControlFlowBehavior::Return) {
+    error(method, "Non-Void method must return a value on every path", true);
+  }
 }
 
 void SemanticVisitor::visitBlock(ast::Block &block) {
@@ -59,6 +64,14 @@ void SemanticVisitor::visitBlock(ast::Block &block) {
   symTbl.enterScope();
   block.acceptChildren(this);
   symTbl.leaveScope();
+
+  for (auto stmt : block.getStatements()) {
+    if (stmt->cfb == sem::ControlFlowBehavior::Return) {
+      block.cfb = sem::ControlFlowBehavior::Return;
+      return; // no more checking necessary, remaining code is dead
+    }
+  }
+  block.cfb = sem::ControlFlowBehavior::MayContinue;
 }
 
 void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
@@ -357,6 +370,12 @@ void SemanticVisitor::visitIfStatement(ast::IfStatement &ifStatement) {
        << ifStatement.getCondition()->targetType;
     error(*ifStatement.getCondition(), ss.str());
   }
+
+  auto thenCFB = ifStatement.getThenStatement()->cfb;
+  auto elseCFB = ifStatement.getElseStatement()
+                     ? ifStatement.getElseStatement()->cfb
+                     : sem::ControlFlowBehavior::MayContinue;
+  ifStatement.cfb = sem::combineCFB(thenCFB, elseCFB);
 }
 
 void SemanticVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
@@ -368,6 +387,8 @@ void SemanticVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
        << stmt.getCondition()->targetType;
     error(*stmt.getCondition(), ss.str());
   }
+
+  stmt.cfb = stmt.getStatement()->cfb;
 }
 
 void SemanticVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
@@ -389,6 +410,8 @@ void SemanticVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
        << "' from method with return type '" << methodReturnType << "'";
     error(*expr, ss.str());
   }
+
+  stmt.cfb = sem::ControlFlowBehavior::Return;
 }
 
 void SemanticVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {

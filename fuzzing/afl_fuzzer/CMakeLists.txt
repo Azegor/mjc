@@ -48,7 +48,6 @@ add_executable(mjc_instr
   ../../src/ast.cpp
   ../../src/symboltable.cpp
   ../../src/semantic_visitor.cpp
-  ../../src/return_visitor.cpp
 )
 
 target_link_libraries(mjc_instr ${Boost_LIBRARIES})

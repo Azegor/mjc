@@ -43,7 +43,6 @@ add_executable(mjc
   src/ast.cpp
   src/symboltable.cpp
   src/semantic_visitor.cpp
-  src/return_visitor.cpp
 )
 
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")

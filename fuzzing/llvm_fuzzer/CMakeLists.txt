@@ -51,7 +51,6 @@ add_executable(fuzzmjc
   ../../src/ast.cpp
   ../../src/symboltable.cpp
   ../../src/semantic_visitor.cpp
-  ../../src/return_visitor.cpp
 )
 
 add_dependencies(fuzzmjc LLVMFuzzer)
