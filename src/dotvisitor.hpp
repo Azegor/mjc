@@ -62,7 +62,8 @@ private:
     return nodeName;
   }
 
-    std::string nodeDeclForExistingName(const std::string &nodeName, const std::string &nodeLabel) {
+  std::string nodeDeclForExistingName(const std::string &nodeName,
+                                      const std::string &nodeLabel) {
     s << nodeName << "[label=\"" << nodeLabel;
     s << "\"]" << '\n';
 

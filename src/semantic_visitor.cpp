@@ -239,6 +239,7 @@ void SemanticVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
   }
 
   expr.targetType = expr.getArrayType()->getSemaType();
+  std::cerr << expr.targetType << std::endl;
 }
 
 void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
