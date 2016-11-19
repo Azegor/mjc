@@ -33,14 +33,22 @@ class SemanticVisitor : public ast::Visitor {
 
   ast::RegularMethod *findMethodInClass(ast::Class *klass,
                                         const std::string &methodName) {
-    ast::RegularMethod *method = nullptr;
     for (auto &m : klass->getMethods()->methods) {
       if (m->getName() == methodName) {
-        method = m.get();
-        break;
+        return m.get();
       }
     }
-    return method;
+    return nullptr;
+  }
+
+  ast::Field *findFieldInClass(ast::Class *klass,
+                               const std::string &fieldName) {
+    for (auto &f : klass->getFields()->fields) {
+      if (f->getName() == fieldName) {
+        return f.get();
+      }
+    }
+    return nullptr;
   }
 
 public:

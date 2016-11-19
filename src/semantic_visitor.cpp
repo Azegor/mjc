@@ -263,7 +263,7 @@ void SemanticVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
 void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
   access.acceptChildren(this);
 
-  // Handle System.out.println separately here...
+  // special handling for System.out.println()
   if (auto ref = dynamic_cast<ast::VarRef *>(access.getLeft())) {
     if (ref->getDef() == &dummySystem) {
       if (access.getName() == "out") {
@@ -285,18 +285,23 @@ void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
   if (!lhsType.isClass()) {
     error(access, "Left hand side of field access must be class type object");
   }
-  auto cls = findClassByName(lhsType.name);
+  auto &fieldName = lhsType.name;
+  auto cls = findClassByName(fieldName);
   if (!cls) {
-    error(*access.getLeft(), "Unknown class type'" + lhsType.name + '\'');
+    error(*access.getLeft(), "Unknown class type'" + fieldName + '\'');
   }
-
-  // TODO find method in class!
-  // access.setDef(field);
+  auto field = findFieldInClass(cls, fieldName);
+  if (!field) {
+    error(access,
+          "Unknown field " + access.getName() + " in class " + fieldName);
+  }
+  access.setDef(field);
 }
 
 void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
   invocation.acceptChildren(this);
 
+  // special handling for System.out.println()
   if (auto left = dynamic_cast<ast::VarRef *>(invocation.getLeft())) {
     auto *def = left->getDef();
     if (def == &dummySystem) {
@@ -347,31 +352,40 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
                               "' on 'System.out'");
       }
     }
-    // TODO: Check if function exists in class
-
-  } else if (dynamic_cast<ast::ThisLiteral *>(invocation.getLeft())) {
-    ast::RegularMethod *method =
-        findMethodInClass(currentClass, invocation.getName());
-    if (method == nullptr) {
-      error(invocation, "Class " + currentClass->getName() +
-                            " does not have a method called '" +
-                            invocation.getName() + "'");
-    }
-
-    invocation.targetType = method->getReturnType()->getSemaType();
-  } else if (auto t = dynamic_cast<ast::NewObjectExpression *>(
-                 invocation.getLeft())) {
-    ast::RegularMethod *method =
-        findMethodInClass(t->getDef(), invocation.getName());
-    if (method == nullptr) {
-      error(invocation, "Class " + t->getDef()->getName() +
-                            " does not have a method called '" +
-                            invocation.getName() + "'");
-    }
-    invocation.targetType = method->getReturnType()->getSemaType();
-  } else {
-    error(invocation, "Can't access method " + invocation.getName());
   }
+  auto left = invocation.getLeft();
+  if (!left->targetType.isClass()) {
+    error(invocation, "Methods can only be called on class types");
+  }
+  auto className = left->targetType.name;
+  auto classDef = findClassByName(className);
+  ast::RegularMethod *method =
+      findMethodInClass(classDef, invocation.getName());
+  if (method == nullptr) {
+    error(invocation, "Class " + currentClass->getName() +
+                          " does not have a method called '" +
+                          invocation.getName() + "'");
+  }
+  const auto &methodParams = method->getParameters();
+  const auto &invocArgs = invocation.getArguments();
+  if (methodParams.size() != invocArgs.size()) {
+    std::stringstream msg;
+    msg << "invalid number of arguments: expected " << methodParams.size()
+        << " but have " << invocArgs.size();
+    error(invocation, msg.str());
+  }
+  for (size_t i = 0; i < methodParams.size(); ++i) {
+    if (methodParams[i]->getType()->getSemaType() != invocArgs[i]->targetType) {
+      std::stringstream msg;
+      msg << "Invalid Argument type. Expected "
+          << methodParams[i]->getType()->getSemaType() << " but have "
+          << invocArgs[i]->targetType;
+      error(*invocArgs[i], msg.str());
+    }
+  }
+
+  invocation.setDef(method);
+  invocation.targetType = method->getReturnType()->getSemaType();
 }
 
 void SemanticVisitor::visitIfStatement(ast::IfStatement &ifStatement) {
