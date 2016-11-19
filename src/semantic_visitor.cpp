@@ -285,9 +285,7 @@ void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
   }
   auto &fieldName = lhsType.name;
   auto cls = findClassByName(fieldName);
-  if (!cls) {
-    error(*access.getLeft(), "Unknown class type'" + fieldName + '\'');
-  }
+  assert(cls);
   auto field = findFieldInClass(cls, fieldName);
   if (!field) {
     error(access,
