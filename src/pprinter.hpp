@@ -37,7 +37,8 @@ class PrettyPrinterVisitor : public ast::Visitor {
 
 public:
   PrettyPrinterVisitor(std::ostream &stream, std::string indentWith)
-      : stream(stream), indentWith(std::move(indentWith)), indentLevel(0) {}
+      : Visitor(""), stream(stream), indentWith(std::move(indentWith)),
+        indentLevel(0) {}
 
   void visitProgram(ast::Program &program) override {
     program.acceptChildren(this);

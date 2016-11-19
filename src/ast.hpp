@@ -97,6 +97,19 @@ struct Type {
   bool operator!=(const sem::Type &other) const { return !(*this == other); }
 };
 
+enum class ControlFlowBehavior {
+  MayContinue, // code flow continues after the statement
+  Return,      // returns the function
+};
+
+inline ControlFlowBehavior combineCFB(ControlFlowBehavior c1,
+                                      ControlFlowBehavior c2) {
+  if (c1 == c2) {
+    return c1;
+  }
+  return ControlFlowBehavior::MayContinue;
+}
+
 } // namespace sem
 std::ostream &operator<<(std::ostream &o, const sem::Type &t);
 
@@ -115,6 +128,22 @@ struct UniquePtrEqPred {
     return *lhs == *rhs;
   }
 };
+
+class Visitor;
+
+class Node {
+protected:
+  SourceLocation location;
+
+  Node(SourceLocation loc) : location(std::move(loc)) {}
+
+public:
+  virtual void accept(Visitor *) {}
+  virtual void acceptChildren(Visitor *) {}
+  virtual ~Node() = default;
+  const SourceLocation &getLoc() const { return location; }
+};
+using NodePtr = std::unique_ptr<Node>;
 
 class Program;
 class Block;
@@ -148,8 +177,31 @@ class ArrayAccess;
 class BinaryExpression;
 class UnaryExpression;
 using ClassPtr = std::unique_ptr<Class>;
-class Visitor {
+
+class SemanticError : public CompilerError {
 public:
+  const SourceLocation srcLoc;
+  const std::string filename, message;
+  SemanticError(SourceLocation srcLoc, std::string filename,
+                std::string message)
+      : srcLoc(std::move(srcLoc)), filename(std::move(filename)),
+        message(std::move(message)) {}
+  const char *what() const noexcept override { return message.c_str(); }
+
+  virtual void writeErrorMessage(std::ostream &out) const override {
+    co::color_ostream<std::ostream> cl_out(out);
+    cl_out << co::mode(co::bold) << filename << ':' << srcLoc.startToken.line
+           << ':' << srcLoc.startToken.col << ": " << co::color(co::red)
+           << "error: " << co::reset << message << std::endl;
+    //     writeErrorLineHighlight(out);
+  }
+};
+
+class Visitor {
+  std::string fileName;
+
+public:
+  Visitor(std::string fileName) : fileName(std::move(fileName)) {}
   virtual ~Visitor() {}
   virtual void visitProgram(Program &program);
   virtual void visitClass(Class &klass);
@@ -183,21 +235,15 @@ public:
   virtual void visitArrayAccess(ArrayAccess &arrayAccess);
   virtual void visitBinaryExpression(BinaryExpression &binaryExpression);
   virtual void visitUnaryExpression(UnaryExpression &unaryExpression);
-};
 
-class Node {
 protected:
-  SourceLocation location;
-
-  Node(SourceLocation loc) : location(std::move(loc)) {}
-
-public:
-  virtual void accept(Visitor *visitor) { (void)visitor; }
-  virtual void acceptChildren(Visitor *visitor) { (void)visitor; }
-  virtual ~Node() = default;
-  const SourceLocation &getLoc() const { return location; }
+  [[noreturn]] void error(const ast::Node &node, std::string msg) {
+    throw SemanticError(node.getLoc(), fileName, std::move(msg));
+  }
+  [[noreturn]] void error(SourceLocation loc, std::string msg) {
+    throw SemanticError(loc, fileName, std::move(msg));
+  }
 };
-using NodePtr = std::unique_ptr<Node>;
 
 class Type : public Node {
 protected:
@@ -211,6 +257,9 @@ using TypePtr = std::unique_ptr<Type>;
 class BlockStatement : public Node {
 protected:
   BlockStatement(SourceLocation loc) : Node(std::move(loc)) {}
+
+public:
+  sem::ControlFlowBehavior cfb = sem::ControlFlowBehavior::MayContinue;
 };
 using BlockStmtPtr = std::unique_ptr<BlockStatement>;
 

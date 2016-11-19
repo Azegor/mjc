@@ -7,27 +7,7 @@
 
 #include <algorithm>
 
-class SemanticError : public CompilerError {
-public:
-  const SourceLocation srcLoc;
-  const std::string filename, message;
-  SemanticError(SourceLocation srcLoc, std::string filename,
-                std::string message)
-      : srcLoc(std::move(srcLoc)), filename(std::move(filename)),
-        message(std::move(message)) {}
-  const char *what() const noexcept override { return message.c_str(); }
-
-  virtual void writeErrorMessage(std::ostream &out) const override {
-    co::color_ostream<std::ostream> cl_out(out);
-    cl_out << co::mode(co::bold) << filename << ':' << srcLoc.startToken.line
-           << ':' << srcLoc.startToken.col << ": " << co::color(co::red)
-           << "error: " << co::reset << message << std::endl;
-    //     writeErrorLineHighlight(out);
-  }
-};
-
 class SemanticVisitor : public ast::Visitor {
-  std::string fileName;
   ast::Program *currentProgram = nullptr;
   ast::Class *currentClass = nullptr;
   ast::Method *currentMethod = nullptr;
@@ -61,7 +41,7 @@ class SemanticVisitor : public ast::Visitor {
   }
 
 public:
-  SemanticVisitor(std::string fileName) : fileName(std::move(fileName)) {}
+  SemanticVisitor(std::string fileName) : Visitor(std::move(fileName)) {}
   void visitProgram(ast::Program &program) override;
   void visitClass(ast::Class &klass) override;
   void visitFieldList(ast::FieldList &fieldList) override;
@@ -95,13 +75,6 @@ public:
   virtual ~SemanticVisitor() {}
 
 private:
-  [[noreturn]] void error(const ast::Node &node, std::string msg) {
-    throw SemanticError(node.getLoc(), fileName, std::move(msg));
-  }
-  [[noreturn]] void error(SourceLocation loc, std::string msg) {
-    throw SemanticError(loc, fileName, std::move(msg));
-  }
-
   template <typename T> void checkForDuplicates(T &list) {
     std::stable_sort(list.begin(), list.end(), ast::SortUniquePtrPred());
     auto firstDuplicate =

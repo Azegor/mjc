@@ -118,7 +118,7 @@ private:
   }
 
 public:
-  DotVisitor(std::ostream &stream) : s(stream) {}
+  DotVisitor(std::ostream &stream) : Visitor(""), s(stream) {}
 
   void visitProgram(ast::Program &program) override;
   void visitClass(ast::Class &klass) override;

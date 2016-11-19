@@ -35,6 +35,7 @@
 #include "input_file.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
+#include "return_visitor.hpp"
 #include "semantic_visitor.hpp"
 
 co::color_ostream<std::ostream> Compiler::cl_cout{std::cout};
@@ -153,8 +154,14 @@ int Compiler::attrAstDot() {
 }
 
 void Compiler::analyzeAstSemantic(ast::Program *astRoot) {
-  SemanticVisitor semantic_visitor(inputFile.getFilename());
-  astRoot->accept(&semantic_visitor);
+  {
+    SemanticVisitor semantic_visitor(inputFile.getFilename());
+    astRoot->accept(&semantic_visitor);
+  }
+  {
+    ReturnAnalysisVisitor return_visitor(inputFile.getFilename());
+    astRoot->accept(&return_visitor);
+  }
 }
 
 static int exclusiveOptionsSum(bool b) { return b ? 1 : 0; }
