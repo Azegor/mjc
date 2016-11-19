@@ -6,6 +6,9 @@ ast::DummySystemOut SemanticVisitor::dummySystemOut;
 void SemanticVisitor::visitProgram(ast::Program &program) {
   currentProgram = &program;
   checkForDuplicates(program.getClasses());
+  for (auto &cls : program.getClasses()) {
+    cls->sortMembers();
+  }
   program.acceptChildren(this);
 
   if (!this->mainMethodFound) {

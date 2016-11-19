@@ -23,9 +23,9 @@ class SemanticVisitor : public ast::Visitor {
     auto pos =
         std::lower_bound(classes.begin(), classes.end(), className,
                          [](const ast::ClassPtr &cls, const std::string &str) {
-                           return *cls < str;
+                           return cls->getName() < str;
                          });
-    if ((pos == classes.end()) || (className < **pos)) {
+    if ((pos == classes.end()) || (className < (*pos)->getName())) {
       return nullptr;
     }
     return pos->get();
@@ -33,22 +33,30 @@ class SemanticVisitor : public ast::Visitor {
 
   ast::RegularMethod *findMethodInClass(ast::Class *klass,
                                         const std::string &methodName) {
-    for (auto &m : klass->getMethods()->methods) {
-      if (m->getName() == methodName) {
-        return m.get();
-      }
+    auto &methods = klass->getMethods()->methods;
+    auto pos = std::lower_bound(
+        methods.begin(), methods.end(), methodName,
+        [](const ast::RegularMethodPtr &m, const std::string &str) {
+          return m->getName() < str;
+        });
+    if ((pos == methods.end()) || (methodName < (*pos)->getName())) {
+      return nullptr;
     }
-    return nullptr;
+    return pos->get();
   }
 
   ast::Field *findFieldInClass(ast::Class *klass,
                                const std::string &fieldName) {
-    for (auto &f : klass->getFields()->fields) {
-      if (f->getName() == fieldName) {
-        return f.get();
-      }
+    auto &fields = klass->getFields()->fields;
+    auto pos =
+        std::lower_bound(fields.begin(), fields.end(), fieldName,
+                         [](const ast::FieldPtr &f, const std::string &str) {
+                           return f->getName() < str;
+                         });
+    if ((pos == fields.end()) || (fieldName < (*pos)->getName())) {
+      return nullptr;
     }
-    return nullptr;
+    return pos->get();
   }
 
 public:
@@ -85,7 +93,7 @@ public:
 
 private:
   template <typename T> void checkForDuplicates(T &list) {
-    std::stable_sort(list.begin(), list.end(), ast::SortUniquePtrPred());
+    // std::stable_sort(list.begin(), list.end(), ast::SortUniquePtrPred());
     auto firstDuplicate =
         std::adjacent_find(list.begin(), list.end(), ast::UniquePtrEqPred());
     if (firstDuplicate != list.end()) {

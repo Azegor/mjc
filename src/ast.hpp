@@ -513,16 +513,11 @@ public:
   SymbolTable::Symbol &getSymbol() const override { return symbol; }
   Type *getType() const override { return type.get(); }
 
-  bool operator<(const Field &other) const {
-    return symbol.name < other.symbol.name;
-    // include type
-  }
-
   void accept(Visitor *visitor) override { visitor->visitField(*this); }
 
   void acceptChildren(Visitor *visitor) override { type->accept(visitor); }
 
-  bool operator<(const Field &o) { return symbol.name < o.symbol.name; }
+  bool operator<(const Field &o) const { return symbol.name < o.symbol.name; }
   bool operator==(const Field &o) const { return symbol.name == o.symbol.name; }
 };
 using FieldPtr = std::unique_ptr<Field>;
@@ -636,6 +631,10 @@ public:
       visitor->visitField(*e);
     }
   }
+
+  void sortFields() {
+    std::stable_sort(fields.begin(), fields.end(), ast::SortUniquePtrPred());
+  }
 };
 
 class MethodList : public Node {
@@ -650,6 +649,10 @@ public:
     for (auto &e : methods) {
       visitor->visitRegularMethod(*e);
     }
+  }
+
+  void sortMethods() {
+    std::stable_sort(methods.begin(), methods.end(), ast::SortUniquePtrPred());
   }
 };
 
@@ -690,18 +693,18 @@ public:
     visitor->visitMainMethodList(mainMethods);
   }
 
+  void sortMembers() {
+    fields.sortFields();
+    methods.sortMethods();
+  }
+
   const FieldList *getFields() const { return &fields; }
   const MethodList *getMethods() const { return &methods; }
 
   const std::string &getName() const { return name; }
 
   bool operator<(const Class &o) const { return name < o.name; }
-  bool operator<(const std::string &oName) const { return name < oName; }
-  friend bool operator<(const std::string &name, const Class &oCls) {
-    return name < oCls.name;
-  }
   bool operator==(const Class &o) const { return name == o.name; }
-  bool operator==(const std::string &oName) const { return name == oName; }
 };
 
 class Program : public Node {
@@ -1055,13 +1058,18 @@ public:
 
 class DummySystem : public SymbolTable::Definition {
   static SymbolTable::Symbol dummySymbol;
+
 public:
   virtual SymbolTable::Symbol &getSymbol() const { return dummySymbol; }
-  virtual ast::Type *getType() const { assert(false); return nullptr;}
+  virtual ast::Type *getType() const {
+    assert(false);
+    return nullptr;
+  }
 };
 
 class DummySystemOut : public Field {
   static SymbolTable::Symbol dummySymbol;
+
 public:
   DummySystemOut() : Field({}, nullptr, dummySymbol) {}
 };
