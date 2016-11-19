@@ -24,6 +24,7 @@ void ReturnAnalysisVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
 }
 
 void ReturnAnalysisVisitor::visitIfStatement(ast::IfStatement &ifStatement) {
+  ifStatement.acceptChildren(this);
   auto thenCFB = ifStatement.getThenStatement()->cfb;
   auto elseCFB = ifStatement.getElseStatement()
                      ? ifStatement.getElseStatement()->cfb
@@ -32,5 +33,6 @@ void ReturnAnalysisVisitor::visitIfStatement(ast::IfStatement &ifStatement) {
 }
 
 void ReturnAnalysisVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
+  stmt.acceptChildren(this);
   stmt.cfb = stmt.getStatement()->cfb;
 }
