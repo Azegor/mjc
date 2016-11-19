@@ -6,7 +6,7 @@ if (CMAKE_CONFIGURATION_TYPES)
         ${CMAKE_CTEST_COMMAND}
             --force-new-ctest-process --quiet
             --build-config "$<CONFIGURATION>"
-        && echo "\\033[1m\\033[32m::: All tests passed!\\033[39m\\033[0m"
+        && printf "\\033[1m\\033[32m::: All tests passed!\\033[39m\\033[0m\\n"
         || ${CMAKE_CTEST_COMMAND}
             --force-new-ctest-process --rerun-failed --output-on-failure
             --build-config "$<CONFIGURATION>"
@@ -16,7 +16,7 @@ else()
     add_custom_target(check
         ${CMAKE_CTEST_COMMAND}
             --force-new-ctest-process --quiet
-        && echo "\\033[1m\\033[32m::: All tests passed!\\033[39m\\033[0m"
+        && printf "\\033[1m\\033[32m::: All tests passed!\\033[39m\\033[0m\\n"
         || ${CMAKE_CTEST_COMMAND}
             --force-new-ctest-process --rerun-failed --output-on-failure
         VERBATIM
