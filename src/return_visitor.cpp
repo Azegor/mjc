@@ -24,3 +24,16 @@ void ReturnAnalysisVisitor::visitBlock(ast::Block &block) {
 void ReturnAnalysisVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
   stmt.cfb = sem::ControlFlowBehavior::Return;
 }
+
+void ReturnAnalysisVisitor::visitIfStatement(ast::IfStatement &ifStatement) {
+  auto thenCFB = ifStatement.getThenStatement()->cfb;
+  auto elseCFB = ifStatement.getElseStatement()
+                     ? ifStatement.getElseStatement()->cfb
+                     : sem::ControlFlowBehavior::MayContinue;
+  ifStatement.cfb = sem::combineCFB(thenCFB, elseCFB);
+}
+
+void ReturnAnalysisVisitor::visitWhileStatement(ast::WhileStatement& stmt)
+{
+  stmt.cfb = stmt.getStatement()->cfb;
+}
