@@ -1051,6 +1051,23 @@ public:
   Op getOperation() const { return operation; }
 };
 
+// ----
+
+class DummySystem : public SymbolTable::Definition {
+  static SymbolTable::Symbol dummySymbol;
+public:
+  virtual SymbolTable::Symbol &getSymbol() const { return dummySymbol; }
+  virtual ast::Type *getType() const { assert(false); return nullptr;}
+};
+
+class DummySystemOut : public Field {
+  static SymbolTable::Symbol dummySymbol;
+public:
+  DummySystemOut() : Field({}, nullptr, dummySymbol) {}
+};
+
+// ----
+
 template <typename St, typename... Args>
 StmtPtr make_SPtr(SourceLocation loc, Args &&... args) {
   return StmtPtr{new St(loc, std::forward<Args>(args)...)};

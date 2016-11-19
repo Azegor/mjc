@@ -1,5 +1,8 @@
 #include "semantic_visitor.hpp"
 
+ast::DummySystem SemanticVisitor::dummySystem;
+ast::DummySystemOut SemanticVisitor::dummySystemOut;
+
 void SemanticVisitor::visitProgram(ast::Program &program) {
   currentProgram = &program;
   checkForDuplicates(program.getClasses());
@@ -116,7 +119,7 @@ void SemanticVisitor::visitVarRef(ast::VarRef &varRef) {
   auto *def = symTbl.lookup(varRef.getSymbol());
   if (!def) {
     if (varRef.getName() == "System") {
-      // TODO
+      def = &dummySystem;
     } else {
       error(varRef, "Unknown variable '" + varRef.getSymbol().name + "'");
     }
@@ -262,9 +265,19 @@ void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
 
   // Handle System.out.println separately here...
   if (auto ref = dynamic_cast<ast::VarRef *>(access.getLeft())) {
-    if (ref->getName() == "System" && access.getName() == "out") {
-      // System.out, .println might follow but don't further check this
-      return;
+    if (ref->getDef() == &dummySystem) {
+      if (access.getName() == "out") {
+        access.setDef(&dummySystemOut);
+        return;
+      } else {
+        error(access,
+              "invalid field access '" + access.getName() + "' on 'System'");
+      }
+    }
+  }
+  if (auto left = dynamic_cast<ast::FieldAccess *>(access.getLeft())) {
+    if (left->getDef() == &dummySystemOut) {
+      error(access, "invalid access '" + access.getName() + "' on System.out");
     }
   }
 
@@ -285,10 +298,11 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
   invocation.acceptChildren(this);
 
   if (auto left = dynamic_cast<ast::VarRef *>(invocation.getLeft())) {
-    auto *def = symTbl.lookup(left->getSymbol());
-    // left has already been visited so we should never arrive here with null
-    // definition
-    assert(def != nullptr);
+    auto *def = left->getDef();
+    if (def == &dummySystem) {
+      error(invocation,
+            "invalid method call '" + invocation.getName() + "' on 'System'");
+    }
     auto defType = def->getType();
     if (auto cl = dynamic_cast<ast::ClassType *>(defType)) {
       auto *classDef = findClassByName(cl->getName());
@@ -301,8 +315,6 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
                               " does not contain a method " +
                               invocation.getName());
       }
-      // TODO: Can we even be sure that the return type has been visited at this
-      // point?
       // Valid method, valid class, propagate type!
       invocation.targetType = method->getReturnType()->getSemaType();
       invocation.setDef(method);
@@ -313,9 +325,8 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
                  dynamic_cast<ast::FieldAccess *>(invocation.getLeft())) {
     // System.out.println special case: VarRef(System) - FieldAccess(out) -
     // MethodInvocation(println)
-    if (invocation.getName() == "println") {
-      auto system = dynamic_cast<ast::VarRef *>(left->getLeft());
-      if (system != nullptr) {
+    if (left->getDef() == &dummySystemOut) {
+      if (invocation.getName() == "println") {
         auto args = invocation.getArguments();
         if (args.size() != 1) {
           error(invocation,
@@ -328,10 +339,12 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
              << args.at(0)->targetType;
           error(invocation, ss.str());
         }
-
         // Yep, System.out.println call
         invocation.targetType.setVoid();
         return;
+      } else {
+        error(invocation, "Invalid method call '" + invocation.getName() +
+                              "' on 'System.out'");
       }
     }
     // TODO: Check if function exists in class
@@ -371,7 +384,8 @@ void SemanticVisitor::visitIfStatement(ast::IfStatement &ifStatement) {
     error(*ifStatement.getCondition(), ss.str());
   }
 
-  // both then and else can be null, if they contain a single empty statement
+  // both then and else can be null, if they contain a single empty
+  // statement
   auto thenCFB = ifStatement.getThenStatement()
                      ? ifStatement.getThenStatement()->cfb
                      : sem::ControlFlowBehavior::MayContinue;

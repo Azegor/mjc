@@ -14,6 +14,9 @@ class SemanticVisitor : public ast::Visitor {
   bool mainMethodFound = false;
   SymbolTable::SymbolTable symTbl;
 
+  static ast::DummySystem dummySystem;
+  static ast::DummySystemOut dummySystemOut;
+
   ast::Class *findClassByName(const std::string &className) {
     // implemented with binary search. TODO: maybe consider a set instead
     auto &classes = currentProgram->getClasses();
