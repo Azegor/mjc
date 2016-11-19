@@ -376,13 +376,13 @@ void SemanticVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
   if (expr == nullptr)
     return;
 
-  auto methodReturnType = this->currentMethod->getReturnType();
+  auto methodReturnType = this->currentMethod->getReturnType()->getSemaType();
 
-  if (expr->targetType != methodReturnType->getSemaType()) {
+  if (expr->targetType != methodReturnType) {
     std::stringstream ss;
-    ss << "Can't return expression of type " << expr->targetType
-       << " from method with return type "
-       << "umm"; // TODO ast::Type toString()
+    ss << "Can't return expression of type '" << expr->targetType
+       << "' from method with return type '"
+       << methodReturnType   << "'";
     error(*expr, ss.str());
   }
 }
