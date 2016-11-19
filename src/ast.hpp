@@ -82,14 +82,15 @@ struct Type {
     case TypeKind::Class:
       return other.kind == TypeKind::Class && this->name == other.name;
     case TypeKind::Array:
-      if (this->innerKind == TypeKind::Class) {
-        if (this->name != other.name) {
-          return false;
-        }
+      if (other.kind != TypeKind::Array || this->dimension != other.dimension ||
+          this->innerKind != other.innerKind) {
+        return false;
       }
-      return other.kind == TypeKind::Array &&
-             this->dimension == other.dimension &&
-             this->innerKind == other.innerKind;
+      if (this->innerKind == TypeKind::Class) {
+        return this->name == other.name;
+      } else {
+        return true;
+      }
     default:
       return this->kind == other.kind;
     }
