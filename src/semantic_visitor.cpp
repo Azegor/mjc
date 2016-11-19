@@ -34,7 +34,9 @@ void SemanticVisitor::visitMainMethodList(ast::MainMethodList &mainMethodList) {
 }
 
 void SemanticVisitor::visitMainMethod(ast::MainMethod &mm) {
+  currentMethod = &mm;
   mm.acceptChildren(this);
+  currentMethod = nullptr;
 
   if (mm.getName() == "main") {
     this->mainMethodFound = true;
@@ -42,7 +44,7 @@ void SemanticVisitor::visitMainMethod(ast::MainMethod &mm) {
   // INFO: check for >1 "main"-methods already done in visitMainMethodList
 }
 
-void SemanticVisitor::visitMethod(ast::Method &method) {
+void SemanticVisitor::visitRegularMethod(ast::RegularMethod &method) {
   symTbl.enterScope(); // for parameters
   currentMethod = &method;
   method.acceptChildren(this);
@@ -279,7 +281,8 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
       auto *classDef = findClassByName(cl->getName());
       assert(classDef != nullptr);
 
-      ast::Method *method = findMethodInClass(classDef, invocation.getName());
+      ast::RegularMethod *method =
+          findMethodInClass(classDef, invocation.getName());
       if (method == nullptr) {
         error(invocation, "Class " + cl->getName() +
                               " does not contain a method " +
@@ -321,7 +324,8 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     // TODO: Check if function exists in class
 
   } else if (dynamic_cast<ast::ThisLiteral *>(invocation.getLeft())) {
-    ast::Method *method = findMethodInClass(currentClass, invocation.getName());
+    ast::RegularMethod *method =
+        findMethodInClass(currentClass, invocation.getName());
     if (method == nullptr) {
       error(invocation, "Class " + currentClass->getName() +
                             " does not have a method called '" +
@@ -331,7 +335,8 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     invocation.targetType = method->getReturnType()->getSemaType();
   } else if (auto t = dynamic_cast<ast::NewObjectExpression *>(
                  invocation.getLeft())) {
-    ast::Method *method = findMethodInClass(t->getDef(), invocation.getName());
+    ast::RegularMethod *method =
+        findMethodInClass(t->getDef(), invocation.getName());
     if (method == nullptr) {
       error(invocation, "Class " + t->getDef()->getName() +
                             " does not have a method called '" +

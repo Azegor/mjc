@@ -1,6 +1,6 @@
 #include "return_visitor.hpp"
 
-void ReturnAnalysisVisitor::visitMethod(ast::Method &method) {
+void ReturnAnalysisVisitor::visitRegularMethod(ast::RegularMethod &method) {
   currentReturnType = method.getReturnType()->getSemaType();
   method.getBlock()->accept(this); // other children not necessary
 }
@@ -33,7 +33,6 @@ void ReturnAnalysisVisitor::visitIfStatement(ast::IfStatement &ifStatement) {
   ifStatement.cfb = sem::combineCFB(thenCFB, elseCFB);
 }
 
-void ReturnAnalysisVisitor::visitWhileStatement(ast::WhileStatement& stmt)
-{
+void ReturnAnalysisVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
   stmt.cfb = stmt.getStatement()->cfb;
 }

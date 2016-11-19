@@ -41,7 +41,7 @@ void DotVisitor::visitField(ast::Field &field) {
   popNode();
 }
 
-void DotVisitor::visitMethod(ast::Method &method) {
+void DotVisitor::visitRegularMethod(ast::RegularMethod &method) {
   auto nodeLabel = "Method(" + method.getName() + ")";
   auto nodeName = nodeNames[&method];
   nodeDeclForExistingName(nodeName, nodeLabel);

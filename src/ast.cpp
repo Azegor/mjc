@@ -59,7 +59,9 @@ void Visitor::visitMainMethodList(MainMethodList &mainMethodList) {
   mainMethodList.acceptChildren(this);
 }
 void Visitor::visitField(Field &field) { field.acceptChildren(this); }
-void Visitor::visitMethod(Method &method) { method.acceptChildren(this); }
+void Visitor::visitRegularMethod(RegularMethod &method) {
+  method.acceptChildren(this);
+}
 void Visitor::visitMainMethod(MainMethod &mainMethod) {
   mainMethod.acceptChildren(this);
 }

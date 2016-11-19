@@ -81,7 +81,7 @@ public:
     stream << " " << field.getName() << ";";
   }
 
-  void visitMethod(ast::Method &method) override {
+  void visitRegularMethod(ast::RegularMethod &method) override {
     newline();
     stream << "public ";
     method.getReturnType()->accept(this);

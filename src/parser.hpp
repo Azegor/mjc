@@ -174,11 +174,11 @@ private:
   }
   inline ast::ClassPtr parseClassDeclaration();
   inline void parseClassMember(std::vector<ast::FieldPtr> &fields,
-                               std::vector<ast::MethodPtr> &methods,
+                               std::vector<ast::RegularMethodPtr> &methods,
                                std::vector<ast::MainMethodPtr> &mainMethods);
   inline ast::MainMethodPtr parseMainMethod();
   inline void parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
-                                 std::vector<ast::MethodPtr> &methods);
+                                 std::vector<ast::RegularMethodPtr> &methods);
   inline ast::ParameterList parseParameterList();
   inline ast::ParameterPtr parseParameter();
   inline ast::TypePtr parseType();

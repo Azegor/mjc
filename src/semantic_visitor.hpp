@@ -28,9 +28,9 @@ class SemanticVisitor : public ast::Visitor {
     return pos->get();
   }
 
-  ast::Method *findMethodInClass(ast::Class *klass,
-                                 const std::string &methodName) {
-    ast::Method *method = nullptr;
+  ast::RegularMethod *findMethodInClass(ast::Class *klass,
+                                        const std::string &methodName) {
+    ast::RegularMethod *method = nullptr;
     for (auto &m : klass->getMethods()->methods) {
       if (m->getName() == methodName) {
         method = m.get();
@@ -47,7 +47,7 @@ public:
   void visitFieldList(ast::FieldList &fieldList) override;
   void visitMethodList(ast::MethodList &methodList) override;
   void visitMainMethodList(ast::MainMethodList &mainMethodList) override;
-  void visitMethod(ast::Method &method) override;
+  void visitRegularMethod(ast::RegularMethod &method) override;
   void visitBlock(ast::Block &block) override;
   void visitVariableDeclaration(ast::VariableDeclaration &decl) override;
   void visitVarRef(ast::VarRef &varRef) override;
@@ -69,8 +69,6 @@ public:
   void visitFieldAccess(ast::FieldAccess &access) override;
   void visitUnaryExpression(ast::UnaryExpression &expr) override;
   void visitArrayAccess(ast::ArrayAccess &access) override;
-  //   void visitArrayType(ast::ArrayType &type) override;
-  //   void visitPrimitiveType(ast::PrimitiveType &type) override;
 
   virtual ~SemanticVisitor() {}
 

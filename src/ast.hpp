@@ -153,7 +153,7 @@ class FieldList;
 class MethodList;
 class MainMethodList;
 class Field;
-class Method;
+class RegularMethod;
 class MainMethod;
 class Parameter;
 class PrimitiveType;
@@ -209,7 +209,7 @@ public:
   virtual void visitMethodList(MethodList &methodList);
   virtual void visitMainMethodList(MainMethodList &mainMethodList);
   virtual void visitField(Field &field);
-  virtual void visitMethod(Method &method);
+  virtual void visitRegularMethod(RegularMethod &method);
   virtual void visitMainMethod(MainMethod &mainMethod);
   virtual void visitParameter(Parameter &parameter);
   virtual void visitPrimitiveType(PrimitiveType &primitiveType);
@@ -540,6 +540,12 @@ using ParameterPtr = std::unique_ptr<Parameter>;
 using ParameterList = std::vector<ParameterPtr>;
 
 class Method : public Node {
+public:
+  Method(SourceLocation loc) : Node(loc) {}
+  virtual Type *getReturnType() const = 0;
+};
+
+class RegularMethod : public Method {
   TypePtr returnType;
   std::string name;
   // might be empty
@@ -547,14 +553,14 @@ class Method : public Node {
   BlockPtr block;
 
 public:
-  Method(SourceLocation loc, TypePtr returnType, std::string name,
-         ParameterList parameters, BlockPtr block)
-      : Node(std::move(loc)), returnType(std::move(returnType)),
+  RegularMethod(SourceLocation loc, TypePtr returnType, std::string name,
+                ParameterList parameters, BlockPtr block)
+      : Method(std::move(loc)), returnType(std::move(returnType)),
         name(std::move(name)), parameters(std::move(parameters)),
         block(std::move(block)) {}
 
   const std::string &getName() const { return name; }
-  Type *getReturnType() const { return returnType.get(); }
+  Type *getReturnType() const override { return returnType.get(); }
   Block *getBlock() const { return block.get(); }
 
   std::vector<Parameter *> getParameters() {
@@ -565,13 +571,13 @@ public:
     return result;
   }
 
-  bool operator<(const Method &other) const {
+  bool operator<(const RegularMethod &other) const {
     return name < other.name;
     // TODO include parameters
   }
-  bool operator==(const Method &o) const { return name == o.name; }
+  bool operator==(const RegularMethod &o) const { return name == o.name; }
 
-  void accept(Visitor *visitor) override { visitor->visitMethod(*this); }
+  void accept(Visitor *visitor) override { visitor->visitRegularMethod(*this); }
 
   void acceptChildren(Visitor *visitor) override {
     returnType->accept(visitor);
@@ -581,9 +587,9 @@ public:
     block->accept(visitor);
   }
 };
-using MethodPtr = std::unique_ptr<Method>;
+using RegularMethodPtr = std::unique_ptr<RegularMethod>;
 
-class MainMethod : public Node {
+class MainMethod : public Method {
   std::string name;
   std::string argName;
   BlockPtr block;
@@ -591,13 +597,17 @@ class MainMethod : public Node {
 public:
   MainMethod(SourceLocation loc, std::string name, std::string argName,
              BlockPtr block)
-      : Node(std::move(loc)), name(std::move(name)),
+      : Method(std::move(loc)), name(std::move(name)),
         argName(std::move(argName)), block(std::move(block)) {}
 
   void accept(Visitor *visitor) override { visitor->visitMainMethod(*this); }
   void acceptChildren(Visitor *visitor) override { block->accept(visitor); }
 
   const std::string &getName() const { return name; }
+  Type *getReturnType() const override {
+    static PrimitiveType type({}, PrimitiveType::PrimType::Void);
+    return &type;
+  }
   const std::string &getArgName() const { return argName; }
   Block *getBlock() const { return block.get(); }
   bool operator<(const MainMethod &other) const {
@@ -625,15 +635,15 @@ public:
 
 class MethodList : public Node {
 public:
-  std::vector<MethodPtr> methods;
+  std::vector<RegularMethodPtr> methods;
 
-  MethodList(std::vector<MethodPtr> methods)
+  MethodList(std::vector<RegularMethodPtr> methods)
       : Node({}), methods(std::move(methods)) {}
   void accept(Visitor *visitor) override { visitor->visitMethodList(*this); }
   void acceptChildren(Visitor *visitor) override {
     std::sort(methods.begin(), methods.end(), SortUniquePtrPred());
     for (auto &e : methods) {
-      visitor->visitMethod(*e);
+      visitor->visitRegularMethod(*e);
     }
   }
 };
@@ -842,7 +852,7 @@ class MethodInvocation : public Expression {
   std::string name;
   // might be empty
   std::vector<ExprPtr> arguments;
-  Method *methodDef;
+  RegularMethod *methodDef;
 
 public:
   MethodInvocation(SourceLocation loc, ExprPtr lhs, std::string methodName,
@@ -874,8 +884,8 @@ public:
   Expression *getLeft() const { return left.get(); }
   const std::string &getName() const { return name; }
 
-  void setDef(Method *def) { methodDef = def; }
-  Method *getDef() const { return methodDef; }
+  void setDef(RegularMethod *def) { methodDef = def; }
+  RegularMethod *getDef() const { return methodDef; }
 };
 
 class FieldAccess : public Expression {

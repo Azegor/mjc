@@ -39,14 +39,14 @@ class ReturnAnalysisVisitor : public ast::Visitor {
 public:
   ReturnAnalysisVisitor(std::string fileName) : Visitor(std::move(fileName)) {}
 
-  void visitMethod(ast::Method &method) override;
+  void visitRegularMethod(ast::RegularMethod &method) override;
   void visitMainMethod(ast::MainMethod &mainMethod) override;
   void visitBlock(ast::Block &block) override;
   void visitReturnStatement(ast::ReturnStatement &stmt) override;
   void visitIfStatement(ast::IfStatement &ifStatement) override;
   void visitWhileStatement(ast::WhileStatement &stmt) override;
-//   void visitExpressionStatement(ExpressionStatement &exprStmt) override;
-//   void visitVariableDeclaration(ast::VariableDeclaration &decl) override;
+  //   void visitExpressionStatement(ExpressionStatement &exprStmt) override;
+  //   void visitVariableDeclaration(ast::VariableDeclaration &decl) override;
 };
 
 #endif // RETURN_VISITOR_H
