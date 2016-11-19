@@ -82,9 +82,9 @@ _import_tests() {
         done
     done
 
-    for f in "${mjt}/${mjt_testpath}/exec/"*.mj; do
+    for f in "${mjt}/${mjt_testpath}/exec/"*.{mj,java}; do
         base=${f##*/}
-        _copy_if_different "${f}" "${mypath}/${our_testpath}/exec/${base%.mj}.java" \
+        _copy_if_different "${f}" "${mypath}/${our_testpath}/exec/${base%.*}.java" \
             && imported=1
     done
 
