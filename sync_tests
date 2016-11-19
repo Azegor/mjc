@@ -48,7 +48,9 @@ _export_tests() {
 
     for f in "${mypath}/${our_testpath}/exec/"*.java; do
         base=${f##*/}
-        _copy_if_different "${f}" "${mjt}/${mjt_testpath}/exec/${base%.java}.mj" \
+        target="${mjt}/${mjt_testpath}/exec/${base}"
+        [[ -e ${target} ]] || target=${target%.java}.mj
+        _copy_if_different "${f}" "${target}" \
             && exported=1
     done
 
