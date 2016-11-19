@@ -137,6 +137,19 @@ int Compiler::checkSemantic() {
   }
 }
 
+int Compiler::fuzzSemantic() {
+  SymbolTable::StringTable strTbl;
+  Parser parser{inputFile, strTbl};
+  try {
+    auto ast = parser.parseProgram();
+    analyzeAstSemantic(ast.get());
+    return EXIT_SUCCESS;
+  } catch (CompilerError &e) {
+    // don't print error message
+    return EXIT_FAILURE;
+  }
+}
+
 int Compiler::attrAstDot() {
   SymbolTable::StringTable strTbl;
   Parser parser{inputFile, strTbl};
@@ -167,11 +180,13 @@ static int exclusiveOptionsSum(bool b, Args... args) {
 void Compiler::checkOptions() {
   if (exclusiveOptionsSum(options.echoFile, options.testLexer,
                           options.fuzzLexer, options.testParser,
-                          options.fuzzParser, options.printAst,
-                          options.dotAst) > 1)
-    throw ArgumentError("Cannot have Options --echo, --lextext, --lexfuzz, "
-                        "--parsertest, --parserfuzz, --print-ast, --dot-ast, "
-                        "--check or --dot-attr-ast simultaneously");
+                          options.fuzzParser, options.printAst, options.dotAst,
+                          options.checkSemantic, options.fuzzSemantic,
+                          options.dotAttrAst) > 1)
+    throw ArgumentError(
+        "Cannot have Options --echo, --lextext, --lexfuzz, "
+        "--parsertest, --parserfuzz, --print-ast, --dot-ast, "
+        "--check, --fuzz-check or --dot-attr-ast simultaneously");
 }
 
 int Compiler::run() {
@@ -191,6 +206,8 @@ int Compiler::run() {
     return astDot();
   } else if (options.checkSemantic) {
     return checkSemantic();
+  } else if (options.fuzzSemantic) {
+    return fuzzSemantic();
   } else if (options.dotAttrAst) {
     return attrAstDot();
   }
