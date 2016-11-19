@@ -371,7 +371,10 @@ void SemanticVisitor::visitIfStatement(ast::IfStatement &ifStatement) {
     error(*ifStatement.getCondition(), ss.str());
   }
 
-  auto thenCFB = ifStatement.getThenStatement()->cfb;
+  // both then and else can be null, if they contain a single empty statement
+  auto thenCFB = ifStatement.getThenStatement()
+                     ? ifStatement.getThenStatement()->cfb
+                     : sem::ControlFlowBehavior::MayContinue;
   auto elseCFB = ifStatement.getElseStatement()
                      ? ifStatement.getElseStatement()->cfb
                      : sem::ControlFlowBehavior::MayContinue;
@@ -388,7 +391,11 @@ void SemanticVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
     error(*stmt.getCondition(), ss.str());
   }
 
-  stmt.cfb = stmt.getStatement()->cfb;
+  if (stmt.getStatement()) {
+    stmt.cfb = stmt.getStatement()->cfb;
+  } else {
+    stmt.cfb = sem::ControlFlowBehavior::MayContinue;
+  }
 }
 
 void SemanticVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
