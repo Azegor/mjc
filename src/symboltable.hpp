@@ -33,6 +33,8 @@
 
 namespace ast {
 class Type;
+class DummySystem;
+class DummySystemOut;
 }
 
 namespace SymbolTable {
@@ -54,6 +56,8 @@ class Symbol {
   Scope *currentScope = nullptr;
   Definition *currentDef = nullptr;
   explicit Symbol(std::string name) : name(std::move(name)) {}
+  friend class ast::DummySystem;
+  friend class ast::DummySystemOut;
 
 public:
   std::string name;
@@ -77,6 +81,7 @@ public:
 };
 
 class Definition {
+public:
   virtual Symbol &getSymbol() const = 0;
   virtual ast::Type *getType() const = 0;
 };

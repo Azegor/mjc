@@ -1,3 +1,4 @@
 #!/bin/sh
 # make -j5 -C afl_fuzzer/build && afl_fuzzer/afl/afl-fuzz -i corpus/lexer/ -o artifacts/afl -x mj_lexer.dict -M fuzz_1 ./afl_fuzzer/build/mjc_instr --lexfuzz @@
-make -j5 -C afl_fuzzer/build && afl_fuzzer/afl/afl-fuzz -i corpus/parser/ -o artifacts/afl -x mj_parser.dict -M fuzz_1 ./afl_fuzzer/build/mjc_instr --parsefuzz @@
+# make -j5 -C afl_fuzzer/build && afl_fuzzer/afl/afl-fuzz -i corpus/parser/ -o artifacts/afl -x mj_parser.dict -M fuzz_1 ./afl_fuzzer/build/mjc_instr --parsefuzz @@
+make -j5 -C afl_fuzzer/build && afl_fuzzer/afl/afl-fuzz -i corpus/semantics/ -o artifacts/afl -x mj_parser.dict -M fuzz_1 ./afl_fuzzer/build/mjc_instr --fuzz-chec @@

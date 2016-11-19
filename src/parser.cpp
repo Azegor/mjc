@@ -66,7 +66,7 @@ ast::ProgramPtr Parser::parseProgram() {
 ast::ClassPtr Parser::parseClassDeclaration() {
   std::string name;
   std::vector<ast::FieldPtr> fields;
-  std::vector<ast::MethodPtr> methods;
+  std::vector<ast::RegularMethodPtr> methods;
   std::vector<ast::MainMethodPtr> mainMethods;
 
   auto startPos = curTok.startPos();
@@ -94,7 +94,7 @@ ast::ClassPtr Parser::parseClassDeclaration() {
 }
 
 void Parser::parseClassMember(std::vector<ast::FieldPtr> &fields,
-                              std::vector<ast::MethodPtr> &methods,
+                              std::vector<ast::RegularMethodPtr> &methods,
                               std::vector<ast::MainMethodPtr> &mainMethods) {
   switch (lookAhead(1).type) {
   case TT::Static:
@@ -138,7 +138,7 @@ ast::MainMethodPtr Parser::parseMainMethod() {
 }
 
 void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
-                                std::vector<ast::MethodPtr> &methods) {
+                                std::vector<ast::RegularMethodPtr> &methods) {
   auto startPos = curTok.startPos();
   expectAndNext(TT::Public);
   auto type = parseType();
@@ -155,8 +155,8 @@ void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
     auto params = parseParameterList();
     expectAndNext(TT::RParen);
     auto block = parseBlock();
-    methods.emplace_back(ast::make_Ptr<ast::Method>(
-        {startPos, curTok.endPos()}, std::move(type), std::move(name),
+    methods.emplace_back(ast::make_Ptr<ast::RegularMethod>(
+        {startPos, block->getLoc().endToken}, std::move(type), std::move(name),
         std::move(params), std::move(block)));
     return;
   }

@@ -34,22 +34,117 @@
 #include "lexer.hpp"
 #include "symboltable.hpp"
 
-namespace ast {
+namespace sem {
+enum class TypeKind {
+  Array,
+  Class,
+  Bool,
+  Int,
+  Void,
+  Null, // Umm?
+  Unresolved
+};
 
+struct Type {
+  TypeKind kind;
+  // For arrays, e.g. int[] -> innerKind=int
+  TypeKind innerKind = TypeKind::Unresolved;
+  // Both class types and arrays need a name
+  std::string name;
+  int dimension = 0;
+  Type() { kind = TypeKind::Unresolved; }
+
+  void setInt() { kind = TypeKind::Int; }
+  void setBool() { kind = TypeKind::Bool; }
+  void setArray(TypeKind innerKind, int dimension, std::string name = "") {
+    assert(innerKind != TypeKind::Array);
+    this->kind = TypeKind::Array;
+    this->name = name;
+    this->innerKind = innerKind;
+    this->dimension = dimension;
+  }
+  void setClass(std::string name) {
+    this->kind = TypeKind::Class;
+    this->name = name;
+  }
+  void setNull() { kind = TypeKind::Null; }
+  void setVoid() { kind = TypeKind::Void; }
+
+  bool isInt() const { return kind == TypeKind::Int; }
+  bool isBool() const { return kind == TypeKind::Bool; }
+  bool isClass() const { return kind == TypeKind::Class; }
+  bool isArray() const { return kind == TypeKind::Array; }
+  bool isNull() const { return kind == TypeKind::Null; }
+  bool isVoid() const { return kind == TypeKind::Void; }
+
+  bool operator==(const sem::Type &other) const {
+    switch (this->kind) {
+    case TypeKind::Class:
+      return other.kind == TypeKind::Class && this->name == other.name;
+    case TypeKind::Array:
+      if (other.kind != TypeKind::Array || this->dimension != other.dimension ||
+          this->innerKind != other.innerKind) {
+        return false;
+      }
+      if (this->innerKind == TypeKind::Class) {
+        return this->name == other.name;
+      } else {
+        return true;
+      }
+    default:
+      return this->kind == other.kind;
+    }
+  }
+  bool operator!=(const sem::Type &other) const { return !(*this == other); }
+};
+
+enum class ControlFlowBehavior {
+  MayContinue, // code flow continues after the statement
+  Return,      // returns the function
+};
+
+inline ControlFlowBehavior combineCFB(ControlFlowBehavior c1,
+                                      ControlFlowBehavior c2) {
+  if (c1 == c2) {
+    return c1;
+  }
+  return ControlFlowBehavior::MayContinue;
+}
+
+} // namespace sem
+std::ostream &operator<<(std::ostream &o, const sem::Type &t);
+
+namespace ast {
 struct SortUniquePtrPred {
   template <typename T>
   bool operator()(const std::unique_ptr<T> &lhs,
-                  const std::unique_ptr<T> &rhs) {
+                  const std::unique_ptr<T> &rhs) const {
     return *lhs < *rhs;
   }
 };
 struct UniquePtrEqPred {
   template <typename T>
   bool operator()(const std::unique_ptr<T> &lhs,
-                  const std::unique_ptr<T> &rhs) {
+                  const std::unique_ptr<T> &rhs) const {
     return *lhs == *rhs;
   }
 };
+
+class Visitor;
+
+class Node {
+protected:
+  SourceLocation location;
+
+  Node(SourceLocation loc) : location(std::move(loc)) {}
+
+public:
+  virtual void accept(Visitor *) {}
+  virtual void acceptChildren(Visitor *) {}
+  virtual ~Node() = default;
+  const SourceLocation &getLoc() const { return location; }
+};
+using NodePtr = std::unique_ptr<Node>;
 
 class Program;
 class Block;
@@ -59,7 +154,7 @@ class FieldList;
 class MethodList;
 class MainMethodList;
 class Field;
-class Method;
+class RegularMethod;
 class MainMethod;
 class Parameter;
 class PrimitiveType;
@@ -83,8 +178,33 @@ class ArrayAccess;
 class BinaryExpression;
 class UnaryExpression;
 using ClassPtr = std::unique_ptr<Class>;
-class Visitor {
+
+class SemanticError : public CompilerError {
 public:
+  const SourceLocation srcLoc;
+  const std::string filename, message;
+  const bool reportAtScopeEnd;
+  SemanticError(SourceLocation srcLoc, std::string filename,
+                std::string message, bool reportAtScopeEnd)
+      : srcLoc(std::move(srcLoc)), filename(std::move(filename)),
+        message(std::move(message)), reportAtScopeEnd(reportAtScopeEnd) {}
+  const char *what() const noexcept override { return message.c_str(); }
+
+  virtual void writeErrorMessage(std::ostream &out) const override {
+    co::color_ostream<std::ostream> cl_out(out);
+    auto reportToken = reportAtScopeEnd ? srcLoc.endToken : srcLoc.startToken;
+    cl_out << co::mode(co::bold) << filename << ':' << reportToken.line << ':'
+           << reportToken.col << ": " << co::color(co::red)
+           << "error: " << co::reset << message << std::endl;
+    //     writeErrorLineHighlight(out);
+  }
+};
+
+class Visitor {
+  std::string fileName;
+
+public:
+  Visitor(std::string fileName) : fileName(std::move(fileName)) {}
   virtual ~Visitor() {}
   virtual void visitProgram(Program &program);
   virtual void visitClass(Class &klass);
@@ -92,7 +212,7 @@ public:
   virtual void visitMethodList(MethodList &methodList);
   virtual void visitMainMethodList(MainMethodList &mainMethodList);
   virtual void visitField(Field &field);
-  virtual void visitMethod(Method &method);
+  virtual void visitRegularMethod(RegularMethod &method);
   virtual void visitMainMethod(MainMethod &mainMethod);
   virtual void visitParameter(Parameter &parameter);
   virtual void visitPrimitiveType(PrimitiveType &primitiveType);
@@ -118,31 +238,34 @@ public:
   virtual void visitArrayAccess(ArrayAccess &arrayAccess);
   virtual void visitBinaryExpression(BinaryExpression &binaryExpression);
   virtual void visitUnaryExpression(UnaryExpression &unaryExpression);
-};
 
-class Node {
 protected:
-  SourceLocation location;
-
-  Node(SourceLocation loc) : location(std::move(loc)) {}
-
-public:
-  virtual void accept(Visitor *visitor) { (void)visitor; }
-  virtual void acceptChildren(Visitor *visitor) { (void)visitor; }
-  virtual ~Node() = default;
-  const SourceLocation &getLoc() const { return location; }
+  [[noreturn]] void error(const ast::Node &node, std::string msg,
+                          bool reportAtScopeEnd = false) {
+    throw SemanticError(node.getLoc(), fileName, std::move(msg),
+                        reportAtScopeEnd);
+  }
+  [[noreturn]] void error(SourceLocation loc, std::string msg,
+                          bool reportAtScopeEnd = false) {
+    throw SemanticError(loc, fileName, std::move(msg), reportAtScopeEnd);
+  }
 };
-using NodePtr = std::unique_ptr<Node>;
 
 class Type : public Node {
 protected:
   Type(SourceLocation loc) : Node(std::move(loc)) {}
+
+public:
+  virtual sem::Type getSemaType() const = 0;
 };
 using TypePtr = std::unique_ptr<Type>;
 
 class BlockStatement : public Node {
 protected:
   BlockStatement(SourceLocation loc) : Node(std::move(loc)) {}
+
+public:
+  sem::ControlFlowBehavior cfb = sem::ControlFlowBehavior::MayContinue;
 };
 using BlockStmtPtr = std::unique_ptr<BlockStatement>;
 
@@ -153,6 +276,9 @@ protected:
 using StmtPtr = std::unique_ptr<Statement>;
 
 class Expression : public Node {
+public:
+  sem::Type targetType;
+
 protected:
   Expression(SourceLocation loc) : Node(std::move(loc)) {}
 };
@@ -199,28 +325,47 @@ using BasicTypePtr = std::unique_ptr<BasicType>;
 
 class PrimitiveType : public BasicType {
 public:
-  enum class TypeType { Boolean, Int, Void, None };
+  enum class PrimType { Boolean, Int, Void, None };
 
 private:
-  TypeType type;
+  PrimType type;
 
 public:
-  PrimitiveType(SourceLocation loc, TypeType type)
+  PrimitiveType(SourceLocation loc, PrimType type)
       : BasicType(std::move(loc)), type(type) {}
 
-  static TypeType getTypeForToken(Token::Type t) {
+  static PrimType getTypeForToken(Token::Type t) {
     switch (t) {
     case Token::Type::Boolean:
-      return TypeType::Boolean;
+      return PrimType::Boolean;
     case Token::Type::Int:
-      return TypeType::Int;
+      return PrimType::Int;
     case Token::Type::Void:
-      return TypeType::Void;
+      return PrimType::Void;
     default:
-      return TypeType::None;
+      return PrimType::None;
     }
   }
-  const TypeType &getType() { return type; }
+
+  const PrimType &getPrimType() const { return type; }
+
+  sem::Type getSemaType() const override {
+    sem::Type res;
+    switch (type) {
+    case PrimType::Boolean:
+      res.setBool();
+      break;
+    case PrimType::Int:
+      res.setInt();
+      break;
+    case PrimType::Void:
+      res.setVoid();
+      break;
+    default:
+      break;
+    }
+    return res;
+  }
 
   void accept(Visitor *visitor) override { visitor->visitPrimitiveType(*this); }
 };
@@ -233,11 +378,17 @@ public:
   ClassType(SourceLocation loc, std::string name)
       : BasicType(std::move(loc)), name(std::move(name)) {}
 
-  const std::string &getName() { return name; }
+  const std::string &getName() const { return name; }
 
   void accept(Visitor *visitor) override { visitor->visitClassType(*this); }
   void setDef(Class *def) { classDef = def; }
   Class *getDef() const { return classDef; }
+
+  sem::Type getSemaType() const override {
+    sem::Type res;
+    res.setClass(getName());
+    return res;
+  }
 };
 
 class ArrayType : public Type {
@@ -254,6 +405,13 @@ public:
   void accept(Visitor *visitor) override { visitor->visitArrayType(*this); }
   void acceptChildren(Visitor *visitor) override {
     elementType->accept(visitor);
+  }
+
+  sem::Type getSemaType() const override {
+    sem::Type res;
+    auto innerType = elementType->getSemaType();
+    res.setArray(innerType.kind, dimension, innerType.name);
+    return res;
   }
 };
 using ArrayTypePtr = std::unique_ptr<ArrayType>;
@@ -288,8 +446,8 @@ public:
         thenStmt(std::move(thenStmt)), elseStmt(std::move(elseStmt)) {}
 
   Expression *getCondition() const { return condition.get(); }
-  Statement *getThenStatement() { return thenStmt.get(); }
-  Statement *getElseStatement() { return elseStmt.get(); }
+  Statement *getThenStatement() const { return thenStmt.get(); }
+  Statement *getElseStatement() const { return elseStmt.get(); }
 
   void accept(Visitor *visitor) override { visitor->visitIfStatement(*this); }
   void acceptChildren(Visitor *visitor) override {
@@ -312,7 +470,7 @@ public:
         statement(std::move(statement)) {}
 
   Expression *getCondition() const { return condition.get(); }
-  Statement *getStatement() { return statement.get(); }
+  Statement *getStatement() const { return statement.get(); }
 
   void accept(Visitor *visitor) override {
     visitor->visitWhileStatement(*this);
@@ -332,7 +490,7 @@ class ReturnStatement : public Statement {
 public:
   ReturnStatement(SourceLocation loc, ExprPtr expr)
       : Statement(std::move(loc)), expr(std::move(expr)) {}
-  Expression *getExpression() { return expr.get(); }
+  Expression *getExpression() const { return expr.get(); }
 
   void accept(Visitor *visitor) override {
     visitor->visitReturnStatement(*this);
@@ -352,14 +510,9 @@ public:
   Field(SourceLocation loc, TypePtr type, SymbolTable::Symbol &sym)
       : Node(std::move(loc)), type(std::move(type)), symbol(sym) {}
 
-  const std::string &getName() { return symbol.name; }
+  const std::string &getName() const { return symbol.name; }
   SymbolTable::Symbol &getSymbol() const override { return symbol; }
   Type *getType() const override { return type.get(); }
-
-  bool operator<(const Field &other) {
-    return symbol.name < other.symbol.name;
-    // include type
-  }
 
   void accept(Visitor *visitor) override { visitor->visitField(*this); }
 
@@ -380,7 +533,7 @@ public:
 
   void accept(Visitor *visitor) override { visitor->visitParameter(*this); }
   void acceptChildren(Visitor *visitor) override { type->accept(visitor); }
-  const std::string &getName() { return symbol.name; }
+  const std::string &getName() const { return symbol.name; }
   SymbolTable::Symbol &getSymbol() const override { return symbol; }
   Type *getType() const override { return type.get(); }
 };
@@ -388,6 +541,12 @@ using ParameterPtr = std::unique_ptr<Parameter>;
 using ParameterList = std::vector<ParameterPtr>;
 
 class Method : public Node {
+public:
+  Method(SourceLocation loc) : Node(loc) {}
+  virtual Type *getReturnType() const = 0;
+};
+
+class RegularMethod : public Method {
   TypePtr returnType;
   std::string name;
   // might be empty
@@ -395,14 +554,14 @@ class Method : public Node {
   BlockPtr block;
 
 public:
-  Method(SourceLocation loc, TypePtr returnType, std::string name,
-         ParameterList parameters, BlockPtr block)
-      : Node(std::move(loc)), returnType(std::move(returnType)),
+  RegularMethod(SourceLocation loc, TypePtr returnType, std::string name,
+                ParameterList parameters, BlockPtr block)
+      : Method(std::move(loc)), returnType(std::move(returnType)),
         name(std::move(name)), parameters(std::move(parameters)),
         block(std::move(block)) {}
 
-  const std::string &getName() { return name; }
-  Type *getReturnType() const { return returnType.get(); }
+  const std::string &getName() const { return name; }
+  Type *getReturnType() const override { return returnType.get(); }
   Block *getBlock() const { return block.get(); }
 
   std::vector<Parameter *> getParameters() {
@@ -413,13 +572,13 @@ public:
     return result;
   }
 
-  bool operator<(const Method &other) const {
+  bool operator<(const RegularMethod &other) const {
     return name < other.name;
     // TODO include parameters
   }
-  bool operator==(const Method &o) const { return name == o.name; }
+  bool operator==(const RegularMethod &o) const { return name == o.name; }
 
-  void accept(Visitor *visitor) override { visitor->visitMethod(*this); }
+  void accept(Visitor *visitor) override { visitor->visitRegularMethod(*this); }
 
   void acceptChildren(Visitor *visitor) override {
     returnType->accept(visitor);
@@ -429,9 +588,9 @@ public:
     block->accept(visitor);
   }
 };
-using MethodPtr = std::unique_ptr<Method>;
+using RegularMethodPtr = std::unique_ptr<RegularMethod>;
 
-class MainMethod : public Node {
+class MainMethod : public Method {
   std::string name;
   std::string argName;
   BlockPtr block;
@@ -439,14 +598,18 @@ class MainMethod : public Node {
 public:
   MainMethod(SourceLocation loc, std::string name, std::string argName,
              BlockPtr block)
-      : Node(std::move(loc)), name(std::move(name)),
+      : Method(std::move(loc)), name(std::move(name)),
         argName(std::move(argName)), block(std::move(block)) {}
 
   void accept(Visitor *visitor) override { visitor->visitMainMethod(*this); }
   void acceptChildren(Visitor *visitor) override { block->accept(visitor); }
 
-  const std::string &getName() { return name; }
-  const std::string &getArgName() { return argName; }
+  const std::string &getName() const { return name; }
+  Type *getReturnType() const override {
+    static PrimitiveType type({}, PrimitiveType::PrimType::Void);
+    return &type;
+  }
+  const std::string &getArgName() const { return argName; }
   Block *getBlock() const { return block.get(); }
   bool operator<(const MainMethod &other) const {
     return name < other.name;
@@ -469,20 +632,28 @@ public:
       visitor->visitField(*e);
     }
   }
+
+  void sortFields() {
+    std::stable_sort(fields.begin(), fields.end(), ast::SortUniquePtrPred());
+  }
 };
 
 class MethodList : public Node {
 public:
-  std::vector<MethodPtr> methods;
+  std::vector<RegularMethodPtr> methods;
 
-  MethodList(std::vector<MethodPtr> methods)
+  MethodList(std::vector<RegularMethodPtr> methods)
       : Node({}), methods(std::move(methods)) {}
   void accept(Visitor *visitor) override { visitor->visitMethodList(*this); }
   void acceptChildren(Visitor *visitor) override {
     std::sort(methods.begin(), methods.end(), SortUniquePtrPred());
     for (auto &e : methods) {
-      visitor->visitMethod(*e);
+      visitor->visitRegularMethod(*e);
     }
+  }
+
+  void sortMethods() {
+    std::stable_sort(methods.begin(), methods.end(), ast::SortUniquePtrPred());
   }
 };
 
@@ -523,15 +694,18 @@ public:
     visitor->visitMainMethodList(mainMethods);
   }
 
-  const std::string &getName() { return name; }
+  void sortMembers() {
+    fields.sortFields();
+    methods.sortMethods();
+  }
+
+  const FieldList *getFields() const { return &fields; }
+  const MethodList *getMethods() const { return &methods; }
+
+  const std::string &getName() const { return name; }
 
   bool operator<(const Class &o) const { return name < o.name; }
-  bool operator<(const std::string &oName) const { return name < oName; }
-  friend bool operator<(const std::string &name, const Class &oCls) {
-    return name < oCls.name;
-  }
   bool operator==(const Class &o) const { return name == o.name; }
-  bool operator==(const std::string &oName) const { return name == oName; }
 };
 
 class Program : public Node {
@@ -578,7 +752,7 @@ public:
   }
 
   SymbolTable::Symbol &getSymbol() const override { return symbol; }
-  const std::string &getName() { return symbol.name; }
+  const std::string &getName() const { return symbol.name; }
   Type *getType() const override { return type.get(); }
   Expression *getInitializer() const { return initializer.get(); }
 };
@@ -621,7 +795,7 @@ public:
     visitor->visitNewObjectExpression(*this);
   }
 
-  const std::string &getName() { return name; }
+  const std::string &getName() const { return name; }
 
   void setDef(Class *def) { classDef = def; }
   Class *getDef() const { return classDef; }
@@ -635,7 +809,7 @@ public:
 
   void accept(Visitor *visitor) override { visitor->visitIntLiteral(*this); }
 
-  const int32_t &getValue() { return value; }
+  int32_t getValue() const { return value; }
 };
 
 class BoolLiteral : public PrimaryExpression {
@@ -647,7 +821,7 @@ public:
 
   void accept(Visitor *visitor) override { visitor->visitBoolLiteral(*this); }
 
-  const bool &getValue() { return value; }
+  bool getValue() const { return value; }
 };
 
 class NullLiteral : public PrimaryExpression {
@@ -676,7 +850,7 @@ public:
 
   SymbolTable::Symbol &getSymbol() const override { return symbol; }
   ast::Type *getType() const override { return nullptr; /* TODO */ }
-  const std::string &getName() { return symbol.name; }
+  const std::string &getName() const { return symbol.name; }
 
   void setDef(SymbolTable::Definition *def) { definition = def; }
   SymbolTable::Definition *getDef() const { return definition; }
@@ -687,6 +861,7 @@ class MethodInvocation : public Expression {
   std::string name;
   // might be empty
   std::vector<ExprPtr> arguments;
+  RegularMethod *methodDef;
 
 public:
   MethodInvocation(SourceLocation loc, ExprPtr lhs, std::string methodName,
@@ -702,8 +877,9 @@ public:
     if (left != nullptr)
       left->accept(visitor);
 
-    for (auto &arg : arguments)
+    for (auto &arg : arguments) {
       arg->accept(visitor);
+    }
   }
 
   std::vector<Expression *> getArguments() {
@@ -715,13 +891,17 @@ public:
   }
 
   Expression *getLeft() const { return left.get(); }
-  const std::string &getName() { return name; }
+  const std::string &getName() const { return name; }
+
+  void setDef(RegularMethod *def) { methodDef = def; }
+  RegularMethod *getDef() const { return methodDef; }
 };
 
 class FieldAccess : public Expression {
   // left.field_name
   ExprPtr left; // set to this if call from within function
   std::string name;
+  Field *fieldDef;
 
 public:
   FieldAccess(SourceLocation loc, ExprPtr lhs, std::string memberName)
@@ -735,7 +915,10 @@ public:
   }
 
   Expression *getLeft() const { return left.get(); }
-  const std::string &getName() { return name; }
+  const std::string &getName() const { return name; }
+
+  void setDef(Field *def) { fieldDef = def; }
+  Field *getDef() const { return fieldDef; }
 };
 
 class ArrayAccess : public Expression {
@@ -834,7 +1017,7 @@ public:
 
   Expression *getLeft() const { return left.get(); }
   Expression *getRight() const { return right.get(); }
-  const Op &getOperation() { return operation; }
+  Op getOperation() const { return operation; }
 };
 
 class UnaryExpression : public Expression {
@@ -869,8 +1052,30 @@ public:
   }
 
   Expression *getExpression() const { return expression.get(); }
-  const Op &getOperation() { return operation; }
+  Op getOperation() const { return operation; }
 };
+
+// ----
+
+class DummySystem : public SymbolTable::Definition {
+  static SymbolTable::Symbol dummySymbol;
+
+public:
+  virtual SymbolTable::Symbol &getSymbol() const { return dummySymbol; }
+  virtual ast::Type *getType() const {
+    assert(false);
+    return nullptr;
+  }
+};
+
+class DummySystemOut : public Field {
+  static SymbolTable::Symbol dummySymbol;
+
+public:
+  DummySystemOut() : Field({}, nullptr, dummySymbol) {}
+};
+
+// ----
 
 template <typename St, typename... Args>
 StmtPtr make_SPtr(SourceLocation loc, Args &&... args) {

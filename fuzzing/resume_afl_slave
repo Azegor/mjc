@@ -1,3 +1,4 @@
 #!/bin/sh
 # afl_fuzzer/afl/afl-fuzz -i - -o artifacts/afl -x mj_lexer.dict -M fuzz_$1 ./afl_fuzzer/build/mjc_instr --lexfuzz @@
 afl_fuzzer/afl/afl-fuzz -i - -o artifacts/afl -x mj_parser.dict -M fuzz_$1 ./afl_fuzzer/build/mjc_instr --parsefuzz @@
+afl_fuzzer/afl/afl-fuzz -i - -o artifacts/afl -x mj_parser.dict -M fuzz_$1 ./afl_fuzzer/build/mjc_instr --fuzz-check @@

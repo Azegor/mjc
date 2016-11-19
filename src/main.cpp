@@ -42,6 +42,8 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
       ("dot-ast", "print AST to dot output")
       // check semantic of program
       ("check", "check whether input program is semantically valid")
+      // fuzz semantic check
+      ("fuzz-check", "fuzz semantic checker, no output")
       // check semantic of program
       ("dot-attr-ast", "print attributed AST as dot output");
 
@@ -91,6 +93,9 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
     }
     if (var_map.count("check")) {
       compilerOptions.checkSemantic = true;
+    }
+    if (var_map.count("fuzz-check")) {
+      compilerOptions.fuzzSemantic = true;
     }
     if (var_map.count("dot-attr-ast")) {
       compilerOptions.dotAttrAst = true;

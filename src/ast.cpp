@@ -1,5 +1,54 @@
 #include "ast.hpp"
 
+SymbolTable::Symbol ast::DummySystem::dummySymbol("System");
+SymbolTable::Symbol ast::DummySystemOut::dummySymbol("System.out");
+
+static const char *typeKindToString(sem::TypeKind kind) {
+  switch (kind) {
+  case sem::TypeKind::Bool:
+    return "bool";
+  case sem::TypeKind::Int:
+    return "int";
+  case sem::TypeKind::Class:
+    return "Class";
+  case sem::TypeKind::Array:
+    assert(false);
+    return "";
+  case sem::TypeKind::Void:
+    return "void";
+  case sem::TypeKind::Null:
+    return "null";
+  case sem::TypeKind::Unresolved:
+    // Print these anyway for easier debugging
+    return "Unresolved";
+  }
+
+  return "";
+}
+
+std::ostream &operator<<(std::ostream &o, const sem::Type &t) {
+  switch (t.kind) {
+  case sem::TypeKind::Bool:
+  case sem::TypeKind::Int:
+  case sem::TypeKind::Void:
+  case sem::TypeKind::Null:
+  case sem::TypeKind::Unresolved:
+    return o << typeKindToString(t.kind);
+
+  case sem::TypeKind::Class:
+    return o << typeKindToString(t.kind) << "(" << t.name << ")";
+  case sem::TypeKind::Array:
+    o << typeKindToString(t.innerKind);
+    if (t.innerKind == sem::TypeKind::Class) {
+      o << "(" << t.name << ")";
+    }
+    for (int i = 0; i < t.dimension; i++)
+      o << "[]";
+    return o;
+  }
+  return o;
+}
+
 namespace ast {
 void Visitor::visitProgram(Program &program) { program.acceptChildren(this); }
 void Visitor::visitClass(Class &klass) { klass.acceptChildren(this); }
@@ -13,7 +62,9 @@ void Visitor::visitMainMethodList(MainMethodList &mainMethodList) {
   mainMethodList.acceptChildren(this);
 }
 void Visitor::visitField(Field &field) { field.acceptChildren(this); }
-void Visitor::visitMethod(Method &method) { method.acceptChildren(this); }
+void Visitor::visitRegularMethod(RegularMethod &method) {
+  method.acceptChildren(this);
+}
 void Visitor::visitMainMethod(MainMethod &mainMethod) {
   mainMethod.acceptChildren(this);
 }

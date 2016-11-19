@@ -17,7 +17,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
 
   CompilerOptions options;
 //   options.fuzzLexer = true; // Modify Options here by hand
-  options.fuzzParser = true; // Modify Options here by hand
+//   options.fuzzParser = true; // Modify Options here by hand
+  options.fuzzSemantic = true; // Modify Options here by hand
   options.inputFileName = "<internal>";
   Compiler compiler{InputFile{"<internal>", &input}, options};
 

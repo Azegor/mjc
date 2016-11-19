@@ -37,7 +37,8 @@ class PrettyPrinterVisitor : public ast::Visitor {
 
 public:
   PrettyPrinterVisitor(std::ostream &stream, std::string indentWith)
-      : stream(stream), indentWith(std::move(indentWith)), indentLevel(0) {}
+      : Visitor(""), stream(stream), indentWith(std::move(indentWith)),
+        indentLevel(0) {}
 
   void visitProgram(ast::Program &program) override {
     program.acceptChildren(this);
@@ -80,7 +81,7 @@ public:
     stream << " " << field.getName() << ";";
   }
 
-  void visitMethod(ast::Method &method) override {
+  void visitRegularMethod(ast::RegularMethod &method) override {
     newline();
     stream << "public ";
     method.getReturnType()->accept(this);
@@ -111,14 +112,14 @@ public:
   }
 
   void visitPrimitiveType(ast::PrimitiveType &primitiveType) override {
-    switch (primitiveType.getType()) {
-    case ast::PrimitiveType::TypeType::Boolean:
+    switch (primitiveType.getPrimType()) {
+    case ast::PrimitiveType::PrimType::Boolean:
       stream << "boolean";
       break;
-    case ast::PrimitiveType::TypeType::Int:
+    case ast::PrimitiveType::PrimType::Int:
       stream << "int";
       break;
-    case ast::PrimitiveType::TypeType::Void:
+    case ast::PrimitiveType::PrimType::Void:
       stream << "void";
       break;
     default:
