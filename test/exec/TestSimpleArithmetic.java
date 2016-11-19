@@ -8,8 +8,7 @@ class TestSimpleArithmetic {
 
   public void run(){
     int maxInt = 2147483647;
-    int minInt = -2147483647;
-    minInt = minInt - 1;
+    int minInt = -2147483648;
     System.out.println(maxInt + 1);
     System.out.println(minInt + 1);
     System.out.println(minInt - 1);
@@ -43,6 +42,7 @@ class TestSimpleArithmetic {
     System.out.println(minInt * maxInt);
     sep();
     System.out.println(-2147483647 / -1);
+    System.out.println(-2147483648 / -1);
   }
 
   public void sep(){

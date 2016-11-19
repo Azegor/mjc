@@ -6,7 +6,7 @@ class A {
     return 32;
   }
 
-  public int bls(boolean a){
+  public int bla(boolean a){
     return 3;
   }
 
