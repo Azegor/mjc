@@ -156,7 +156,7 @@ void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
     expectAndNext(TT::RParen);
     auto block = parseBlock();
     methods.emplace_back(ast::make_Ptr<ast::RegularMethod>(
-        {startPos, curTok.endPos()}, std::move(type), std::move(name),
+        {startPos, block->getLoc().endToken}, std::move(type), std::move(name),
         std::move(params), std::move(block)));
     return;
   }

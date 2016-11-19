@@ -182,16 +182,18 @@ class SemanticError : public CompilerError {
 public:
   const SourceLocation srcLoc;
   const std::string filename, message;
+  const bool reportAtScopeEnd;
   SemanticError(SourceLocation srcLoc, std::string filename,
-                std::string message)
+                std::string message, bool reportAtScopeEnd)
       : srcLoc(std::move(srcLoc)), filename(std::move(filename)),
-        message(std::move(message)) {}
+        message(std::move(message)), reportAtScopeEnd(reportAtScopeEnd) {}
   const char *what() const noexcept override { return message.c_str(); }
 
   virtual void writeErrorMessage(std::ostream &out) const override {
     co::color_ostream<std::ostream> cl_out(out);
-    cl_out << co::mode(co::bold) << filename << ':' << srcLoc.startToken.line
-           << ':' << srcLoc.startToken.col << ": " << co::color(co::red)
+    auto reportToken = reportAtScopeEnd ? srcLoc.endToken : srcLoc.startToken;
+    cl_out << co::mode(co::bold) << filename << ':' << reportToken.line << ':'
+           << reportToken.col << ": " << co::color(co::red)
            << "error: " << co::reset << message << std::endl;
     //     writeErrorLineHighlight(out);
   }
@@ -237,11 +239,14 @@ public:
   virtual void visitUnaryExpression(UnaryExpression &unaryExpression);
 
 protected:
-  [[noreturn]] void error(const ast::Node &node, std::string msg) {
-    throw SemanticError(node.getLoc(), fileName, std::move(msg));
+  [[noreturn]] void error(const ast::Node &node, std::string msg,
+                          bool reportAtScopeEnd = false) {
+    throw SemanticError(node.getLoc(), fileName, std::move(msg),
+                        reportAtScopeEnd);
   }
-  [[noreturn]] void error(SourceLocation loc, std::string msg) {
-    throw SemanticError(loc, fileName, std::move(msg));
+  [[noreturn]] void error(SourceLocation loc, std::string msg,
+                          bool reportAtScopeEnd = false) {
+    throw SemanticError(loc, fileName, std::move(msg), reportAtScopeEnd);
   }
 };
 

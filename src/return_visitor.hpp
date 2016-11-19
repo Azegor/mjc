@@ -32,15 +32,11 @@
 #include "ast.hpp"
 
 class ReturnAnalysisVisitor : public ast::Visitor {
-  std::string fileName;
-
-  sem::Type currentReturnType;
-
 public:
   ReturnAnalysisVisitor(std::string fileName) : Visitor(std::move(fileName)) {}
 
   void visitRegularMethod(ast::RegularMethod &method) override;
-  void visitMainMethod(ast::MainMethod &mainMethod) override;
+  // main method is always void -> no need to check
   void visitBlock(ast::Block &block) override;
   void visitReturnStatement(ast::ReturnStatement &stmt) override;
   void visitIfStatement(ast::IfStatement &ifStatement) override;

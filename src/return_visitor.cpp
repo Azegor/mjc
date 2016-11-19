@@ -1,13 +1,11 @@
 #include "return_visitor.hpp"
 
 void ReturnAnalysisVisitor::visitRegularMethod(ast::RegularMethod &method) {
-  currentReturnType = method.getReturnType()->getSemaType();
   method.getBlock()->accept(this); // other children not necessary
-}
-
-void ReturnAnalysisVisitor::visitMainMethod(ast::MainMethod &mainMethod) {
-  currentReturnType.setVoid();
-  mainMethod.getBlock()->accept(this); // other children not necessary
+  if (!method.getReturnType()->getSemaType().isVoid() &&
+      method.getBlock()->cfb != sem::ControlFlowBehavior::Return) {
+    error(method, "Non-Void method must return a value on every path", true);
+  }
 }
 
 void ReturnAnalysisVisitor::visitBlock(ast::Block &block) {
