@@ -17,6 +17,10 @@ public class LehmerRandom {
     return this;
   }
 
+  public LehmerRandom initWithDefault(){
+    return init(2147480677);
+  }
+
   public int random() {
     int hi = seed / Q;
     int lo = seed % Q;

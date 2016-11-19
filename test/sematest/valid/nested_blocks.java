@@ -17,7 +17,7 @@ class A {
                           {
                             {
                               System.out.println(a);
-                              System.out.println(this.a);
+                              System.out.println(new A().a);
                               {
                                 {
                                   {

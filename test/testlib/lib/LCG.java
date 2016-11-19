@@ -11,8 +11,11 @@ public class LCG {
   public int val;
 
   public LCG initWithDefault(){
-    init(2147483629, 2147483587, 2147483647);
-    return this;
+    return init(2147483629, 2147483587, 2147483647);
+  }
+
+  public LCG initWithDefault2(){
+    return init(2147480707, 2147480707, 2147482367);
   }
 
   public LCG init(int a_, int c_, int m_) {
@@ -41,5 +44,13 @@ public class LCG {
       System.out.println(abs(nextVal()));
     }
     /*System.out.println(-2147483648 / -1);*/
+  }
+
+  /**
+   * @param min minimum number
+   * @param max exclusive range end
+   */
+  public int nextRange(int min, int max){
+    return nextVal() % (max - min) + min;
   }
 }
