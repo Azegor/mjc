@@ -36,6 +36,9 @@ std::ostream &operator<<(std::ostream &o, const sem::Type &t) {
     return o << typeKindToString(t.kind) << "(" << t.name << ")";
   case sem::TypeKind::Array:
     o << typeKindToString(t.innerKind);
+    if (t.innerKind == sem::TypeKind::Class) {
+      o << "(" << t.name << ")";
+    }
     for (int i = 0; i < t.dimension; i++)
       o << "[]";
     return o;
