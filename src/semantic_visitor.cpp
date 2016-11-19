@@ -432,15 +432,22 @@ void SemanticVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
 void SemanticVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
   stmt.acceptChildren(this);
 
+  stmt.cfb = sem::ControlFlowBehavior::Return;
+
   if (currentMethod == nullptr) {
     error(stmt, "Return statement outside of Method");
   }
 
-  auto expr = stmt.getExpression();
-  if (expr == nullptr)
-    return;
-
   auto methodReturnType = this->currentMethod->getReturnType()->getSemaType();
+
+  auto expr = stmt.getExpression();
+  if (expr == nullptr) {
+    if (methodReturnType.isVoid()) {
+      return;
+    } else {
+      error(stmt, "Non-Void methods must return a value");
+    }
+  }
 
   if (expr->targetType != methodReturnType) {
     std::stringstream ss;
@@ -449,7 +456,6 @@ void SemanticVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
     error(*expr, ss.str());
   }
 
-  stmt.cfb = sem::ControlFlowBehavior::Return;
 }
 
 void SemanticVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
