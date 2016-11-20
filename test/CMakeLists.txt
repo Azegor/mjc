@@ -166,7 +166,7 @@ get_filename_component(dirname "${file}" PATH)
     COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/preprocess.sh"
     ARGS "${CMAKE_CURRENT_SOURCE_DIR}/${file}" "${CMAKE_CURRENT_SOURCE_DIR}/testlib" "${file}"
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${file}"
-    DEPENDS "${stdlib_files}"
+    DEPENDS ${stdlib_files}
     OUTPUT "${file}"
   )
   # HACK: can't add dependencies to tests, sp just always preprocess them in `make all`
