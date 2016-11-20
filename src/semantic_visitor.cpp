@@ -283,9 +283,10 @@ void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
   if (!lhsType.isClass()) {
     error(access, "Left hand side of field access must be class type object");
   }
-  auto &fieldName = lhsType.name;
-  auto cls = findClassByName(fieldName);
+
+  auto cls = findClassByName(lhsType.name);
   assert(cls);
+  auto &fieldName = access.getName();
   auto field = findFieldInClass(cls, fieldName);
   if (!field) {
     error(access,
