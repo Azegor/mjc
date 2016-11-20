@@ -11,7 +11,7 @@ class SemanticVisitor : public ast::Visitor {
   ast::Program *currentProgram = nullptr;
   ast::Class *currentClass = nullptr;
   ast::Method *currentMethod = nullptr;
-  bool mainMethodFound = false;
+  int mainMethodCount = 0;
   SymbolTable::SymbolTable symTbl;
 
   static ast::DummyDefinition dummySystem;

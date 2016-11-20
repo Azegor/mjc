@@ -12,8 +12,11 @@ void SemanticVisitor::visitProgram(ast::Program &program) {
   }
   program.acceptChildren(this);
 
-  if (!this->mainMethodFound) {
+  if (this->mainMethodCount == 0) {
     error(program, "Program does not contain a valid main method");
+  }
+  if (this->mainMethodCount > 1) {
+    error(program, "Program contains more than one main method");
   }
 }
 
@@ -47,7 +50,7 @@ void SemanticVisitor::visitMainMethod(ast::MainMethod &mm) {
   currentMethod = nullptr;
 
   if (mm.getName() == "main") {
-    this->mainMethodFound = true;
+    this->mainMethodCount += 1;
   }
   // INFO: check for >1 "main"-methods already done in visitMainMethodList
 }
