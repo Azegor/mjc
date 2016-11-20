@@ -293,6 +293,7 @@ void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
           "Unknown field " + access.getName() + " in class " + fieldName);
   }
   access.setDef(field);
+  access.targetType = field->getType()->getSemaType();
 }
 
 void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
