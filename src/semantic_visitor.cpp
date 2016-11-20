@@ -21,6 +21,15 @@ void SemanticVisitor::visitProgram(ast::Program &program) {
 }
 
 void SemanticVisitor::visitClass(ast::Class &klass) {
+  auto &methods = klass.getMethods()->methods;
+  auto &mainMethods = klass.getMainMethods()->mainMethods;
+  auto intersect = sortedListsFirstIntersection(
+      methods.begin(), methods.end(), mainMethods.begin(), mainMethods.end());
+  if (intersect.first) {
+    error(**(intersect.second), "duplicate definition of method '" +
+                                    (*intersect.second)->getName() + "'");
+  }
+
   currentClass = &klass;
   klass.acceptChildren(this);
 }

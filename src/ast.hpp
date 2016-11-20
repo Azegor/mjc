@@ -561,6 +561,9 @@ class Method : public Node {
 public:
   Method(SourceLocation loc) : Node(loc) {}
   virtual Type *getReturnType() const = 0;
+  virtual const std::string &getName() const = 0;
+
+  bool operator<(const Method &o) const { return getName() < o.getName(); }
 };
 
 class RegularMethod : public Method {
@@ -577,7 +580,7 @@ public:
         name(std::move(name)), parameters(std::move(parameters)),
         block(std::move(block)) {}
 
-  const std::string &getName() const { return name; }
+  const std::string &getName() const override { return name; }
   Type *getReturnType() const override { return returnType.get(); }
   Block *getBlock() const { return block.get(); }
 
@@ -589,11 +592,9 @@ public:
     return result;
   }
 
-  bool operator<(const RegularMethod &other) const {
-    return name < other.name;
-    // TODO include parameters
+  bool operator==(const RegularMethod &other) const {
+    return name == other.name;
   }
-  bool operator==(const RegularMethod &o) const { return name == o.name; }
 
   void accept(Visitor *visitor) override { visitor->visitRegularMethod(*this); }
 
@@ -621,7 +622,7 @@ public:
   void accept(Visitor *visitor) override { visitor->visitMainMethod(*this); }
   void acceptChildren(Visitor *visitor) override { block->accept(visitor); }
 
-  const std::string &getName() const { return name; }
+  const std::string &getName() const override { return name; }
   Type *getReturnType() const override {
     static PrimitiveType type({}, PrimitiveType::PrimType::Void);
     return &type;
@@ -629,10 +630,6 @@ public:
   const std::string &getArgName() const { return argSymbol.name; }
   SymbolTable::Symbol &getArgSymbol() const { return argSymbol; }
   Block *getBlock() const { return block.get(); }
-  bool operator<(const MainMethod &other) const {
-    return name < other.name;
-    // TODO include parameters
-  }
   bool operator==(const MainMethod &o) const { return name == o.name; }
 };
 using MainMethodPtr = std::unique_ptr<MainMethod>;
@@ -719,6 +716,7 @@ public:
 
   const FieldList *getFields() const { return &fields; }
   const MethodList *getMethods() const { return &methods; }
+  const MainMethodList *getMainMethods() const { return &mainMethods; }
 
   const std::string &getName() const { return name; }
 
