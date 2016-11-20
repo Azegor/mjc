@@ -87,7 +87,7 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
       decl.getInitializer()->targetType != decl.getType()->getSemaType()) {
     std::stringstream ss;
     ss << "Can't assign from " << decl.getInitializer()->targetType << " to "
-       << "umm"; // TODO: Write toStr() or stream op for ast::Type variants
+       << decl.getType()->getSemaType();
     error(decl, ss.str());
   }
 
