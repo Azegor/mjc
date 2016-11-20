@@ -31,7 +31,9 @@ void SemanticVisitor::visitClass(ast::Class &klass) {
   }
 
   currentClass = &klass;
+  symTbl.enterScope(); // for the fields
   klass.acceptChildren(this);
+  symTbl.leaveScope(); // for the fields
 }
 
 void SemanticVisitor::visitFieldList(ast::FieldList &fieldList) {
