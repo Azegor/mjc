@@ -154,6 +154,7 @@ MESSAGE(STATUS "  Added ${Count} invalid semantic tests")
 
 set(Count 0)
 file(GLOB lexer_input_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/exec/*.java")
+file(GLOB_RECURSE stdlib_files "${CMAKE_CURRENT_SOURCE_DIR}/testlib/*.java")
 foreach(file ${lexer_input_files})
   math(EXPR Count "${Count} + 1")
 #   MESSAGE(STATUS "Parser test file: ${file}")
@@ -165,6 +166,7 @@ get_filename_component(dirname "${file}" DIRECTORY)
     COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/preprocess.sh"
     ARGS "${CMAKE_CURRENT_SOURCE_DIR}/${file}" "${CMAKE_CURRENT_SOURCE_DIR}/testlib" "${file}"
     DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${file}"
+    DEPENDS "${stdlib_files}"
     OUTPUT "${file}"
   )
   # HACK: can't add dependencies to tests, sp just always preprocess them in `make all`
