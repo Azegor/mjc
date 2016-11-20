@@ -13,10 +13,10 @@ void SemanticVisitor::visitProgram(ast::Program &program) {
   program.acceptChildren(this);
 
   if (this->mainMethodCount == 0) {
-    error(program, "Program does not contain a valid main method");
+    error(program, "Program does not contain a valid main method", true);
   }
   if (this->mainMethodCount > 1) {
-    error(program, "Program contains more than one main method");
+    error(program, "Program contains more than one main method", true);
   }
 }
 

@@ -49,13 +49,17 @@ void Parser::parseAndDotAst() {
 
 ast::ProgramPtr Parser::parseProgram() {
   std::vector<ast::ClassPtr> classes;
+  auto startPos = curTok.startPos();
   while (true) {
     switch (curTok.type) {
     case TT::Class:
       classes.emplace_back(parseClassDeclaration());
       break;
-    case TT::Eof:
-      return ast::make_Ptr<ast::Program>(SourceLocation{}, std::move(classes));
+    case TT::Eof: {
+      auto endPos = curTok.startPos();
+      return ast::make_Ptr<ast::Program>({startPos, endPos},
+                                         std::move(classes));
+    }
     default:
       errorExpectedAnyOf({TT::Class, TT::Eof});
       break;
