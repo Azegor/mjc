@@ -230,8 +230,8 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
     if (dynamic_cast<ast::LiteralExpression *>(left)) {
       error(*left, "Left hand side of assignment cannot be a literal");
     }
-    if (dynamic_cast<ast::MethodInvocation *>(left)) {
-      error(*left, "Left hand side of assignment cannot a method invocation");
+    if (dynamic_cast<ast::RValueExpression *>(left)) {
+      error(*left, "Left hand side of assignment cannot a an rvalue");
     }
     if (!(left->targetType >= right->targetType)) {
       std::stringstream ss;

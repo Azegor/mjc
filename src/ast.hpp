@@ -293,6 +293,12 @@ public:
 protected:
   Expression(SourceLocation loc) : Node(std::move(loc)) {}
 };
+
+class RValueExpression : public Expression {
+public:
+  RValueExpression(SourceLocation loc) : Expression(loc) {}
+};
+
 using ExprPtr = std::unique_ptr<Expression>;
 using ExprList = std::vector<ExprPtr>;
 
@@ -874,7 +880,7 @@ public:
   SymbolTable::Definition *getDef() const { return definition; }
 };
 
-class MethodInvocation : public Expression {
+class MethodInvocation : public RValueExpression {
   ExprPtr left; // set to this if call from within function
   std::string name;
   // might be empty
@@ -884,7 +890,7 @@ class MethodInvocation : public Expression {
 public:
   MethodInvocation(SourceLocation loc, ExprPtr lhs, std::string methodName,
                    ExprList methodArgs)
-      : Expression(std::move(loc)), left(std::move(lhs)),
+      : RValueExpression(std::move(loc)), left(std::move(lhs)),
         name(std::move(methodName)), arguments(std::move(methodArgs)) {}
 
   void accept(Visitor *visitor) override {
@@ -958,7 +964,7 @@ public:
   Expression *getIndex() const { return index.get(); }
 };
 
-class BinaryExpression : public Expression {
+class BinaryExpression : public RValueExpression {
 
 public:
   enum class Op {
@@ -986,7 +992,7 @@ private:
 
 public:
   BinaryExpression(SourceLocation loc, ExprPtr lhs, ExprPtr rhs, Op op)
-      : Expression(std::move(loc)), left(std::move(lhs)), right(std::move(rhs)),
+      : RValueExpression(std::move(loc)), left(std::move(lhs)), right(std::move(rhs)),
         operation(op) {}
 
   static Op getOpForToken(Token::Type t) {
@@ -1038,7 +1044,7 @@ public:
   Op getOperation() const { return operation; }
 };
 
-class UnaryExpression : public Expression {
+class UnaryExpression : public RValueExpression {
 public:
   enum class Op { Not, Neg, None };
 
@@ -1048,7 +1054,7 @@ private:
 
 public:
   UnaryExpression(SourceLocation loc, ExprPtr expression, Op operation)
-      : Expression(std::move(loc)), expression(std::move(expression)),
+      : RValueExpression(std::move(loc)), expression(std::move(expression)),
         operation(operation) {}
 
   static Op getOpForToken(Token::Type t) {
