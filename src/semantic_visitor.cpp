@@ -309,15 +309,15 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
       error(invocation,
             "invalid method call '" + invocation.getName() + "' on 'System'");
     }
-    auto defType = def->getType();
-    if (auto cl = dynamic_cast<ast::ClassType *>(defType)) {
-      auto *classDef = findClassByName(cl->getName());
+    auto defSemaType = def->getType()->getSemaType();
+    if (defSemaType.kind == sem::TypeKind::Class) {
+      auto *classDef = findClassByName(defSemaType.name);
       assert(classDef != nullptr);
 
       ast::RegularMethod *method =
           findMethodInClass(classDef, invocation.getName());
       if (method == nullptr) {
-        error(invocation, "Class " + cl->getName() +
+        error(invocation, "Class " + defSemaType.name +
                               " does not contain a method " +
                               invocation.getName());
       }
