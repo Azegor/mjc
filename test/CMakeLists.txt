@@ -158,7 +158,7 @@ file(GLOB_RECURSE stdlib_files "${CMAKE_CURRENT_SOURCE_DIR}/testlib/*.java")
 foreach(file ${lexer_input_files})
   math(EXPR Count "${Count} + 1")
 #   MESSAGE(STATUS "Parser test file: ${file}")
-get_filename_component(dirname "${file}" DIRECTORY)
+get_filename_component(dirname "${file}" PATH)
   add_custom_command(
     PRE_BUILD
     COMMAND "mkdir"
