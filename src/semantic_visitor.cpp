@@ -392,7 +392,7 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     std::stringstream msg;
     msg << "invalid number of arguments: expected " << methodParams.size()
         << " but have " << invocArgs.size();
-    error(invocation, msg.str());
+    error(invocation.getArgumentsLoc(), msg.str());
   }
   for (size_t i = 0; i < methodParams.size(); ++i) {
     if (!(methodParams[i]->getType()->getSemaType() >=

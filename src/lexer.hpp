@@ -56,7 +56,7 @@ struct TokenPos {
 };
 
 struct SourceLocation {
-  const TokenPos startToken, endToken;
+  TokenPos startToken, endToken;
   SourceLocation() = default;
   SourceLocation(TokenPos start, TokenPos end)
       : startToken(start), endToken(end) {}

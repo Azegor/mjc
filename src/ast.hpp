@@ -907,6 +907,18 @@ public:
     return result;
   }
 
+  SourceLocation getArgumentsLoc() {
+    SourceLocation loc;
+    if (arguments.size() > 0) {
+      loc.startToken = arguments[0]->getLoc().startToken;
+      loc.endToken = arguments.back()->getLoc().endToken;
+    } else {
+      loc.startToken = location.endToken;
+      loc.endToken = location.endToken;
+    }
+    return loc;
+  }
+
   Expression *getLeft() const { return left.get(); }
   const std::string &getName() const { return name; }
 
