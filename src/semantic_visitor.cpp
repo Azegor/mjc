@@ -174,7 +174,11 @@ void SemanticVisitor::visitThisLiteral(ast::ThisLiteral &lit) {
   if (currentClass == nullptr) {
     error(lit, "'this' can't be used outside of classes");
   }
-  lit.targetType.setClass(this->currentClass->getName());
+  if (dynamic_cast<ast::RegularMethod *>(currentMethod)) {
+    lit.targetType.setClass(this->currentClass->getName());
+  } else {
+    error(lit, "Cannot access class members in static method");
+  }
 }
 
 void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
@@ -283,15 +287,17 @@ void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
   if (!lhsType.isClass()) {
     error(access, "Left hand side of field access must be class type object");
   }
-  auto &fieldName = lhsType.name;
-  auto cls = findClassByName(fieldName);
+
+  auto cls = findClassByName(lhsType.name);
   assert(cls);
+  auto &fieldName = access.getName();
   auto field = findFieldInClass(cls, fieldName);
   if (!field) {
     error(access,
           "Unknown field " + access.getName() + " in class " + fieldName);
   }
   access.setDef(field);
+  access.targetType = field->getType()->getSemaType();
 }
 
 void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
