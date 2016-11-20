@@ -440,7 +440,7 @@ void SemanticVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
     }
   }
 
-  if (!(expr->targetType >= methodReturnType)) {
+  if (!(methodReturnType >= expr->targetType)) {
     std::stringstream ss;
     ss << "Can't return expression of type '" << expr->targetType
        << "' from method with return type '" << methodReturnType << "'";
