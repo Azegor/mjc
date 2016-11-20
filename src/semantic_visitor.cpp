@@ -84,7 +84,7 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
   decl.acceptChildren(this);
 
   if (decl.getInitializer() != nullptr &&
-      decl.getInitializer()->targetType != decl.getType()->getSemaType()) {
+      !(decl.getType()->getSemaType() >= decl.getInitializer()->targetType)) {
     std::stringstream ss;
     ss << "Can't assign from " << decl.getInitializer()->targetType << " to "
        << decl.getType()->getSemaType();
@@ -218,7 +218,7 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
     break;
 
   case ast::BinaryExpression::Op::Assign:
-    if (left->targetType != right->targetType) {
+    if (!(left->targetType >= right->targetType)) {
       std::stringstream ss;
       ss << "Can't assign value of type " << right->targetType
          << " to variable of type " << left->targetType;
@@ -229,20 +229,14 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
 
   case ast::BinaryExpression::Op::Equals:
   case ast::BinaryExpression::Op::NotEquals:
-    if (left->targetType != right->targetType) {
-      // class types of different classes can still be compared
-      if ((left->targetType.isClass() && right->targetType.isNull()) ||
-          (left->targetType.isNull() && right->targetType.isClass())) {
-        // Fine.
-        expr.targetType.setBool();
-      } else {
-        std::stringstream ss;
-        ss << "Can't compare expression of type '" << left->targetType
-           << "' to expression of type '" << right->targetType << "'";
-        error(expr, ss.str());
-      }
-    } else {
+    if (left->targetType >= right->targetType ||
+        right->targetType >= left->targetType) {
       expr.targetType.setBool();
+    } else {
+      std::stringstream ss;
+      ss << "Can't compare expression of type '" << left->targetType
+         << "' to expression of type '" << right->targetType << "'";
+      error(expr, ss.str());
     }
     break;
 
@@ -377,7 +371,8 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     error(invocation, msg.str());
   }
   for (size_t i = 0; i < methodParams.size(); ++i) {
-    if (methodParams[i]->getType()->getSemaType() != invocArgs[i]->targetType) {
+    if (!(methodParams[i]->getType()->getSemaType() >=
+          invocArgs[i]->targetType)) {
       std::stringstream msg;
       msg << "Invalid Argument type. Expected "
           << methodParams[i]->getType()->getSemaType() << " but have "
@@ -448,7 +443,7 @@ void SemanticVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
     }
   }
 
-  if (expr->targetType != methodReturnType) {
+  if (!(expr->targetType >= methodReturnType)) {
     std::stringstream ss;
     ss << "Can't return expression of type '" << expr->targetType
        << "' from method with return type '" << methodReturnType << "'";

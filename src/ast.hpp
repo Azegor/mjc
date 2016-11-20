@@ -95,6 +95,17 @@ struct Type {
       return this->kind == other.kind;
     }
   }
+  bool operator>=(const sem::Type &other) const {
+    switch (this->kind) {
+    case TypeKind::Class:
+    case TypeKind::Array:
+      if (other.kind == TypeKind::Null) {
+        return true;
+      }
+    default:
+      return *this == other;
+    }
+  }
   bool operator!=(const sem::Type &other) const { return !(*this == other); }
 };
 
