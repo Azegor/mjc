@@ -421,11 +421,8 @@ void SemanticVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
     error(*stmt.getCondition(), ss.str());
   }
 
-  if (stmt.getStatement()) {
-    stmt.cfb = stmt.getStatement()->cfb;
-  } else {
-    stmt.cfb = sem::ControlFlowBehavior::MayContinue;
-  }
+  // condition might be false -> ignore content of while block
+  stmt.cfb = sem::ControlFlowBehavior::MayContinue;
 }
 
 void SemanticVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
