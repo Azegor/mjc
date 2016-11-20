@@ -94,18 +94,10 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
   }
 
   // Filter out void types
-  if (auto t = dynamic_cast<ast::PrimitiveType *>(decl.getType())) {
-    if (t->getPrimType() == ast::PrimitiveType::PrimType::Void) {
-      error(decl, "'void' is not a valid type in this context");
-    }
-  } else if (auto t = dynamic_cast<ast::ArrayType *>(decl.getType())) {
-    // void[] types are not allowed either
-    auto elementType = t->getElementType();
-    if (auto p = dynamic_cast<ast::PrimitiveType *>(elementType)) {
-      if (p->getPrimType() == ast::PrimitiveType::PrimType::Void) {
-        error(decl, "'void' is not a valid type in this context");
-      }
-    }
+  auto semaType = decl.getType()->getSemaType();
+  if (semaType.isVoid() ||
+      (semaType.isArray() && semaType.innerKind == sem::TypeKind::Void)) {
+    error(decl, "Variable cannot be of type 'void'");
   }
 
   auto &sym = decl.getSymbol();
@@ -143,6 +135,14 @@ void SemanticVisitor::visitParameter(ast::Parameter &param) {
   if (symTbl.isDefinedInCurrentScope(sym)) {
     error(param, "Parameter '" + param.getSymbol().name + "' already defined");
   }
+
+  // Filter out void types
+  auto semaType = param.getType()->getSemaType();
+if (semaType.isVoid() ||
+      (semaType.isArray() && semaType.innerKind == sem::TypeKind::Void)) {
+    error(param, "Parameter cannot be of type 'void'");
+  }
+
   symTbl.insert(sym, &param);
 }
 
@@ -503,9 +503,10 @@ void SemanticVisitor::visitArrayAccess(ast::ArrayAccess &access) {
 void SemanticVisitor::visitField(ast::Field &field) {
   field.acceptChildren(this);
 
-  if (auto t = dynamic_cast<ast::PrimitiveType *>(field.getType())) {
-    if (t->getPrimType() == ast::PrimitiveType::PrimType::Void) {
-      error(*t, "'void' is not a valid type in this context");
-    }
+  // Filter out void types
+  auto semaType = field.getType()->getSemaType();
+  if (semaType.isVoid() ||
+      (semaType.isArray() && semaType.innerKind == sem::TypeKind::Void)) {
+    error(field, "Parameter cannot be of type 'void'");
   }
 }
