@@ -134,7 +134,7 @@ ast::MainMethodPtr Parser::parseMainMethod() {
   auto block = parseBlock();
   return ast::make_Ptr<ast::MainMethod>({startPos, curTok.endPos()},
                                         std::move(methodName),
-                                        std::move(paramName), std::move(block));
+                                        strTbl.findOrInsert(paramName), std::move(block));
 }
 
 void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,

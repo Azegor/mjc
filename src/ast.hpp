@@ -603,14 +603,14 @@ using RegularMethodPtr = std::unique_ptr<RegularMethod>;
 
 class MainMethod : public Method {
   std::string name;
-  std::string argName;
+  SymbolTable::Symbol &argSymbol;
   BlockPtr block;
 
 public:
-  MainMethod(SourceLocation loc, std::string name, std::string argName,
+  MainMethod(SourceLocation loc, std::string name, SymbolTable::Symbol &argName,
              BlockPtr block)
-      : Method(std::move(loc)), name(std::move(name)),
-        argName(std::move(argName)), block(std::move(block)) {}
+      : Method(std::move(loc)), name(std::move(name)), argSymbol(argName),
+        block(std::move(block)) {}
 
   void accept(Visitor *visitor) override { visitor->visitMainMethod(*this); }
   void acceptChildren(Visitor *visitor) override { block->accept(visitor); }
@@ -620,7 +620,8 @@ public:
     static PrimitiveType type({}, PrimitiveType::PrimType::Void);
     return &type;
   }
-  const std::string &getArgName() const { return argName; }
+  const std::string &getArgName() const { return argSymbol.name; }
+  SymbolTable::Symbol &getArgSymbol() const { return argSymbol; }
   Block *getBlock() const { return block.get(); }
   bool operator<(const MainMethod &other) const {
     return name < other.name;
@@ -1068,7 +1069,7 @@ public:
 
 // ----
 
-class DummySystem : public SymbolTable::Definition {
+class DummyDefinition : public SymbolTable::Definition {
   static SymbolTable::Symbol dummySymbol;
 
 public:

@@ -1,7 +1,8 @@
 #include "semantic_visitor.hpp"
 
-ast::DummySystem SemanticVisitor::dummySystem;
+ast::DummyDefinition SemanticVisitor::dummySystem;
 ast::DummySystemOut SemanticVisitor::dummySystemOut;
+ast::DummyDefinition SemanticVisitor::dummyMainArgDef;
 
 void SemanticVisitor::visitProgram(ast::Program &program) {
   currentProgram = &program;
@@ -41,6 +42,7 @@ void SemanticVisitor::visitMainMethodList(ast::MainMethodList &mainMethodList) {
 
 void SemanticVisitor::visitMainMethod(ast::MainMethod &mm) {
   currentMethod = &mm;
+  symTbl.insert(mm.getArgSymbol(), &dummyMainArgDef);
   mm.acceptChildren(this);
   currentMethod = nullptr;
 
@@ -127,6 +129,9 @@ void SemanticVisitor::visitVarRef(ast::VarRef &varRef) {
       error(varRef, "Unknown variable '" + varRef.getSymbol().name + "'");
     }
   } else {
+    if (def == &dummyMainArgDef) {
+      error(varRef, "Access to parameter of main method is forbidden");
+    }
     varRef.targetType = def->getType()->getSemaType();
   }
   varRef.setDef(def);

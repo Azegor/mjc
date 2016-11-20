@@ -1,6 +1,6 @@
 #include "ast.hpp"
 
-SymbolTable::Symbol ast::DummySystem::dummySymbol("System");
+SymbolTable::Symbol ast::DummyDefinition::dummySymbol("<Dummy>");
 SymbolTable::Symbol ast::DummySystemOut::dummySymbol("System.out");
 
 static const char *typeKindToString(sem::TypeKind kind) {

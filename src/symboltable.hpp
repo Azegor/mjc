@@ -33,7 +33,7 @@
 
 namespace ast {
 class Type;
-class DummySystem;
+class DummyDefinition;
 class DummySystemOut;
 }
 
@@ -56,7 +56,7 @@ class Symbol {
   Scope *currentScope = nullptr;
   Definition *currentDef = nullptr;
   explicit Symbol(std::string name) : name(std::move(name)) {}
-  friend class ast::DummySystem;
+  friend class ast::DummyDefinition;
   friend class ast::DummySystemOut;
 
 public:
