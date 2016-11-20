@@ -51,7 +51,7 @@ public:
     cl_out << co::mode(co::bold) << filename << ':' << srcLoc.startToken.line
            << ':' << srcLoc.startToken.col << ": " << co::color(co::red)
            << "error: " << co::reset << message << std::endl;
-    srcLoc.writeErrorLineHighlight(out, errorLine);
+    srcLoc.writeErrorLineHighlight(out, errorLine, false);
   }
 };
 

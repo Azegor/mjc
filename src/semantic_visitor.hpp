@@ -125,14 +125,16 @@ private:
   [[noreturn]] void error(const ast::Node &node, std::string msg,
                           bool reportAtScopeEnd = false) {
     auto &loc = node.getLoc();
+    auto &errorToken = reportAtScopeEnd ? loc.endToken : loc.startToken;
     throw ast::SemanticError(loc, lexer.getFilename(), std::move(msg),
-                        lexer.getCurrentLineFromInput(loc.startToken.line),
+                        lexer.getCurrentLineFromInput(errorToken.line),
                         reportAtScopeEnd);
   }
   [[noreturn]] void error(SourceLocation loc, std::string msg,
                           bool reportAtScopeEnd = false) {
+    auto &errorToken = reportAtScopeEnd ? loc.endToken : loc.startToken;
     throw ast::SemanticError(loc, lexer.getFilename(), std::move(msg),
-                        lexer.getCurrentLineFromInput(loc.startToken.line),
+                        lexer.getCurrentLineFromInput(errorToken.line),
                         reportAtScopeEnd);
   }
 };

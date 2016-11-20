@@ -73,9 +73,11 @@ struct SourceLocation {
     return "between token " + startToken.toStr() + " and " + endToken.toStr();
   }
 
-  void writeErrorLineHighlight(std::ostream &out, const std::string errorLine) const {
+  void writeErrorLineHighlight(std::ostream &out, const std::string errorLine,
+                               bool highlightEndToken) const {
     co::color_ostream<std::ostream> cl_out(out);
-    size_t highlightStart = startToken.col - 1;
+    size_t highlightStart =
+        highlightEndToken ? (endToken.col - 1) : (startToken.col - 1);
     size_t highlightEnd = endToken.col - 1;
     if (errorLine.length() > Consts::maxErrorLineLength) {
       size_t offset = std::min(highlightStart,
@@ -380,7 +382,7 @@ public:
     }
   }
 
-  const std::string& getFilename() const { return filename; }
+  const std::string &getFilename() const { return filename; }
 
   static bool tokenNameNeedsQuotes(Token::Type type);
   static const char *getTokenName(Token::Type type);
