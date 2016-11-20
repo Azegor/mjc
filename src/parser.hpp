@@ -51,40 +51,7 @@ public:
     cl_out << co::mode(co::bold) << filename << ':' << srcLoc.startToken.line
            << ':' << srcLoc.startToken.col << ": " << co::color(co::red)
            << "error: " << co::reset << message << std::endl;
-    writeErrorLineHighlight(out);
-  }
-  void writeErrorLineHighlight(std::ostream &out) const {
-    co::color_ostream<std::ostream> cl_out(out);
-    size_t highlightStart = srcLoc.startToken.col - 1;
-    size_t highlightEnd = srcLoc.endToken.col - 1;
-    if (errorLine.length() > Consts::maxErrorLineLength) {
-      size_t offset = std::min(highlightStart,
-                               errorLine.length() - Consts::maxErrorLineLength);
-      // -1 because of leading ellipsis
-      if (offset > 0) {
-        highlightStart -= (offset - 1);
-      }
-      highlightEnd =
-          std::min(highlightEnd - (offset - 1), Consts::maxErrorLineLength - 2);
-      cl_out << truncatedErrorLine(errorLine, offset,
-                                   Consts::maxErrorLineLength)
-             << std::endl;
-    } else {
-      cl_out << errorLine << std::endl;
-    }
-    cl_out << co::color(co::green);
-
-    for (size_t i = 0; i < highlightStart; ++i) {
-      cl_out << '~';
-    }
-    if (srcLoc.startToken.line == srcLoc.endToken.line) {
-      for (size_t i = highlightStart; i <= highlightEnd; ++i) {
-        cl_out << co::mode(co::bold) << '^';
-      }
-    } else {
-      cl_out << co::mode(co::bold) << '^';
-    }
-    cl_out << std::endl;
+    srcLoc.writeErrorLineHighlight(out, errorLine);
   }
 };
 
@@ -113,6 +80,8 @@ public:
   void parseAndDotAst();
 
   ast::ProgramPtr parseProgram();
+
+  Lexer& getLexer() { return lexer; }
 
 private:
   void readExpect(Token::Type ttype) {

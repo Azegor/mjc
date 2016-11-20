@@ -193,12 +193,14 @@ using ClassPtr = std::unique_ptr<Class>;
 class SemanticError : public CompilerError {
 public:
   const SourceLocation srcLoc;
-  const std::string filename, message;
+  const std::string filename, message, errorLine;
   const bool reportAtScopeEnd;
   SemanticError(SourceLocation srcLoc, std::string filename,
-                std::string message, bool reportAtScopeEnd)
+                std::string message, std::string errorLine,
+                bool reportAtScopeEnd)
       : srcLoc(std::move(srcLoc)), filename(std::move(filename)),
-        message(std::move(message)), reportAtScopeEnd(reportAtScopeEnd) {}
+        message(std::move(message)), errorLine(std::move(errorLine)),
+        reportAtScopeEnd(reportAtScopeEnd) {}
   const char *what() const noexcept override { return message.c_str(); }
 
   virtual void writeErrorMessage(std::ostream &out) const override {
@@ -207,15 +209,12 @@ public:
     cl_out << co::mode(co::bold) << filename << ':' << reportToken.line << ':'
            << reportToken.col << ": " << co::color(co::red)
            << "error: " << co::reset << message << std::endl;
-    //     writeErrorLineHighlight(out);
+    srcLoc.writeErrorLineHighlight(out, errorLine);
   }
 };
 
 class Visitor {
-  std::string fileName;
-
 public:
-  Visitor(std::string fileName) : fileName(std::move(fileName)) {}
   virtual ~Visitor() {}
   virtual void visitProgram(Program &program);
   virtual void visitClass(Class &klass);
@@ -249,17 +248,6 @@ public:
   virtual void visitArrayAccess(ArrayAccess &arrayAccess);
   virtual void visitBinaryExpression(BinaryExpression &binaryExpression);
   virtual void visitUnaryExpression(UnaryExpression &unaryExpression);
-
-protected:
-  [[noreturn]] void error(const ast::Node &node, std::string msg,
-                          bool reportAtScopeEnd = false) {
-    throw SemanticError(node.getLoc(), fileName, std::move(msg),
-                        reportAtScopeEnd);
-  }
-  [[noreturn]] void error(SourceLocation loc, std::string msg,
-                          bool reportAtScopeEnd = false) {
-    throw SemanticError(loc, fileName, std::move(msg), reportAtScopeEnd);
-  }
 };
 
 class Type : public Node {

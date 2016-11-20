@@ -71,7 +71,7 @@ class Compiler {
   void checkOptions();
   bool sanityChecks();
 
-  void analyzeAstSemantic(ast::Program *astRoot);
+  void analyzeAstSemantic(ast::Program *astRoot, Lexer& lexer);
 
 public:
   Compiler(InputFile inputFile, CompilerOptions &opt)

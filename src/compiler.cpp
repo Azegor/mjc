@@ -129,7 +129,7 @@ int Compiler::checkSemantic() {
   Parser parser{inputFile, strTbl};
   try {
     auto ast = parser.parseProgram();
-    analyzeAstSemantic(ast.get());
+    analyzeAstSemantic(ast.get(), parser.getLexer());
     return EXIT_SUCCESS;
   } catch (CompilerError &e) {
     e.writeErrorMessage(std::cerr);
@@ -142,7 +142,7 @@ int Compiler::fuzzSemantic() {
   Parser parser{inputFile, strTbl};
   try {
     auto ast = parser.parseProgram();
-    analyzeAstSemantic(ast.get());
+    analyzeAstSemantic(ast.get(), parser.getLexer());
     return EXIT_SUCCESS;
   } catch (CompilerError &e) {
     // don't print error message
@@ -155,7 +155,7 @@ int Compiler::attrAstDot() {
   Parser parser{inputFile, strTbl};
   try {
     auto ast = parser.parseProgram();
-    analyzeAstSemantic(ast.get());
+    analyzeAstSemantic(ast.get(), parser.getLexer());
     DotVisitor dotVisitor{std::cout};
     ast->accept(&dotVisitor);
     return EXIT_SUCCESS;
@@ -165,8 +165,8 @@ int Compiler::attrAstDot() {
   }
 }
 
-void Compiler::analyzeAstSemantic(ast::Program *astRoot) {
-  SemanticVisitor semantic_visitor(inputFile.getFilename());
+void Compiler::analyzeAstSemantic(ast::Program *astRoot, Lexer& lexer) {
+  SemanticVisitor semantic_visitor(lexer);
   astRoot->accept(&semantic_visitor);
 }
 

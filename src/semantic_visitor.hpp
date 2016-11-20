@@ -77,8 +77,10 @@ class SemanticVisitor : public ast::Visitor {
     return {false, {}};
   }
 
+  Lexer &lexer;
+
 public:
-  SemanticVisitor(std::string fileName) : Visitor(std::move(fileName)) {}
+  SemanticVisitor(Lexer &lexer) : lexer(lexer) {}
   void visitProgram(ast::Program &program) override;
   void visitClass(ast::Class &klass) override;
   void visitFieldList(ast::FieldList &fieldList) override;
@@ -118,6 +120,20 @@ private:
       error(**++firstDuplicate, "invalid duplicate definition of field");
       // first defition is at **firstDuplicate
     }
+  }
+
+  [[noreturn]] void error(const ast::Node &node, std::string msg,
+                          bool reportAtScopeEnd = false) {
+    auto &loc = node.getLoc();
+    throw ast::SemanticError(loc, lexer.getFilename(), std::move(msg),
+                        lexer.getCurrentLineFromInput(loc.startToken.line),
+                        reportAtScopeEnd);
+  }
+  [[noreturn]] void error(SourceLocation loc, std::string msg,
+                          bool reportAtScopeEnd = false) {
+    throw ast::SemanticError(loc, lexer.getFilename(), std::move(msg),
+                        lexer.getCurrentLineFromInput(loc.startToken.line),
+                        reportAtScopeEnd);
   }
 };
 

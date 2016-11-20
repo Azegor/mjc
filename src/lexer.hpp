@@ -72,6 +72,40 @@ struct SourceLocation {
       return "at token " + startToken.toStr() + "->" + endToken.toStr();
     return "between token " + startToken.toStr() + " and " + endToken.toStr();
   }
+
+  void writeErrorLineHighlight(std::ostream &out, const std::string errorLine) const {
+    co::color_ostream<std::ostream> cl_out(out);
+    size_t highlightStart = startToken.col - 1;
+    size_t highlightEnd = endToken.col - 1;
+    if (errorLine.length() > Consts::maxErrorLineLength) {
+      size_t offset = std::min(highlightStart,
+                               errorLine.length() - Consts::maxErrorLineLength);
+      // -1 because of leading ellipsis
+      if (offset > 0) {
+        highlightStart -= (offset - 1);
+      }
+      highlightEnd =
+          std::min(highlightEnd - (offset - 1), Consts::maxErrorLineLength - 2);
+      cl_out << truncatedErrorLine(errorLine, offset,
+                                   Consts::maxErrorLineLength)
+             << std::endl;
+    } else {
+      cl_out << errorLine << std::endl;
+    }
+    cl_out << co::color(co::green);
+
+    for (size_t i = 0; i < highlightStart; ++i) {
+      cl_out << '~';
+    }
+    if (startToken.line == endToken.line) {
+      for (size_t i = highlightStart; i <= highlightEnd; ++i) {
+        cl_out << co::mode(co::bold) << '^';
+      }
+    } else {
+      cl_out << co::mode(co::bold) << '^';
+    }
+    cl_out << std::endl;
+  }
 };
 
 struct Token {
@@ -292,7 +326,7 @@ class Lexer {
   }
 
   [[noreturn]] void invalidCharError(int errorChar) {
-    if (std::isspace(errorChar) || std::isprint(errorChar)) {
+    if (std::isprint(errorChar)) {
       error("Invalid input character: '"s + (char)errorChar + "'");
     }
     std::stringstream invalidChar;
@@ -345,6 +379,8 @@ public:
       return peekAhead(numTokens);
     }
   }
+
+  const std::string& getFilename() const { return filename; }
 
   static bool tokenNameNeedsQuotes(Token::Type type);
   static const char *getTokenName(Token::Type type);
