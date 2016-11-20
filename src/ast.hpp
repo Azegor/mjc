@@ -812,40 +812,46 @@ public:
   void setDef(Class *def) { classDef = def; }
   Class *getDef() const { return classDef; }
 };
-class IntLiteral : public PrimaryExpression {
+
+class LiteralExpression : public PrimaryExpression {
+public:
+  LiteralExpression(SourceLocation loc) : PrimaryExpression(std::move(loc)) {}
+};
+
+class IntLiteral : public LiteralExpression {
   int32_t value;
 
 public:
   IntLiteral(SourceLocation loc, int32_t value)
-      : PrimaryExpression(std::move(loc)), value(value) {}
+      : LiteralExpression(std::move(loc)), value(value) {}
 
   void accept(Visitor *visitor) override { visitor->visitIntLiteral(*this); }
 
   int32_t getValue() const { return value; }
 };
 
-class BoolLiteral : public PrimaryExpression {
+class BoolLiteral : public LiteralExpression {
   bool value;
 
 public:
   BoolLiteral(SourceLocation loc, bool val)
-      : PrimaryExpression(std::move(loc)), value(val) {}
+      : LiteralExpression(std::move(loc)), value(val) {}
 
   void accept(Visitor *visitor) override { visitor->visitBoolLiteral(*this); }
 
   bool getValue() const { return value; }
 };
 
-class NullLiteral : public PrimaryExpression {
+class NullLiteral : public LiteralExpression {
 public:
-  NullLiteral(SourceLocation loc) : PrimaryExpression(std::move(loc)) {}
+  NullLiteral(SourceLocation loc) : LiteralExpression(std::move(loc)) {}
 
   void accept(Visitor *visitor) override { visitor->visitNullLiteral(*this); }
 };
 
-class ThisLiteral : public PrimaryExpression {
+class ThisLiteral : public LiteralExpression {
 public:
-  ThisLiteral(SourceLocation loc) : PrimaryExpression(std::move(loc)) {}
+  ThisLiteral(SourceLocation loc) : LiteralExpression(std::move(loc)) {}
 
   void accept(Visitor *visitor) override { visitor->visitThisLiteral(*this); }
 };

@@ -223,6 +223,9 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
     break;
 
   case ast::BinaryExpression::Op::Assign:
+    if (dynamic_cast<ast::LiteralExpression *>(left)) {
+      error(*left, "Left hand side of assignment cannot be a literal");
+    }
     if (!(left->targetType >= right->targetType)) {
       std::stringstream ss;
       ss << "Can't assign value of type " << right->targetType
