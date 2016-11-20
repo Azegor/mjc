@@ -174,7 +174,11 @@ void SemanticVisitor::visitThisLiteral(ast::ThisLiteral &lit) {
   if (currentClass == nullptr) {
     error(lit, "'this' can't be used outside of classes");
   }
-  lit.targetType.setClass(this->currentClass->getName());
+  if (dynamic_cast<ast::RegularMethod *>(currentMethod)) {
+    lit.targetType.setClass(this->currentClass->getName());
+  } else {
+    error(lit, "Cannot access class members in static method");
+  }
 }
 
 void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
