@@ -226,8 +226,12 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
     break;
 
   case ast::BinaryExpression::Op::Assign:
+    // check if lvalue TODO: make notion of lvalues explicit
     if (dynamic_cast<ast::LiteralExpression *>(left)) {
       error(*left, "Left hand side of assignment cannot be a literal");
+    }
+    if (dynamic_cast<ast::MethodInvocation *>(left)) {
+      error(*left, "Left hand side of assignment cannot a method invocation");
     }
     if (!(left->targetType >= right->targetType)) {
       std::stringstream ss;
