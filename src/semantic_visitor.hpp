@@ -112,12 +112,12 @@ public:
   virtual ~SemanticVisitor() {}
 
 private:
-  template <typename T> void checkForDuplicates(T &list) {
+  template <typename T> void checkForDuplicates(T &list, const std::string& name) {
     std::stable_sort(list.begin(), list.end(), ast::SortUniquePtrPred());
     auto firstDuplicate =
         std::adjacent_find(list.begin(), list.end(), ast::UniquePtrEqPred());
     if (firstDuplicate != list.end()) {
-      error(**++firstDuplicate, "invalid duplicate definition of field");
+      error(**++firstDuplicate, "invalid duplicate definition of " + name);
       // first defition is at **firstDuplicate
     }
   }

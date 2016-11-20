@@ -355,9 +355,12 @@ ast::BlockStmtPtr Parser::parseLocalVarDeclStmt() {
   auto ident = expectGetIdentAndNext(TT::Identifier);
   switch (curTok.type) {
   case TT::Eq: {
+    auto endPos = curTok.endPos();
     readNextToken();
     auto initializer = parseExpr();
-    auto endPos = curTok.endPos();
+    if (initializer) {
+      endPos = initializer->getLoc().endToken;
+    }
     expectAndNext(TT::Semicolon);
     return ast::make_Ptr<ast::VariableDeclaration>(
         {startPos, endPos}, std::move(type), strTbl.findOrInsert(ident),
@@ -510,7 +513,7 @@ ast::ExprPtr Parser::precedenceParse(int minPrec) {
       opPrec += 1;
     }
     auto rhs = precedenceParse(opPrec);
-    auto endPos = curTok.endPos();
+    auto endPos = rhs->getLoc().endToken;
     auto operation = ast::BinaryExpression::getOpForToken(opTok.type);
     result = ast::make_EPtr<ast::BinaryExpression>(
         {startPos, endPos}, std::move(result), std::move(rhs), operation);
@@ -616,9 +619,9 @@ ast::ExprPtr Parser::parsePrimary() {
     return ast::make_EPtr<ast::IntLiteral>(loc, value);
   }
   case TT::Identifier: {
-    auto ident = std::move(curTok.str);
     auto startPos = curTok.startPos();
     auto fieldEndPos = curTok.endPos();
+    auto ident = std::move(curTok.str);
     readNextToken();
     if (curTok.type == TT::LParen) {
       // return "this.methodinvocation(args)
@@ -646,16 +649,16 @@ ast::ExprPtr Parser::parsePrimary() {
 ast::ExprPtr Parser::parseMemberAccess(ast::ExprPtr lhs) {
   auto startPos = curTok.startPos();
   expectAndNext(TT::Dot);
+  auto endPos = curTok.endPos();
   auto ident = expectGetIdentAndNext(TT::Identifier);
   if (curTok.type == TT::LParen) {
     readNextToken();
     auto args = parseArguments();
+    endPos = curTok.endPos();
     expectAndNext(TT::RParen);
-    auto endPos = curTok.endPos();
     return ast::make_EPtr<ast::MethodInvocation>(
         {startPos, endPos}, std::move(lhs), std::move(ident), std::move(args));
   } else {
-    auto endPos = curTok.endPos();
     return ast::make_EPtr<ast::FieldAccess>({startPos, endPos}, std::move(lhs),
                                             std::move(ident));
   }

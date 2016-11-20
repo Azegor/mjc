@@ -6,7 +6,7 @@ ast::DummyDefinition SemanticVisitor::dummyMainArgDef;
 
 void SemanticVisitor::visitProgram(ast::Program &program) {
   currentProgram = &program;
-  checkForDuplicates(program.getClasses());
+  checkForDuplicates(program.getClasses(), "class");
   for (auto &cls : program.getClasses()) {
     cls->sortMembers();
   }
@@ -37,7 +37,7 @@ void SemanticVisitor::visitClass(ast::Class &klass) {
 }
 
 void SemanticVisitor::visitFieldList(ast::FieldList &fieldList) {
-  checkForDuplicates(fieldList.fields);
+  checkForDuplicates(fieldList.fields, "field");
   for (auto &f : fieldList.fields) {
     symTbl.insert(f->getSymbol(), f.get());
   }
@@ -45,12 +45,12 @@ void SemanticVisitor::visitFieldList(ast::FieldList &fieldList) {
 }
 
 void SemanticVisitor::visitMethodList(ast::MethodList &methodList) {
-  checkForDuplicates(methodList.methods);
+  checkForDuplicates(methodList.methods, "method");
   methodList.acceptChildren(this);
 }
 
 void SemanticVisitor::visitMainMethodList(ast::MainMethodList &mainMethodList) {
-  checkForDuplicates(mainMethodList.mainMethods);
+  checkForDuplicates(mainMethodList.mainMethods, "main method");
   mainMethodList.acceptChildren(this);
 }
 
@@ -102,7 +102,7 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
   if (decl.getInitializer() != nullptr &&
       !(decl.getType()->getSemaType() >= decl.getInitializer()->targetType)) {
     std::stringstream ss;
-    ss << "Can't assign from " << decl.getInitializer()->targetType << " to "
+    ss << "May not assign from " << decl.getInitializer()->targetType << " to "
        << decl.getType()->getSemaType();
     error(decl, ss.str());
   }
@@ -111,7 +111,9 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
   auto semaType = decl.getType()->getSemaType();
   if (semaType.isVoid() ||
       (semaType.isArray() && semaType.innerKind == sem::TypeKind::Void)) {
-    error(decl, "Variable cannot be of type 'void'");
+    std::stringstream msg;
+    msg << "Variable may not be of type '" << semaType << "'";
+    error(decl, msg.str());
   }
 
   auto &sym = decl.getSymbol();
@@ -136,7 +138,7 @@ void SemanticVisitor::visitVarRef(ast::VarRef &varRef) {
     }
   } else {
     if (def == &dummyMainArgDef) {
-      error(varRef, "Access to parameter of main method is forbidden");
+      error(varRef, "Access to the parameter of a main method is forbidden");
     }
     varRef.targetType = def->getType()->getSemaType();
   }
@@ -154,7 +156,9 @@ void SemanticVisitor::visitParameter(ast::Parameter &param) {
   auto semaType = param.getType()->getSemaType();
   if (semaType.isVoid() ||
       (semaType.isArray() && semaType.innerKind == sem::TypeKind::Void)) {
-    error(param, "Parameter cannot be of type 'void'");
+    std::stringstream msg;
+    msg << "Parameter may not be of type '" << semaType << "'";
+    error(*param.getType(), msg.str());
   }
 
   symTbl.insert(sym, &param);
@@ -191,7 +195,7 @@ void SemanticVisitor::visitNullLiteral(ast::NullLiteral &lit) {
 }
 void SemanticVisitor::visitThisLiteral(ast::ThisLiteral &lit) {
   if (currentClass == nullptr) {
-    error(lit, "'this' can't be used outside of classes");
+    error(lit, "'this' may not be used outside of classes");
   }
   if (dynamic_cast<ast::RegularMethod *>(currentMethod)) {
     lit.targetType.setClass(this->currentClass->getName());
@@ -240,7 +244,7 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
     // check if lvalue TODO: make notion of lvalues explicit
     if (dynamic_cast<ast::PrimaryRValueExpression *>(left) ||
         dynamic_cast<ast::RValueExpression *>(left)) {
-      error(*left, "Left hand side of assignment cannot a an rvalue");
+      error(*left, "Left hand side of assignment may not be an rvalue");
     }
     if (!(left->targetType >= right->targetType)) {
       std::stringstream ss;
@@ -277,7 +281,6 @@ void SemanticVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
   }
 
   expr.targetType = expr.getArrayType()->getSemaType();
-  std::cerr << expr.targetType << std::endl;
 }
 
 void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
@@ -303,7 +306,10 @@ void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
 
   auto &lhsType = access.getLeft()->targetType;
   if (!lhsType.isClass()) {
-    error(access, "Left hand side of field access must be class type object");
+    std::stringstream msg;
+    msg << "Left hand side of field access must be class type object, but is '"
+        << lhsType << "'";
+    error(*access.getLeft(), msg.str());
   }
 
   auto cls = findClassByName(lhsType.name);
@@ -312,7 +318,7 @@ void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
   auto field = findFieldInClass(cls, fieldName);
   if (!field) {
     error(access,
-          "Unknown field " + access.getName() + " in class " + fieldName);
+          "Unknown field " + access.getName() + " in class " + lhsType.name);
   }
   access.setDef(field);
   access.targetType = field->getType()->getSemaType();
@@ -471,7 +477,7 @@ void SemanticVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
 
   if (!(methodReturnType >= expr->targetType)) {
     std::stringstream ss;
-    ss << "Can't return expression of type '" << expr->targetType
+    ss << "May not return expression of type '" << expr->targetType
        << "' from method with return type '" << methodReturnType << "'";
     error(*expr, ss.str());
   }
@@ -528,6 +534,8 @@ void SemanticVisitor::visitField(ast::Field &field) {
   auto semaType = field.getType()->getSemaType();
   if (semaType.isVoid() ||
       (semaType.isArray() && semaType.innerKind == sem::TypeKind::Void)) {
-    error(field, "Parameter cannot be of type 'void'");
+    std::stringstream msg;
+    msg << "Field may not be of type '" << semaType << "'";
+    error(*field.getType(), msg.str());
   }
 }
