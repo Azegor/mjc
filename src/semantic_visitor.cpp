@@ -95,9 +95,8 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
 
   // Filter out void types
   auto semaType = decl.getType()->getSemaType();
-  if (semaType.kind == sem::TypeKind::Void ||
-      (semaType.kind == sem::TypeKind::Array &&
-       semaType.innerKind == sem::TypeKind::Void)) {
+  if (semaType.isVoid() ||
+      (semaType.isArray() && semaType.innerKind == sem::TypeKind::Void)) {
     error(decl, "Variable cannot be of type 'void'");
   }
 
@@ -139,9 +138,8 @@ void SemanticVisitor::visitParameter(ast::Parameter &param) {
 
   // Filter out void types
   auto semaType = param.getType()->getSemaType();
-  if (semaType.kind == sem::TypeKind::Void ||
-      (semaType.kind == sem::TypeKind::Array &&
-       semaType.innerKind == sem::TypeKind::Void)) {
+if (semaType.isVoid() ||
+      (semaType.isArray() && semaType.innerKind == sem::TypeKind::Void)) {
     error(param, "Parameter cannot be of type 'void'");
   }
 
@@ -507,9 +505,8 @@ void SemanticVisitor::visitField(ast::Field &field) {
 
   // Filter out void types
   auto semaType = field.getType()->getSemaType();
-  if (semaType.kind == sem::TypeKind::Void ||
-      (semaType.kind == sem::TypeKind::Array &&
-       semaType.innerKind == sem::TypeKind::Void)) {
+  if (semaType.isVoid() ||
+      (semaType.isArray() && semaType.innerKind == sem::TypeKind::Void)) {
     error(field, "Parameter cannot be of type 'void'");
   }
 }
