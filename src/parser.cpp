@@ -132,9 +132,9 @@ ast::MainMethodPtr Parser::parseMainMethod() {
   auto paramName = expectGetIdentAndNext(TT::Identifier);
   expectAndNext(TT::RParen);
   auto block = parseBlock();
-  return ast::make_Ptr<ast::MainMethod>({startPos, curTok.endPos()},
-                                        std::move(methodName),
-                                        strTbl.findOrInsert(paramName), std::move(block));
+  return ast::make_Ptr<ast::MainMethod>(
+      {startPos, curTok.endPos()}, std::move(methodName),
+      strTbl.findOrInsert(paramName), std::move(block));
 }
 
 void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,

@@ -780,14 +780,20 @@ protected:
   PrimaryExpression(SourceLocation loc) : Expression(std::move(loc)) {}
 };
 
-class NewArrayExpression : public PrimaryExpression {
+class PrimaryRValueExpression : public PrimaryExpression {
+protected:
+  PrimaryRValueExpression(SourceLocation loc)
+      : PrimaryExpression(std::move(loc)) {}
+};
+
+class NewArrayExpression : public PrimaryRValueExpression {
   ArrayTypePtr arrayType;
   ExprPtr size;
 
 public:
   NewArrayExpression(SourceLocation loc, ArrayTypePtr arrayType, ExprPtr size)
-      : PrimaryExpression(std::move(loc)), arrayType(std::move(arrayType)),
-        size(std::move(size)) {}
+      : PrimaryRValueExpression(std::move(loc)),
+        arrayType(std::move(arrayType)), size(std::move(size)) {}
 
   void accept(Visitor *visitor) override {
     visitor->visitNewArrayExpression(*this);
@@ -801,13 +807,13 @@ public:
   Expression *getSize() const { return size.get(); }
 };
 
-class NewObjectExpression : public PrimaryExpression {
+class NewObjectExpression : public PrimaryRValueExpression {
   std::string name;
   Class *classDef = nullptr;
 
 public:
   NewObjectExpression(SourceLocation loc, std::string name)
-      : PrimaryExpression(std::move(loc)), name(std::move(name)) {}
+      : PrimaryRValueExpression(std::move(loc)), name(std::move(name)) {}
 
   void accept(Visitor *visitor) override {
     visitor->visitNewObjectExpression(*this);
@@ -819,9 +825,10 @@ public:
   Class *getDef() const { return classDef; }
 };
 
-class LiteralExpression : public PrimaryExpression {
+class LiteralExpression : public PrimaryRValueExpression {
 public:
-  LiteralExpression(SourceLocation loc) : PrimaryExpression(std::move(loc)) {}
+  LiteralExpression(SourceLocation loc)
+      : PrimaryRValueExpression(std::move(loc)) {}
 };
 
 class IntLiteral : public LiteralExpression {
@@ -992,8 +999,8 @@ private:
 
 public:
   BinaryExpression(SourceLocation loc, ExprPtr lhs, ExprPtr rhs, Op op)
-      : RValueExpression(std::move(loc)), left(std::move(lhs)), right(std::move(rhs)),
-        operation(op) {}
+      : RValueExpression(std::move(loc)), left(std::move(lhs)),
+        right(std::move(rhs)), operation(op) {}
 
   static Op getOpForToken(Token::Type t) {
     switch (t) {

@@ -141,7 +141,7 @@ void SemanticVisitor::visitParameter(ast::Parameter &param) {
 
   // Filter out void types
   auto semaType = param.getType()->getSemaType();
-if (semaType.isVoid() ||
+  if (semaType.isVoid() ||
       (semaType.isArray() && semaType.innerKind == sem::TypeKind::Void)) {
     error(param, "Parameter cannot be of type 'void'");
   }
@@ -227,10 +227,8 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
 
   case ast::BinaryExpression::Op::Assign:
     // check if lvalue TODO: make notion of lvalues explicit
-    if (dynamic_cast<ast::LiteralExpression *>(left)) {
-      error(*left, "Left hand side of assignment cannot be a literal");
-    }
-    if (dynamic_cast<ast::RValueExpression *>(left)) {
+    if (dynamic_cast<ast::PrimaryRValueExpression *>(left) ||
+        dynamic_cast<ast::RValueExpression *>(left)) {
       error(*left, "Left hand side of assignment cannot a an rvalue");
     }
     if (!(left->targetType >= right->targetType)) {
@@ -522,4 +520,3 @@ void SemanticVisitor::visitField(ast::Field &field) {
     error(field, "Parameter cannot be of type 'void'");
   }
 }
-
