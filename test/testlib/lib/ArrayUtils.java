@@ -1,5 +1,8 @@
 package lib;
 
+import lib.BooleanUtils;
+import lib.ASCII;
+
 public class ArrayUtils {
   public ArrayUtils printIntArray(int[] arr, int size) {
     int i = 0;
