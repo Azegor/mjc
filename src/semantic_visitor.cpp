@@ -447,6 +447,11 @@ void SemanticVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
       error(stmt, "Non-Void methods must return a value");
     }
   }
+  if (methodReturnType.isVoid()) {
+    if (expr != nullptr) {
+      error(*expr, "Void method may not return any value");
+    }
+  }
 
   if (!(methodReturnType >= expr->targetType)) {
     std::stringstream ss;
@@ -510,3 +515,4 @@ void SemanticVisitor::visitField(ast::Field &field) {
     error(field, "Parameter cannot be of type 'void'");
   }
 }
+
