@@ -11,8 +11,11 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,undefined
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,undefined -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fno-common")
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -fprofile-arcs -ftest-coverage")
-
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")
+
+set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/install")
+include_directories("${CMAKE_PREFIX_PATH}/include")
+link_directories("${CMAKE_PREFIX_PATH}/lib")
 
 if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
   if("${CMAKE_BUILD_TYPE}" STREQUAL "")
@@ -34,6 +37,21 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/thirdparty/cmake)
 
 find_package(JeMalloc)
 
+include(ExternalProject) # load module
+
+ExternalProject_Add(libfirm
+  SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libfirm"
+  BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/libfirm/build"
+  INSTALL_DIR "${CMAKE_PREFIX_PATH}"
+  CMAKE_ARGS
+    "-DCMAKE_BUILD_TYPE=${configuration}"
+    "-DCMAKE_INSTALL_PREFIX=${CMAKE_PREFIX_PATH}"
+)
+
+# copied from libfirm.pc
+# can't use that as it's not generated yet when cmake runs
+set(libfirm_LIBRARIES "-lfirm -lm")
+
 add_executable(mjc
   src/main.cpp
   src/compiler.cpp
@@ -45,9 +63,8 @@ add_executable(mjc
   src/semantic_visitor.cpp
 )
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")
-
-target_link_libraries(mjc ${Boost_LIBRARIES} ${JEMALLOC_LIBRARIES})
+add_dependencies(mjc libfirm)
+target_link_libraries(mjc ${Boost_LIBRARIES} ${JEMALLOC_LIBRARIES} ${libfirm_LIBRARIES})
 
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
