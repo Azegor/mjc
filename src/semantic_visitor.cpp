@@ -97,6 +97,16 @@ void SemanticVisitor::visitBlock(ast::Block &block) {
 }
 
 void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
+  auto &sym = decl.getSymbol();
+  if (symTbl.isDefinedInCurrentScope(sym)) {
+    error(decl, "Variable '" + decl.getSymbol().name + "' already defined");
+  }
+  auto prev = symTbl.lookup(sym);
+  if (prev && dynamic_cast<ast::Field *>(prev) == nullptr) {
+    error(decl, "Variable '" + decl.getSymbol().name + "' already defined");
+  }
+  symTbl.insert(sym, &decl);
+
   decl.acceptChildren(this);
 
   if (decl.getInitializer() != nullptr &&
@@ -115,16 +125,6 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
     msg << "Variable may not be of type '" << semaType << "'";
     error(decl, msg.str());
   }
-
-  auto &sym = decl.getSymbol();
-  if (symTbl.isDefinedInCurrentScope(sym)) {
-    error(decl, "Variable '" + decl.getSymbol().name + "' already defined");
-  }
-  auto prev = symTbl.lookup(sym);
-  if (prev && dynamic_cast<ast::Field *>(prev) == nullptr) {
-    error(decl, "Variable '" + decl.getSymbol().name + "' already defined");
-  }
-  symTbl.insert(sym, &decl);
 }
 
 void SemanticVisitor::visitVarRef(ast::VarRef &varRef) {
