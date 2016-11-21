@@ -73,6 +73,9 @@ void SemanticVisitor::visitRegularMethod(ast::RegularMethod &method) {
   symTbl.leaveScope();
   currentMethod = nullptr;
 
+  if (method.getReturnType()->getSemaType().isVoidArray()) {
+    error(method, "Method return type cannot be of type 'void[]'");
+  }
   if (!method.getReturnType()->getSemaType().isVoid() &&
       method.getBlock()->cfb != sem::ControlFlowBehavior::Return) {
     error(method, "Non-Void method must return a value on every path", true);
@@ -119,8 +122,7 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
 
   // Filter out void types
   auto semaType = decl.getType()->getSemaType();
-  if (semaType.isVoid() ||
-      (semaType.isArray() && semaType.innerKind == sem::TypeKind::Void)) {
+  if (semaType.isVoidOrVoidArray()) {
     std::stringstream msg;
     msg << "Variable may not be of type '" << semaType << "'";
     error(decl, msg.str());
@@ -159,8 +161,7 @@ void SemanticVisitor::visitParameter(ast::Parameter &param) {
 
   // Filter out void types
   auto semaType = param.getType()->getSemaType();
-  if (semaType.isVoid() ||
-      (semaType.isArray() && semaType.innerKind == sem::TypeKind::Void)) {
+  if (semaType.isVoidOrVoidArray()) {
     std::stringstream msg;
     msg << "Parameter may not be of type '" << semaType << "'";
     error(*param.getType(), msg.str());
@@ -285,7 +286,13 @@ void SemanticVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
     error(*expr.getSize(), "Array indices must be ints");
   }
 
-  expr.targetType = expr.getArrayType()->getSemaType();
+  auto semaType = expr.getArrayType()->getSemaType();
+  if (semaType.isVoidOrVoidArray()) {
+    std::stringstream msg;
+    msg << "Cannot create new object of type '" << semaType << "'";
+    error(expr, msg.str());
+  }
+  expr.targetType = semaType;
 }
 
 void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
@@ -537,8 +544,7 @@ void SemanticVisitor::visitField(ast::Field &field) {
 
   // Filter out void types
   auto semaType = field.getType()->getSemaType();
-  if (semaType.isVoid() ||
-      (semaType.isArray() && semaType.innerKind == sem::TypeKind::Void)) {
+  if (semaType.isVoidOrVoidArray()) {
     std::stringstream msg;
     msg << "Field may not be of type '" << semaType << "'";
     error(*field.getType(), msg.str());
