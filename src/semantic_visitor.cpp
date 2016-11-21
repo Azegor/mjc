@@ -140,6 +140,11 @@ void SemanticVisitor::visitVarRef(ast::VarRef &varRef) {
     if (def == &dummyMainArgDef) {
       error(varRef, "Access to the parameter of a main method is forbidden");
     }
+    if (dynamic_cast<ast::MainMethod *>(currentMethod)) {
+      if (dynamic_cast<ast::Field *>(def)) {
+        error(varRef, "Cannot use fields in static method");
+      }
+    }
     varRef.targetType = def->getType()->getSemaType();
   }
   varRef.setDef(def);
