@@ -59,7 +59,6 @@ public class MersenneTwisterRNG {
 	/* Internal state */
 	public int[] mt;
 	public int mti;
-	public boolean compat;
 
 	/* Temporary buffer used during setSeed(int) */
 	public int[] ibuf;
@@ -81,19 +80,17 @@ public class MersenneTwisterRNG {
       MAGIC_MASK2   = -272236544/*0xefc60000*/;
       MAGIC_SEED    = 19650218;
       DEFAULT_SEED = 5489;
-
-      compat = false;
       return this;
 	}
 
-	public MersenneTwisterRNG init(boolean compatible) {
+    public MersenneTwisterRNG init() {
 		initInternal();
-		compat = compatible;
-		if (compat) {
-            setSeed(DEFAULT_SEED);
-		} else {
-            setSeed(DEFAULT_SEED /* TODO: System.currentTimeMillis() */);
-		}
+        setSeed(DEFAULT_SEED);
+		return this;
+	}
+	public MersenneTwisterRNG initSeed(int seed) {
+		initInternal();
+        setSeed(seed);
 		return this;
 	}
 
@@ -120,7 +117,7 @@ public class MersenneTwisterRNG {
 		int mti = 1;
 		while (mti < N) {
 			/* mt[mti] = (MAGIC_FACTOR1 * (mt[mti-1] ^ (mt[mti-1] >>> 30)) + mti);*/
-			mt[mti] = (MAGIC_FACTOR1 * bops.i32xor(mt[mti-1], bops.logRShift(mt[mti-1], 30)) + mti);
+			mt[mti] = (MAGIC_FACTOR1 * bops.i32xor(mt[mti-1], bops.ui32shr(mt[mti-1], 30)) + mti);
 			mti = mti + 1;
 		}
 		/* ---- End Mersenne Twister Algorithm ---- */
@@ -156,16 +153,16 @@ public class MersenneTwisterRNG {
             kk = 0;
 			while (kk < N-M) {
 				y = bops.i32or(bops.i32and(mt[kk], UPPER_MASK), bops.i32and(mt[kk+1], LOWER_MASK));
-				mt[kk] = bops.i32xor(bops.i32xor(mt[kk+M], bops.logRShift(y, 1)), MAGIC[bops.i32and(y,1)]);
+				mt[kk] = bops.i32xor(bops.i32xor(mt[kk+M], bops.ui32shr(y, 1)), MAGIC[bops.i32and(y,1)]);
 				kk = kk + 1;
 			}
 			while (kk < N-1) {
 				y = bops.i32or(bops.i32and(mt[kk], UPPER_MASK), bops.i32and(mt[kk+1], LOWER_MASK));
-				mt[kk] = bops.i32xor(bops.i32xor(mt[kk+(M-N)], bops.logRShift(y, 1)), MAGIC[bops.i32and(y, 1)]);
+				mt[kk] = bops.i32xor(bops.i32xor(mt[kk+(M-N)], bops.ui32shr(y, 1)), MAGIC[bops.i32and(y, 1)]);
 				kk = kk + 1;
 			}
 			y = bops.i32or(bops.i32and(mt[N-1], UPPER_MASK), bops.i32and(mt[0], LOWER_MASK));
-			mt[N-1] = bops.i32xor(bops.i32xor(mt[M-1], bops.logRShift(y, 1)), MAGIC[bops.i32and(y, 1)]);
+			mt[N-1] = bops.i32xor(bops.i32xor(mt[M-1], bops.ui32shr(y, 1)), MAGIC[bops.i32and(y, 1)]);
 
 			mti = 0;
 		}
@@ -174,12 +171,12 @@ public class MersenneTwisterRNG {
 		mti = mti + 1;
 
 		/* Tempering */
-		y = bops.i32xor(y, bops.logRShift(y, 11));
-		y = bops.i32xor(y, bops.i32and(bops.logLShift(y, 7), MAGIC_MASK1));
-		y = bops.i32xor(y, bops.i32and(bops.logLShift(y, 15), MAGIC_MASK2));
-		y = bops.i32xor(y, bops.logRShift(y, 18));
+		y = bops.i32xor(y, bops.ui32shr(y, 11));
+		y = bops.i32xor(y, bops.i32and(bops.i32shl(y, 7), MAGIC_MASK1));
+		y = bops.i32xor(y, bops.i32and(bops.i32shl(y, 15), MAGIC_MASK2));
+		y = bops.i32xor(y, bops.ui32shr(y, 18));
 		/* ---- End Mersenne Twister Algorithm ---- */
-		return bops.logRShift(y, (32-bits));
+		return bops.ui32shr(y, (32-bits));
 	}
 
     /**
@@ -208,11 +205,11 @@ public class MersenneTwisterRNG {
 	public int[] pack(int[] buf, int length) {
 		int k;
 		int blen = length;
-		int ilen = bops.logRShift((length+3), 2);
+		int ilen = bops.ui32shr((length+3), 2);
 		int[] ibuf = new int[ilen];
 		int n = 0;
 		while (n < ilen) {
-			int m = bops.logLShift((n+1), 2);
+			int m = bops.i32shl((n+1), 2);
 			if (m > blen) m = blen;
 			m = m - 1;
 			k = bops.i32and(buf[m], 255);
@@ -220,7 +217,7 @@ public class MersenneTwisterRNG {
 			ibuf[n] = k;
 			n = n + 1;
 			m = m - 1;
-			k = bops.i32or(bops.logLShift(k, 8), bops.i32and(buf[m], 255));
+			k = bops.i32or(bops.i32shl(k, 8), bops.i32and(buf[m], 255));
 		}
 		return ibuf;
 	}

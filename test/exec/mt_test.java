@@ -2,7 +2,7 @@ import lib.MersenneTwisterRNG;
 
 public class mt_test {
   public static void main(String[] args) {
-    MersenneTwisterRNG mt = new MersenneTwisterRNG().init(true);
+    MersenneTwisterRNG mt = new MersenneTwisterRNG().init();
     int i = 0;
     while (i < 100) {
       int j = 1;

@@ -35,19 +35,19 @@ public class BitOps32 {
     System.out.println("All and/or/xor ok for -2147483648 <= x < 2147483647!");
     for (int a = -1; a < 2147483647 - 99; a += 999) { // seem to be off by one or negated from -32768 to 0
       for (int b = 0; b < 31; b += 1) { // only to 15, since java uses 32 bit
-        if ( bo.logLShift(a, b) != (a << b) ) {
-          System.out.println("logLShift error for " + a + " << " + b);
-          System.out.println("have " + bo.logLShift(a,b) + " expected " + (a << b));
+        if ( bo.i32shl(a, b) != (a << b) ) {
+          System.out.println("i32shl error for " + a + " << " + b);
+          System.out.println("have " + bo.i32shl(a,b) + " expected " + (a << b));
           return;
         }
-        if ( bo.logRShift(a,b) != (a >>> b) ) {
-          System.out.println("logRShift error for " + a + " >>> " + b);
-          System.out.println("have " + bo.logRShift(a,b) + " expected " + (a >>> b));
+        if ( bo.ui32shr(a,b) != (a >>> b) ) {
+          System.out.println("ui32shr error for " + a + " >>> " + b);
+          System.out.println("have " + bo.ui32shr(a,b) + " expected " + (a >>> b));
           return;
         }
-        if ( bo.arithRShift(a, b) != (a >> b) ) {
-          System.out.println("arithRShift error for " + a + " >> " + b);
-          System.out.println("have " + bo.arithRShift(a,b) + " expected " + (a >> b));
+        if ( bo.si32shr(a, b) != (a >> b) ) {
+          System.out.println("si32shr error for " + a + " >> " + b);
+          System.out.println("have " + bo.si32shr(a,b) + " expected " + (a >> b));
           return;
         }
       }
@@ -61,7 +61,7 @@ public class BitOps32 {
   public int[] andlookup;
 
   /* logical shift left */
-  public int logLShift(int i, int shift) {
+  public int i32shl(int i, int shift) {
     if (shift > 31) {
         return 0; /* if shifting more than 15 bits to the left, value is always zero */
     } else {
@@ -70,7 +70,7 @@ public class BitOps32 {
   }
 
   /* logical shift right (unsigned) */
-  public int logRShift(int i, int shift) {
+  public int ui32shr(int i, int shift) {
     if (shift > 31) {
         return 0; /* more than 15, becomes zero */
     } else if (shift > 0) {
@@ -88,7 +88,7 @@ public class BitOps32 {
   }
 
   /* arithmetic shift right (signed) */
-  public int arithRShift(int i, int shift) {
+  public int si32shr(int i, int shift) {
     if (shift >= 31) {
       if (i < 0) {
           return -1;
@@ -114,7 +114,17 @@ public class BitOps32 {
     return -1 - i;
   }
 
+  public int ui32rotl(int i, int rot)
+  {
+    rot = rot % 32;
+    return i32or(i32shl(i, rot), ui32shr(i, (32 - rot)));
+  }
 
+  public int ui32rotr(int i, int rot)
+  {
+    rot = rot % 32;
+    return i32or(ui32shr(i, rot), i32shl(i, (32 - rot)));
+  }
 
   public int i32and(int a, int b) {
     int r = 0;

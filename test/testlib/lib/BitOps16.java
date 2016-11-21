@@ -37,19 +37,19 @@ public class BitOps16 {
     System.out.println("All and/or/xor/compl ok for < 65536!");
     for (int a = 0; a < 65536; a += 1) { // seem to be off by one or negated from -32768 to 0
       for (int b = 0; b < 15; b += 1) { // only to 15 since 16 bit op
-        if ( (short)bo.logLShift(a, b) != (short)(a << b) ) {
-          System.out.println("logLShift error for " + a + " << " + b);
-          System.out.println("have " + (short)bo.logLShift(a,b) + " expected " + (short)(a << b));
+        if ( (short)bo.i16shl(a, b) != (short)(a << b) ) {
+          System.out.println("i16shl error for " + a + " << " + b);
+          System.out.println("have " + (short)bo.i16shl(a,b) + " expected " + (short)(a << b));
           return;
         }
-        if ( (short)bo.logRShift(a,b) != (short)(a >>> b) ) {
-          System.out.println("logRShift error for " + a + " >>> " + b);
-          System.out.println("have " + (short)bo.logRShift(a,b) + " expected " + (short)(a >>> b));
+        if ( (short)bo.ui16shr(a,b) != (short)(a >>> b) ) {
+          System.out.println("ui16shr error for " + a + " >>> " + b);
+          System.out.println("have " + (short)bo.ui16shr(a,b) + " expected " + (short)(a >>> b));
           return;
         }
-        if ( (short)bo.arithRShift(a, b) != (short)(a >> b) ) {
-          System.out.println("arithRShift error for " + a + " >> " + b);
-          System.out.println("have " + (short)bo.arithRShift(a,b) + " expected " + (short)(a >> b));
+        if ( (short)bo.si16shr(a, b) != (short)(a >> b) ) {
+          System.out.println("si16shr error for " + a + " >> " + b);
+          System.out.println("have " + (short)bo.si16shr(a,b) + " expected " + (short)(a >> b));
           return;
         }
       }
@@ -62,7 +62,7 @@ public class BitOps16 {
   public int[] andlookup;
 
   /* logical shift left */
-  public int logLShift(int i, int shift) {
+  public int i16shl(int i, int shift) {
     if (shift > 15) {
         return 0; /* if shifting more than 15 bits to the left, value is always zero */
     } else {
@@ -71,7 +71,7 @@ public class BitOps16 {
   }
 
   /* logical shift right (unsigned) */
-  public int logRShift(int i, int shift) {
+  public int ui16shr(int i, int shift) {
     if (shift > 15) {
       return 0; /* more than 15, becomes zero */
     } else if (shift > 0) {
@@ -82,7 +82,7 @@ public class BitOps16 {
   }
 
   /* arithmetic shift right (signed) */
-  public int arithRShift(int i, int shift) {
+  public int si16shr(int i, int shift) {
     if (shift >= 15) {
       if (i < 0) {
           return -1;
@@ -102,6 +102,18 @@ public class BitOps16 {
     } else {
       return i; /* no shift */
     }
+  }
+
+  public int ui16rotl(int i, int rot)
+  {
+    rot = rot % 16;
+    return i16or(ui16shl(i, rot), ui16shr(i, (16 - rot)));
+  }
+
+  public int ui16rotr(int i, int rot)
+  {
+    rot = rot % 16;
+    return i16or(ui16shr(i, rot), ui16shl(i, (16 - rot)));
   }
 
   public int i16compl(int i) {
