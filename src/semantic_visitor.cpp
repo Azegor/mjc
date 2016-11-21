@@ -21,19 +21,19 @@ void SemanticVisitor::visitProgram(ast::Program &program) {
 }
 
 void SemanticVisitor::visitClass(ast::Class &klass) {
-  auto &methods = klass.getMethods()->methods;
   auto &mainMethods = klass.getMainMethods()->mainMethods;
-  auto intersect = sortedListsFirstIntersection(
-      methods.begin(), methods.end(), mainMethods.begin(), mainMethods.end());
-  if (intersect.first) {
-    error(**(intersect.second), "duplicate definition of method '" +
-                                    (*intersect.second)->getName() + "'");
-  }
 
   currentClass = &klass;
   symTbl.enterScope(); // for the fields
   klass.acceptChildren(this);
   symTbl.leaveScope(); // for the fields
+
+  if (mainMethods.size() > 0) {
+    auto overload = findMethodInClass(currentClass, mainMethods[0]->getName());
+    if (overload) {
+      error(*overload, "may not overload main method");
+    }
+  }
 }
 
 void SemanticVisitor::visitFieldList(ast::FieldList &fieldList) {
@@ -50,7 +50,10 @@ void SemanticVisitor::visitMethodList(ast::MethodList &methodList) {
 }
 
 void SemanticVisitor::visitMainMethodList(ast::MainMethodList &mainMethodList) {
-  checkForDuplicates(mainMethodList.mainMethods, "main method");
+  if (mainMethodList.mainMethods.size() > 1) {
+    error(*mainMethodList.mainMethods[1],
+          "Not more than one main method allowed per class");
+  }
   mainMethodList.acceptChildren(this);
 }
 
