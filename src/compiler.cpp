@@ -36,6 +36,7 @@
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "semantic_visitor.hpp"
+#include "firm_visitor.hpp"
 
 co::color_ostream<std::ostream> Compiler::cl_cout{std::cout};
 co::color_ostream<std::ostream> Compiler::cl_cerr{std::cerr};
@@ -130,6 +131,10 @@ int Compiler::checkSemantic() {
   try {
     auto ast = parser.parseProgram();
     analyzeAstSemantic(ast.get(), parser.getLexer());
+
+    FirmVisitor v;
+    v.visitProgram(*ast.get());
+
     return EXIT_SUCCESS;
   } catch (CompilerError &e) {
     e.writeErrorMessage(std::cerr);

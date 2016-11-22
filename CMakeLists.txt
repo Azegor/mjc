@@ -70,6 +70,7 @@ add_executable(mjc
   src/ast.cpp
   src/symboltable.cpp
   src/semantic_visitor.cpp
+  src/firm_visitor.cpp
 )
 
 add_dependencies(mjc libfirm)
