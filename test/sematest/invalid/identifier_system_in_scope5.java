@@ -1,5 +1,6 @@
 class A {
+  public int System;
   public static void main(String[] args) {
-    new void[13];
+    int a = System + 3;
   }
 }
