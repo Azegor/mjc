@@ -131,10 +131,6 @@ int Compiler::checkSemantic() {
   try {
     auto ast = parser.parseProgram();
     analyzeAstSemantic(ast.get(), parser.getLexer());
-
-    FirmVisitor v;
-    v.visitProgram(*ast.get());
-
     return EXIT_SUCCESS;
   } catch (CompilerError &e) {
     e.writeErrorMessage(std::cerr);
@@ -170,10 +166,31 @@ int Compiler::attrAstDot() {
   }
 }
 
+int Compiler::printFirmGraph() {
+  SymbolTable::StringTable strTbl;
+  Parser parser{inputFile, strTbl};
+  try {
+    auto ast = parser.parseProgram();
+    analyzeAstSemantic(ast.get(), parser.getLexer());
+    createFirmGraph(ast.get());
+    return EXIT_SUCCESS;
+  } catch (CompilerError &e) {
+    e.writeErrorMessage(std::cerr);
+    return EXIT_FAILURE;
+  }
+}
+
 void Compiler::analyzeAstSemantic(ast::Program *astRoot, Lexer& lexer) {
   SemanticVisitor semantic_visitor(lexer);
   astRoot->accept(&semantic_visitor);
 }
+
+void Compiler::createFirmGraph(ast::Program *astRoot) {
+    FirmVisitor firm_visitor;
+    astRoot->accept(&firm_visitor);
+}
+
+
 
 static int exclusiveOptionsSum(bool b) { return b ? 1 : 0; }
 

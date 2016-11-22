@@ -36,6 +36,7 @@
 
 struct CompilerOptions {
   std::string inputFileName;
+  std::string outputDirName;
   bool help = false;
   bool echoFile = false;
   bool testLexer = false;
@@ -47,6 +48,7 @@ struct CompilerOptions {
   bool checkSemantic = false;
   bool fuzzSemantic = false;
   bool dotAttrAst = false;
+  bool printFirmGraph = false;
   // ...
 };
 
@@ -67,11 +69,13 @@ class Compiler {
   int checkSemantic();
   int fuzzSemantic();
   int attrAstDot();
+  int printFirmGraph();
 
   void checkOptions();
   bool sanityChecks();
 
   void analyzeAstSemantic(ast::Program *astRoot, Lexer& lexer);
+  void createFirmGraph(ast::Program *astRoot);
 
 public:
   Compiler(InputFile inputFile, CompilerOptions &opt)
