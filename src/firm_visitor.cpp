@@ -9,7 +9,15 @@ FirmVisitor::FirmVisitor() {
 }
 
 void FirmVisitor::visitProgram(ast::Program &program) {
-  program.acceptChildren(this);
+  //program.acceptChildren(this);
+
+  auto &classes = program.getClasses();
+
+  // First, collect all class types
+  for(auto &klass : classes) {
+    ir_type *classType = new_type_class(klass->getName().c_str());
+    this->classTypes[klass.get()] = classType;
+  }
 
   dump_all_ir_graphs("");
 }
@@ -32,13 +40,22 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
 
 void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   int numReturnValues = method.getReturnType()->getSemaType().isVoid() ? 0 : 1;
-  ir_type *methodType = new_type_method(method.getParameters().size(),
+  auto parameters = method.getParameters();
+  ir_type *methodType = new_type_method(parameters.size() + 1,
                                         numReturnValues,
                                         false, cc_cdecl_set,
                                         mtp_no_property);
 
   if (numReturnValues > 0)
     set_method_res_type(methodType, 0, intType);
+
+  set_method_param_type(methodType, 0, this->currentClassType);
+
+  int i = 0;
+  for (auto &param : parameters) {
+    set_method_param_type(methodType, 1 + i, intType);
+    i ++;
+  }
 
   ir_entity *entity = new_entity(this->currentClassType,
                                  new_id_from_str(method.getName().c_str()),

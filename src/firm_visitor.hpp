@@ -13,6 +13,8 @@ private:
 
   ir_type *currentClassType = nullptr;
 
+  std::unordered_map<ast::Class*, ir_type*> classTypes;
+
 public:
   FirmVisitor();
   virtual ~FirmVisitor() {};
