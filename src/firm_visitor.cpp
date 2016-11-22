@@ -57,7 +57,8 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   int i = 0;
   for (auto &param : parameters) {
     (void)param;
-    set_method_param_type(methodType, 1 + i, intType);
+    set_method_param_type(methodType, 1 + i,
+                          getIrType(param->getType()));
     i ++;
   }
 
