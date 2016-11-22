@@ -186,8 +186,8 @@ void Compiler::analyzeAstSemantic(ast::Program *astRoot, Lexer& lexer) {
 }
 
 void Compiler::createFirmGraph(ast::Program *astRoot) {
-    FirmVisitor firm_visitor;
-    astRoot->accept(&firm_visitor);
+  FirmVisitor firm_visitor;
+  astRoot->accept(&firm_visitor);
 }
 
 
@@ -232,6 +232,8 @@ int Compiler::run() {
     return fuzzSemantic();
   } else if (options.dotAttrAst) {
     return attrAstDot();
+  } else if (options.printFirmGraph) {
+    return printFirmGraph();
   }
   return EXIT_FAILURE;
 }
