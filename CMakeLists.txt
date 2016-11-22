@@ -43,9 +43,18 @@ ExternalProject_Add(libfirm
   SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libfirm"
   BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/libfirm/build"
   INSTALL_DIR "${CMAKE_PREFIX_PATH}"
-  CMAKE_ARGS
-    "-DCMAKE_BUILD_TYPE=${configuration}"
-    "-DCMAKE_INSTALL_PREFIX=${CMAKE_PREFIX_PATH}"
+  CONFIGURE_COMMAND ""
+  BUILD_COMMAND make -j
+    -C "${CMAKE_CURRENT_SOURCE_DIR}/libfirm"
+    "variant=optimize"
+    "top_builddir=${CMAKE_CURRENT_BINARY_DIR}/libfirm/build"
+  INSTALL_COMMAND make -j
+    -C "${CMAKE_CURRENT_SOURCE_DIR}/libfirm"
+    "variant=optimize"
+    "top_builddir=${CMAKE_CURRENT_BINARY_DIR}/libfirm/build"
+    "PREFIX=/"
+    "DESTDIR=${CMAKE_PREFIX_PATH}"
+    "install"
 )
 
 # copied from libfirm.pc
