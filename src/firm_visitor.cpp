@@ -9,14 +9,17 @@ FirmVisitor::FirmVisitor() {
 }
 
 void FirmVisitor::visitProgram(ast::Program &program) {
-  //program.acceptChildren(this);
-
   auto &classes = program.getClasses();
 
   // First, collect all class types
   for(auto &klass : classes) {
     ir_type *classType = new_type_class(klass->getName().c_str());
     this->classTypes[klass.get()] = classType;
+  }
+
+  for(auto &klass : classes) {
+    this->currentClassType = classTypes[klass.get()];
+    klass->acceptChildren(this);
   }
 
   dump_all_ir_graphs("");
@@ -53,6 +56,7 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
 
   int i = 0;
   for (auto &param : parameters) {
+    (void)param;
     set_method_param_type(methodType, 1 + i, intType);
     i ++;
   }
@@ -71,8 +75,6 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
 
 
 void FirmVisitor::visitClass(ast::Class &klass) {
-  ir_type *classType = new_type_class(klass.getName().c_str());
-  this->currentClassType = classType;
-
-  klass.acceptChildren(this);
+  // Ignore
+  (void)klass;
 }
