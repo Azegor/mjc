@@ -9,7 +9,6 @@ class FirmVisitor : public ast::Visitor {
 private:
   ir_type *intType;
   ir_type *boolType;
-  ir_type *voidType;
 
   ir_type *currentClassType = nullptr;
 

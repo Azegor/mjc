@@ -4,7 +4,6 @@ FirmVisitor::FirmVisitor() {
   ir_init();
 
   intType  = new_type_primitive (mode_Is);
-  voidType = new_type_primitive (mode_Is);
   boolType = new_type_primitive (mode_Bu);
 }
 
