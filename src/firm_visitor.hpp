@@ -8,6 +8,7 @@ class FirmVisitor : public ast::Visitor {
 private:
   ir_type *intType;
   ir_type *boolType;
+  ir_type *arrayType;
 
   ir_type *currentClassType = nullptr;
 
@@ -20,6 +21,8 @@ private:
       return this->intType;
     case sem::TypeKind::Bool:
       return this->boolType;
+	case sem::TypeKind::Array:
+		return this->arrayType;
     case sem::TypeKind::Class: {
       auto ct = dynamic_cast<ast::ClassType *>(type);
       return this->classTypes[ct->getDef()];
@@ -33,6 +36,10 @@ private:
 public:
   FirmVisitor();
   virtual ~FirmVisitor() {
+	for (auto& e : classTypes) {
+		free_type(e.second);
+	}
+	free_type(arrayType);
     free_type(boolType);
     free_type(intType);
   };

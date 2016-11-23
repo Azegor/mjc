@@ -5,6 +5,7 @@ FirmVisitor::FirmVisitor() {
 
   intType = new_type_primitive(mode_Is);
   boolType = new_type_primitive(mode_Bu);
+  arrayType = new_type_primitive(mode_P);
 }
 
 void FirmVisitor::visitProgram(ast::Program &program) {
