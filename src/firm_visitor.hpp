@@ -16,16 +16,17 @@ private:
   std::unordered_map<ast::Class*, ir_type*> classTypes;
 
   ir_type *getIrType(ast::Type *type) {
-    if (auto t = dynamic_cast<ast::ClassType*>(type)) {
-      return this->classTypes[t->getDef()];
-    } else if (auto t = dynamic_cast<ast::PrimitiveType*>(type)) {
-      if (t->getPrimType() == ast::PrimitiveType::PrimType::Int)
-        return this->intType;
-      else if (t->getPrimType() == ast::PrimitiveType::PrimType::Boolean)
-        return this->boolType;
-      else
-        assert(false);
-    }
+    auto sType = type->getSemaType();
+
+    if (sType.isInt())
+      return this->intType;
+    else if (sType.isBool())
+      return this->boolType;
+    else if (sType.isClass()) {
+      auto ct = dynamic_cast<ast::ClassType*>(type);
+      return this->classTypes[ct->getDef()];
+    } else
+      assert(false);
   }
 
 public:
