@@ -15,21 +15,26 @@ private:
 
   ir_type *getIrType(ast::Type *type) {
     auto sType = type->getSemaType();
-
-    if (sType.isInt())
+    switch (sType.kind) {
+    case sem::TypeKind::Int:
       return this->intType;
-    else if (sType.isBool())
+    case sem::TypeKind::Bool:
       return this->boolType;
-    else if (sType.isClass()) {
-      auto ct = dynamic_cast<ast::ClassType*>(type);
+    case sem::TypeKind::Class: {
+      auto ct = dynamic_cast<ast::ClassType *>(type);
       return this->classTypes[ct->getDef()];
-    } else
+    }
+    default:
       assert(false);
+    }
   }
 
 public:
   FirmVisitor();
-  virtual ~FirmVisitor() {};
+  virtual ~FirmVisitor() {
+    free_type(boolType);
+    free_type(intType);
+  };
 
   void visitProgram(ast::Program &program) override;
   void visitMainMethod(ast::MainMethod &method) override;
