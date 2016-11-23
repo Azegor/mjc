@@ -5,7 +5,7 @@
 
 void DotVisitor::visitProgram(ast::Program &program) {
   s << "digraph G {\n";
-  // s << "rankdir=LR\n"; // TODO worth considering
+  s << "rankdir=LR\n"; // TODO worth considering
   // first add all class node names:
   for (auto &klass : program.getClasses()) {
     nodeNames[klass.get()] = newNodeName();
