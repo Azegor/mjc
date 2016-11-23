@@ -4,7 +4,6 @@
 #include "ast.hpp"
 #include "libfirm/firm.h"
 
-
 class FirmVisitor : public ast::Visitor {
 private:
   ir_type *intType;
@@ -12,7 +11,7 @@ private:
 
   ir_type *currentClassType = nullptr;
 
-  std::unordered_map<ast::Class*, ir_type*> classTypes;
+  std::unordered_map<ast::Class *, ir_type *> classTypes;
 
   ir_type *getIrType(ast::Type *type) {
     auto sType = type->getSemaType();
@@ -39,4 +38,3 @@ public:
 };
 
 #endif
-

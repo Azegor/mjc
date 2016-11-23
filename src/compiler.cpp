@@ -32,11 +32,11 @@
 
 #include "dotvisitor.hpp"
 #include "error.hpp"
+#include "firm_visitor.hpp"
 #include "input_file.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "semantic_visitor.hpp"
-#include "firm_visitor.hpp"
 
 co::color_ostream<std::ostream> Compiler::cl_cout{std::cout};
 co::color_ostream<std::ostream> Compiler::cl_cerr{std::cerr};
@@ -180,7 +180,7 @@ int Compiler::printFirmGraph() {
   }
 }
 
-void Compiler::analyzeAstSemantic(ast::Program *astRoot, Lexer& lexer) {
+void Compiler::analyzeAstSemantic(ast::Program *astRoot, Lexer &lexer) {
   SemanticVisitor semantic_visitor(lexer);
   astRoot->accept(&semantic_visitor);
 }
@@ -189,8 +189,6 @@ void Compiler::createFirmGraph(ast::Program *astRoot) {
   FirmVisitor firm_visitor;
   astRoot->accept(&firm_visitor);
 }
-
-
 
 static int exclusiveOptionsSum(bool b) { return b ? 1 : 0; }
 

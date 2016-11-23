@@ -95,7 +95,8 @@ public:
   virtual ~SemanticVisitor() {}
 
 private:
-  template <typename T> void checkForDuplicates(T &list, const std::string& name) {
+  template <typename T>
+  void checkForDuplicates(T &list, const std::string &name) {
     std::stable_sort(list.begin(), list.end(), ast::SortUniquePtrPred());
     auto firstDuplicate =
         std::adjacent_find(list.begin(), list.end(), ast::UniquePtrEqPred());
@@ -110,15 +111,15 @@ private:
     auto &loc = node.getLoc();
     auto &errorToken = reportAtScopeEnd ? loc.endToken : loc.startToken;
     throw ast::SemanticError(loc, lexer.getFilename(), std::move(msg),
-                        lexer.getCurrentLineFromInput(errorToken.line),
-                        reportAtScopeEnd);
+                             lexer.getCurrentLineFromInput(errorToken.line),
+                             reportAtScopeEnd);
   }
   [[noreturn]] void error(SourceLocation loc, std::string msg,
                           bool reportAtScopeEnd = false) {
     auto &errorToken = reportAtScopeEnd ? loc.endToken : loc.startToken;
     throw ast::SemanticError(loc, lexer.getFilename(), std::move(msg),
-                        lexer.getCurrentLineFromInput(errorToken.line),
-                        reportAtScopeEnd);
+                             lexer.getCurrentLineFromInput(errorToken.line),
+                             reportAtScopeEnd);
   }
 };
 

@@ -81,7 +81,7 @@ public:
 
   ast::ProgramPtr parseProgram();
 
-  Lexer& getLexer() { return lexer; }
+  Lexer &getLexer() { return lexer; }
 
 private:
   void readExpect(Token::Type ttype) {

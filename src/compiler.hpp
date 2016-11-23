@@ -74,7 +74,7 @@ class Compiler {
   void checkOptions();
   bool sanityChecks();
 
-  void analyzeAstSemantic(ast::Program *astRoot, Lexer& lexer);
+  void analyzeAstSemantic(ast::Program *astRoot, Lexer &lexer);
   void createFirmGraph(ast::Program *astRoot);
 
 public:
