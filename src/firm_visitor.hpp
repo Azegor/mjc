@@ -26,6 +26,7 @@ private:
     }
     default:
       assert(false);
+	  return nullptr; // slience compiler warning
     }
   }
 

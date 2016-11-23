@@ -17,12 +17,10 @@ set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/install")
 include_directories("${CMAKE_PREFIX_PATH}/include")
 link_directories("${CMAKE_PREFIX_PATH}/lib")
 
-if (NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-  if("${CMAKE_BUILD_TYPE}" STREQUAL "")
-    set(CMAKE_BUILD_TYPE "Debug" CACHE STRING
-      "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel."
-      FORCE)
-  endif()
+set(ENABLE_FUZZING OFF CACHE BOOL "Enable building off fuzzer binaries")
+
+if (${ENABLE_FUZZING})
+	message(STATUS "Fuzzer builds enabled")
   add_subdirectory(fuzzing)
 endif()
 
