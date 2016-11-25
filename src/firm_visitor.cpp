@@ -150,6 +150,11 @@ void FirmVisitor::visitIntLiteral(ast::IntLiteral &lit) {
   pushNode(node);
 }
 
+void FirmVisitor::visitBoolLiteral(ast::BoolLiteral &lit) {
+  ir_node *node = new_Const(new_tarval_from_long(lit.getValue() ? 1 : 0, mode_Bu));
+  pushNode(node);
+}
+
 void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   expr.getLeft()->accept(this);
   ir_node *leftNode = popNode();
