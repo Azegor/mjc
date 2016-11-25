@@ -10,8 +10,8 @@ FirmVisitor::FirmVisitor() {
   // System.out.println takes just 1 param and returns void
   sysoutType = new_type_method(1, 0, false, cc_cdecl_set, mtp_no_property);
   set_method_param_type(sysoutType, 0, intType);
-  // TODO: printf() doesn't take an int?
-  sysoutEntity = new_entity(get_glob_type(), "printf", sysoutType);
+  sysoutEntity = new_global_entity(get_glob_type(), "print_int", sysoutType,
+                                   ir_visibility_external, IR_LINKAGE_DEFAULT);
 }
 
 void FirmVisitor::visitProgram(ast::Program &program) {
