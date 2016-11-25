@@ -110,10 +110,11 @@ void FirmVisitor::visitClass(ast::Class &klass) {
 
 void FirmVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
   (void)stmt;
-  ir_node *constRetval = new_Const_long(mode_Is, 0);
   ir_graph *currentGraph = get_current_ir_graph();
 
-  ir_node *results[1] = {constRetval};
+  stmt.acceptChildren(this);
+
+  ir_node *results[1] = {popNode()};
 
   ir_node *store = get_store();
   ir_node *ret = new_Return(store, 1, results);
