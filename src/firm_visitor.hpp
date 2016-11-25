@@ -50,6 +50,7 @@ public:
   void visitMainMethod(ast::MainMethod &method) override;
   void visitRegularMethod(ast::RegularMethod &method) override;
   void visitClass(ast::Class &klass) override;
+  void visitReturnStatement(ast::ReturnStatement &stmt) override;
 };
 
 #endif

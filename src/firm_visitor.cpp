@@ -77,3 +77,17 @@ void FirmVisitor::visitClass(ast::Class &klass) {
   // Ignore
   (void)klass;
 }
+
+void FirmVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
+  (void)stmt;
+  ir_node *constRetval = new_Const_long(mode_Is, 0);
+  ir_graph *currentGraph = get_current_ir_graph();
+
+  ir_node *results[1] = {constRetval};
+
+  ir_node *store = get_store();
+  ir_node *ret = new_Return(store, 1, results);
+  ir_node *end = get_irg_end_block(currentGraph);
+
+  add_immBlock_pred(end, ret);
+}
