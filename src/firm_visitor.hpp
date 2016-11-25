@@ -21,25 +21,25 @@ private:
       return this->intType;
     case sem::TypeKind::Bool:
       return this->boolType;
-	case sem::TypeKind::Array:
-		return this->arrayType;
+    case sem::TypeKind::Array:
+      return this->arrayType;
     case sem::TypeKind::Class: {
       auto ct = dynamic_cast<ast::ClassType *>(type);
       return this->classTypes[ct->getDef()];
     }
     default:
       assert(false);
-	  return nullptr; // slience compiler warning
+      return nullptr; // slience compiler warning
     }
   }
 
 public:
   FirmVisitor();
   virtual ~FirmVisitor() {
-	for (auto& e : classTypes) {
-		free_type(e.second);
-	}
-	free_type(arrayType);
+    for (auto& e : classTypes) {
+      free_type(e.second);
+    }
+    free_type(arrayType);
     free_type(boolType);
     free_type(intType);
   };

@@ -62,12 +62,12 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
       new_entity(this->currentClassType,
                  new_id_from_str(method.getName().c_str()), methodType);
 
-  ir_graph *mainMethodGraph = new_ir_graph(entity, 0);
-  set_current_ir_graph(mainMethodGraph);
+  ir_graph *methodGraph = new_ir_graph(entity, 0);
+  set_current_ir_graph(methodGraph);
 
   method.acceptChildren(this);
 
-  irg_finalize_cons(mainMethodGraph);
+  irg_finalize_cons(methodGraph);
 }
 
 void FirmVisitor::visitClass(ast::Class &klass) {
