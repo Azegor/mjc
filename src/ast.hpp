@@ -322,7 +322,7 @@ public:
     }
   }
 
-  size_t countVariableDeclarations();
+  std::vector<VariableDeclaration*> countVariableDeclarations();
 };
 using BlockPtr = std::unique_ptr<Block>;
 

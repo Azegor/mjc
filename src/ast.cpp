@@ -134,14 +134,15 @@ void Visitor::visitUnaryExpression(UnaryExpression &unaryExpression) {
 }
 
 
-size_t Block::countVariableDeclarations() {
-  size_t n = 0;
+std::vector<VariableDeclaration*> Block::countVariableDeclarations() {
+  std::vector<VariableDeclaration*> decls;
   for (auto &stmt : statements) {
-    if (dynamic_cast<VariableDeclaration*>(stmt.get()))
-      n ++;
+    if (auto d = dynamic_cast<VariableDeclaration*>(stmt.get())) {
+      decls.push_back(d);
+    }
   }
 
-  return n;
+  return decls;
 }
 
 } /* namespace ast */
