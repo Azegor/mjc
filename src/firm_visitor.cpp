@@ -144,17 +144,49 @@ void FirmVisitor::visitIntLiteral(ast::IntLiteral &lit) {
 }
 
 void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
-  if (expr.getOperation() == ast::BinaryExpression::Op::Plus) {
-    expr.getLeft()->accept(this);
-    ir_node *leftNode = popNode();
-    expr.getRight()->accept(this);
-    ir_node *rightNode = popNode();
+  expr.getLeft()->accept(this);
+  ir_node *leftNode = popNode();
+  expr.getRight()->accept(this);
+  ir_node *rightNode = popNode();
 
-    ir_node *addNode = new_Add(leftNode, rightNode);
-    pushNode(addNode);
-
-  } else {
-    // TODO: Implement
+  switch (expr.getOperation()) {
+  case ast::BinaryExpression::Op::Assign:
+    break;
+  case ast::BinaryExpression::Op::Or:
+    break;
+  case ast::BinaryExpression::Op::And:
+    break;
+  case ast::BinaryExpression::Op::Equals:
+    break;
+  case ast::BinaryExpression::Op::NotEquals:
+    break;
+  case ast::BinaryExpression::Op::Less:
+    break;
+  case ast::BinaryExpression::Op::LessEquals:
+    break;
+  case ast::BinaryExpression::Op::Greater:
+    break;
+  case ast::BinaryExpression::Op::GreaterEquals:
+    break;
+  case ast::BinaryExpression::Op::Plus:
+    pushNode(new_Add(leftNode, rightNode));
+    break;
+  case ast::BinaryExpression::Op::Minus:
+    pushNode(new_Sub(leftNode, rightNode));
+    break;
+  case ast::BinaryExpression::Op::Mul:
+    pushNode(new_Mul(leftNode, rightNode));
+    break;
+  case ast::BinaryExpression::Op::Div:
+    break;
+  case ast::BinaryExpression::Op::Mod: {
+    ir_node *store = get_store();
+    // TODO: Wtf does the last parameter mean?
+    pushNode(new_Mod(store, leftNode, rightNode, 0));
+    break;
+  }
+  default:
     assert(false);
+    break;
   }
 }
