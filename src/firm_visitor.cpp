@@ -41,12 +41,16 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   ir_entity *entity =
       new_entity(get_glob_type(), new_id_from_str("main"), mainMethodType);
 
-  ir_graph *mainMethodGraph = new_ir_graph(entity, 0);
+  auto localVars = method.getBlock()->countVariableDeclarations();
+  ir_graph *mainMethodGraph = new_ir_graph(entity, localVars.size());
   set_current_ir_graph(mainMethodGraph);
 
+  this->methods.insert({&method, FirmMethod(mainMethodType, 0, nullptr, localVars)});
   this->currentMethod = &method;
   method.acceptChildren(this);
 
+  // "... mature the current block, which means fixing the number of their predecessors"
+  mature_immBlock(get_r_cur_block(mainMethodGraph));
   irg_finalize_cons(mainMethodGraph);
 }
 
