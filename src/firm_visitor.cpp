@@ -53,7 +53,6 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
 
   int numParams = 1;
   for (auto &param : parameters) {
-    (void)param;
     set_method_param_type(methodType, numParams, getIrType(param->getType()));
     numParams++;
   }
@@ -67,6 +66,22 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   ir_graph *methodGraph = new_ir_graph(entity,
                                        numParams); // number of local variables including parameters
   set_current_ir_graph(methodGraph);
+
+  // Add projections for arguments
+  ir_node *lastBlock = get_r_cur_block(methodGraph);
+  // set the start block to be the current block
+  set_r_cur_block(methodGraph, get_irg_start_block(methodGraph));
+  ir_node *args = get_irg_args(methodGraph);
+
+  int i = 0;
+  for(auto &param : parameters) {
+    (void)param;
+    // TODO: Save this somewhere?
+    new_Proj(args, mode_Is, i); // TODO: Correct mode
+    i++;
+  }
+
+  set_r_cur_block(methodGraph, lastBlock);
 
   method.acceptChildren(this);
 
