@@ -62,6 +62,8 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
       new_entity(this->currentClassType,
                  new_id_from_str(method.getName().c_str()), methodType);
 
+  /* "returns a new graph consisting of a start block, a regular block
+   * and an end block" */
   ir_graph *methodGraph = new_ir_graph(entity,
                                        numParams); // number of local variables including parameters
   set_current_ir_graph(methodGraph);
