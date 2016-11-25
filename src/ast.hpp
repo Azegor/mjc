@@ -881,6 +881,7 @@ class MethodInvocation : public RValueExpression {
   // might be empty
   std::vector<ExprPtr> arguments;
   RegularMethod *methodDef;
+  bool isSysout = false;
 
 public:
   MethodInvocation(SourceLocation loc, ExprPtr lhs, std::string methodName,
@@ -923,6 +924,9 @@ public:
 
   Expression *getLeft() const { return left.get(); }
   const std::string &getName() const { return name; }
+
+  void setIsSysoutCall(bool val) { isSysout = val; }
+  bool isSysoutCall() { return isSysout; }
 
   void setDef(RegularMethod *def) { methodDef = def; }
   RegularMethod *getDef() const { return methodDef; }

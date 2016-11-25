@@ -386,6 +386,7 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
           error(invocation, ss.str());
         }
         // Yep, System.out.println call
+        invocation.setIsSysoutCall(true);
         invocation.targetType.setVoid();
         return;
       } else {
