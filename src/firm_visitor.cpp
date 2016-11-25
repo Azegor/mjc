@@ -69,10 +69,11 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
       new_entity(this->currentClassType,
                  new_id_from_str(method.getName().c_str()), methodType);
 
+  size_t numLocalVars = method.getBlock()->countVariableDeclarations();
   /* "returns a new graph consisting of a start block, a regular block
    * and an end block" */
   ir_graph *methodGraph = new_ir_graph(entity,
-                                       numParams); // number of local variables including parameters
+         numParams + numLocalVars); // number of local variables including parameters
   set_current_ir_graph(methodGraph);
 
   // Add projections for arguments
@@ -86,7 +87,6 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   int i = 1;
   for(auto &param : parameters) {
     (void)param;
-    // TODO: Save this somewhere?
     paramNodes[i] = new_Proj(args, mode_Is, i); // TODO: Correct mode
     i++;
   }
