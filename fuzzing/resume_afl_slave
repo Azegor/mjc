@@ -11,18 +11,35 @@ for x in "${!phases[@]}"; do
     [[ ${1} == ${x} ]] && valid_arg=1
 done
 
-[[ ${#} -eq 2 && ${valid_arg} == 1 ]] || { echo "pass one of: ${!phases[@]} and an afl slave id"; exit 1; }
+[[ ${#} -eq 1 && ${valid_arg} == 1 ]] || { echo "pass one of: ${!phases[@]}"; exit 1; }
+
+cd ${0%/*}
+
+output_dir="artifacts/afl"
+work_prefix="fuzz_"
+
+# lock our work dir. Works because mkdir is atomic and fails if the dir exists
+c=0
+while true; do
+    lock_dir=.${work_prefix}$((++c)).lock
+    if mkdir "${output_dir}/${lock_dir}"; then
+        work_dir=${work_prefix}${c}
+        break
+    fi
+done
 
 afl_args=(
     -i -
-    -o artifacts/afl
+    -o "${output_dir}"
     -x mj_parser.dict
-    -S fuzz_"${2}"
+    -S "${work_dir}"
     ../builddir/fuzzing/afl_fuzzer/mjc_instr
-    ${phases[${1}]}
+    "${phases[${1}]}"
     @@
 )
 
-cd ${0%/*}
 afl_fuzzer/afl/afl-fuzz "${afl_args[@]}"
+
+# unlock
+rmdir "${output_dir}/${lock_dir}"
 
