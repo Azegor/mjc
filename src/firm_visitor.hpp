@@ -42,6 +42,8 @@ public:
     free_type(arrayType);
     free_type(boolType);
     free_type(intType);
+
+    ir_finish();
   };
 
   void visitProgram(ast::Program &program) override;
