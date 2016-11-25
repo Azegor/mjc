@@ -18,6 +18,8 @@ private:
 
   std::unordered_map<ast::Class *, ir_type *> classTypes;
 
+  std::vector<ir_node*> nodeStack;
+
   ir_type *getIrType(ast::Type *type) {
     auto sType = type->getSemaType();
     switch (sType.kind) {
@@ -35,6 +37,18 @@ private:
       assert(false);
       return nullptr; // slience compiler warning
     }
+  }
+
+  void pushNode(ir_node* node) {
+    nodeStack.push_back(node);
+  }
+
+  ir_node* popNode() {
+    assert(nodeStack.size() > 0);
+    ir_node *n = nodeStack[nodeStack.size() - 1];
+    nodeStack.erase(nodeStack.end() - 1);
+
+    return n;
   }
 
 public:
