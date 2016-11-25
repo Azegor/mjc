@@ -10,6 +10,10 @@ private:
   ir_type *boolType;
   ir_type *arrayType;
 
+  // System.out.println special case
+  ir_type *sysoutType;
+  ir_entity *sysoutEntity;
+
   ir_type *currentClassType = nullptr;
 
   std::unordered_map<ast::Class *, ir_type *> classTypes;
@@ -51,6 +55,7 @@ public:
   void visitRegularMethod(ast::RegularMethod &method) override;
   void visitClass(ast::Class &klass) override;
   void visitReturnStatement(ast::ReturnStatement &stmt) override;
+  void visitMethodInvocation(ast::MethodInvocation &invocation) override;
 };
 
 #endif

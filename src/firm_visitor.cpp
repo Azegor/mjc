@@ -6,6 +6,12 @@ FirmVisitor::FirmVisitor() {
   intType = new_type_primitive(mode_Is);
   boolType = new_type_primitive(mode_Bu);
   arrayType = new_type_primitive(mode_P);
+
+  // System.out.println takes just 1 param and returns void
+  sysoutType = new_type_method(1, 0, false, cc_cdecl_set, mtp_no_property);
+  set_method_param_type(sysoutType, 0, intType);
+  // TODO: printf() doesn't take an int?
+  sysoutEntity = new_entity(get_glob_type(), "printf", sysoutType);
 }
 
 void FirmVisitor::visitProgram(ast::Program &program) {
@@ -108,4 +114,26 @@ void FirmVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
   ir_node *end = get_irg_end_block(currentGraph);
 
   add_immBlock_pred(end, ret);
+}
+
+void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
+  if (invocation.isSysoutCall()) {
+    // "to create the call we first create a node representing the address
+    //  of the function we want to call" ... "then we use new_Call to
+    //  create the call"
+    auto arg = dynamic_cast<ast::IntLiteral*>(invocation.getArguments()[0]);
+    ir_node *args[1] = {new_Const(new_tarval_from_long(arg->getValue(), mode_Is))};
+    assert(arg);
+    ir_node *store = get_store();
+    //ir_node *callee = this->sysoutAddress;
+    ir_node *callee = new_Address(sysoutEntity);
+    ir_node *callNode = new_Call(store, callee, 1, args, this->sysoutType);
+
+    // Update the current store
+    ir_node *newStore = new_Proj(callNode, get_modeM(), pn_Call_M);
+    set_store(newStore);
+  } else {
+    // TODO: Implement
+    assert(false);
+  }
 }
