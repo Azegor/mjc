@@ -175,7 +175,7 @@ void FirmVisitor::visitThisLiteral(ast::ThisLiteral &lit) {
 
 void FirmVisitor::visitNullLiteral(ast::NullLiteral &lit) {
   (void)lit;
-  pushNode(new_Const(new_tarval_from_long(0, mode_P))); // XXX Correct?
+  pushNode(new_Const(new_tarval_from_long(0, mode_P)));
 }
 
 void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
