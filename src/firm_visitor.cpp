@@ -59,7 +59,8 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   if (numReturnValues > 0)
     set_method_res_type(methodType, 0, intType);
 
-  set_method_param_type(methodType, 0, classes.at(this->currentClass).type);
+  ir_type *thisParamType = new_type_pointer(classes.at(this->currentClass).type);
+  set_method_param_type(methodType, 0, thisParamType);
 
   int numParams = 1;
   for (auto &param : parameters) {
