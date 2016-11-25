@@ -14,9 +14,16 @@ struct FirmMethod {
     type(type), nParams(nParams), params(params), localVars(localVars) {}
 };
 
+struct FirmField {
+  ast::Field *field;
+  ir_entity *entity;
+  FirmField(ast::Field *field, ir_entity *entity) : field(field), entity(entity) {}
+};
+
 struct FirmClass {
   ir_type *type;
   ir_entity *entity;
+  std::vector<FirmField> fieldEntities;
   FirmClass(ir_type *type, ir_entity* entity) :
     type(type), entity(entity) {}
 };
@@ -103,6 +110,7 @@ public:
   void visitThisLiteral(ast::ThisLiteral &lit) override;
   void visitNullLiteral(ast::NullLiteral &lit) override;
   void visitVariableDeclaration(ast::VariableDeclaration &decl) override;
+  void visitField(ast::Field &field) override;
 };
 
 #endif

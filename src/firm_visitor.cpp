@@ -271,6 +271,22 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
     // TODO: Use Proj here?
     ir_node *val = get_r_value (current_ir_graph, pos, mode_Is); // TODO: Correct mode
     pushNode(val);
+  } else if (auto field = dynamic_cast<ast::Field*>(ref.getDef())) {
+    auto firmClass = &classes.at(this->currentClass);
+    bool found = false;
+    for (auto &fieldEnt : firmClass->fieldEntities) {
+      if (fieldEnt.field == field) {
+        // XXX: Always creates pointer types?
+        ir_node *member = new_Member(new_Address(firmClass->entity),
+                                     fieldEnt.entity);
+        pushNode(member);
+        found = true;
+        break;
+      }
+    }
+
+    // Just to be sure
+    assert(found);
   } else {
     assert(false);
   }
@@ -305,4 +321,13 @@ void FirmVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
 
     set_r_value(current_ir_graph, pos, popNode());
   }
+}
+
+void FirmVisitor::visitField(ast::Field &field) {
+  auto firmClass = &classes.at(this->currentClass);
+  ir_type *fieldType = new_type_primitive(mode_Is); // TODO: Use correct type;
+  ir_entity *ent = new_entity(firmClass->type,
+                              field.getName().c_str(),
+                              fieldType);
+  firmClass->fieldEntities.push_back(FirmField{&field, ent});
 }
