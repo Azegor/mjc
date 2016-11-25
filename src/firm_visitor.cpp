@@ -15,16 +15,18 @@ FirmVisitor::FirmVisitor() {
 }
 
 void FirmVisitor::visitProgram(ast::Program &program) {
+  this->currentProgram = &program;
   auto &classes = program.getClasses();
 
   // First, collect all class types
   for (auto &klass : classes) {
     ir_type *classType = new_type_class(klass->getName().c_str());
-    this->classTypes[klass.get()] = classType;
+    ir_entity *classEntity = new_entity(get_glob_type(), klass->getName().c_str(), classType);
+    this->classes.insert({klass.get(), FirmClass(classType, classEntity)});
   }
 
   for (auto &klass : classes) {
-    this->currentClassType = classTypes[klass.get()];
+    this->currentClass = klass.get();
     klass->acceptChildren(this);
   }
 
@@ -57,7 +59,7 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   if (numReturnValues > 0)
     set_method_res_type(methodType, 0, intType);
 
-  set_method_param_type(methodType, 0, this->currentClassType);
+  set_method_param_type(methodType, 0, classes.at(this->currentClass).type);
 
   int numParams = 1;
   for (auto &param : parameters) {
@@ -66,7 +68,7 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   }
 
   ir_entity *entity =
-      new_entity(this->currentClassType,
+      new_entity(classes.at(this->currentClass).type,
                  new_id_from_str(method.getName().c_str()), methodType);
 
   size_t numLocalVars = method.getBlock()->countVariableDeclarations();

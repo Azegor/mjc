@@ -12,6 +12,13 @@ struct FirmMethod {
     type(type), nParams(nParams), params(params) {}
 };
 
+struct FirmClass {
+  ir_type *type;
+  ir_entity *entity;
+  FirmClass(ir_type *type, ir_entity* entity) :
+    type(type), entity(entity) {}
+};
+
 class FirmVisitor : public ast::Visitor {
 private:
   ir_type *intType;
@@ -22,11 +29,13 @@ private:
   ir_type *sysoutType;
   ir_entity *sysoutEntity;
 
-  ir_type *currentClassType = nullptr;
 
+  //ir_type *currentClassType = nullptr;
+  ast::Class *currentClass = nullptr;
+  ast::Program *currentProgram = nullptr;
   ast::Method *currentMethod = nullptr;
 
-  std::unordered_map<ast::Class *, ir_type *> classTypes;
+  std::unordered_map<ast::Class *, FirmClass> classes;
   std::unordered_map<ast::Method *, FirmMethod> methods;
 
   std::vector<ir_node*> nodeStack;
@@ -42,7 +51,7 @@ private:
       return this->arrayType;
     case sem::TypeKind::Class: {
       auto ct = dynamic_cast<ast::ClassType *>(type);
-      return this->classTypes[ct->getDef()];
+      return this->classes.at(ct->getDef()).type;
     }
     default:
       assert(false);
@@ -65,8 +74,8 @@ private:
 public:
   FirmVisitor();
   virtual ~FirmVisitor() {
-    for (auto& e : classTypes) {
-      free_type(e.second);
+    for (auto& e : classes) {
+      free_type(e.second.type);
     }
     for (auto& e : methods) {
       delete[] e.second.params;
