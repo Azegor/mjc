@@ -4,25 +4,17 @@ cmake_minimum_required(VERSION 2.6)
 
 project(mcj)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wextra -Werror -pedantic")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fno-common -fno-inline")
-# works only with clang
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,undefined -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fno-common")
-
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -fprofile-arcs -ftest-coverage")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")
-
 set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/install")
 include_directories("${CMAKE_PREFIX_PATH}/include")
 link_directories("${CMAKE_PREFIX_PATH}/lib")
 
-set(ENABLE_FUZZING OFF CACHE BOOL "Enable building off fuzzer binaries")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall")
+set(DEBUG_FLAGS "${DEBUG_FLAGS} -Wextra -Werror -pedantic")
+set(DEBUG_FLAGS "${DEBUG_FLAGS} -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common")
+# works only with clang
+#set(DEBUG_FLAGS "${DEBUG_FLAGS} -fsanitize=address,undefined -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fno-common")
 
-if (${ENABLE_FUZZING})
-	message(STATUS "Fuzzer builds enabled")
-  add_subdirectory(fuzzing)
-endif()
+set(DEBUG_FLAGS "${DEBUG_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
 
 enable_testing()
 add_subdirectory(test)
@@ -59,16 +51,20 @@ ExternalProject_Add(libfirm
 # can't use that as it's not generated yet when cmake runs
 set(libfirm_LIBRARIES "-lfirm -lm")
 
+
+set(MJC_SOURCES
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/compiler.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/lexer.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/parser.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/dotvisitor.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/ast.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/symboltable.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/semantic_visitor.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/firm_visitor.cpp"
+)
 add_executable(mjc
-  src/main.cpp
-  src/compiler.cpp
-  src/lexer.cpp
-  src/parser.cpp
-  src/dotvisitor.cpp
-  src/ast.cpp
-  src/symboltable.cpp
-  src/semantic_visitor.cpp
-  src/firm_visitor.cpp
+  ${MJC_SOURCES}
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp"
 )
 
 add_library(runtime STATIC src/runtime.c)
@@ -76,9 +72,23 @@ add_library(runtime STATIC src/runtime.c)
 add_dependencies(mjc libfirm runtime)
 target_link_libraries(mjc ${Boost_LIBRARIES} ${JEMALLOC_LIBRARIES} ${libfirm_LIBRARIES})
 
+set(ENABLE_FUZZING OFF CACHE BOOL "Enable building off fuzzer binaries")
+
+if (${ENABLE_FUZZING})
+	message(STATUS "Fuzzer builds enabled")
+  add_subdirectory(fuzzing)
+endif()
+
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+  set_property(TARGET mjc APPEND_STRING PROPERTY LINK_FLAGS "${DEBUG_FLAGS}")
+  separate_arguments(DEBUG_FLAGS)
+  set_property(TARGET mjc APPEND PROPERTY COMPILE_OPTIONS "${DEBUG_FLAGS}")
+
   include(CodeCoverage)
   setup_target_for_coverage(coverage "make -C ${PROJECT_SOURCE_DIR}/builddir test" coverage)
   add_dependencies(coverage mjc)
+else()
+  set_property(TARGET mjc APPEND_STRING PROPERTY LINK_FLAGS -flto)
+  set_property(TARGET mjc APPEND PROPERTY COMPILE_OPTIONS -flto)
 endif()

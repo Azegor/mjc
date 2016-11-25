@@ -2,13 +2,15 @@ cmake_minimum_required(VERSION 2.6)
 
 # add_definitions( -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS )
 
-project(fuzzmjc_afl)
-
-set(CMAKE_BUILD_TYPE "Release")
-
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-
 include(ExternalProject) # load module
+
+# create instrumented binary for afl
+add_executable(mjc_instr $<TARGET_PROPERTY:mjc,SOURCES>)
+target_link_libraries(mjc_instr $<TARGET_PROPERTY:mjc,LINK_LIBRARIES>)
+set(RELEASE_FLAGS "${CMAKE_CXX_FLAGS_RELEASE}")
+set_property(TARGET mjc_instr APPEND_STRING PROPERTY LINK_FLAGS "${RELEASE_FLAGS}")
+separate_arguments(RELEASE_FLAGS)
+set_property(TARGET mjc_instr APPEND PROPERTY COMPILE_OPTIONS "${RELEASE_FLAGS}")
 
 # build afl-gcc binaries
 ExternalProject_Add(AFL
@@ -32,27 +34,6 @@ if(EXISTS "/usr/bin/llvm-config")
     TEST_COMMAND :
   )
   add_dependencies(AFL_CLANG_FAST AFL)
-  set(HAVE_CLANG_FAST 1)
-#   set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")
-endif()
-
-find_package(Boost COMPONENTS program_options REQUIRED)
-
-# create instrumented binary for afl
-add_executable(mjc_instr
-  ../../src/main.cpp
-  ../../src/compiler.cpp
-  ../../src/lexer.cpp
-  ../../src/parser.cpp
-  ../../src/dotvisitor.cpp
-  ../../src/ast.cpp
-  ../../src/symboltable.cpp
-  ../../src/semantic_visitor.cpp
-)
-
-target_link_libraries(mjc_instr ${Boost_LIBRARIES})
-
-if (${HAVE_CLANG_FAST})
   add_dependencies(mjc_instr AFL_CLANG_FAST)
 
   set(CMAKE_C_COMPILER ${CMAKE_CURRENT_SOURCE_DIR}/afl/afl-clang-fast)
@@ -63,3 +44,4 @@ else()
   set(CMAKE_C_COMPILER ${CMAKE_CURRENT_SOURCE_DIR}/afl/afl-gcc)
   set(CMAKE_CXX_COMPILER ${CMAKE_CURRENT_SOURCE_DIR}/afl/afl-g++)
 endif()
+
