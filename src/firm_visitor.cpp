@@ -95,7 +95,7 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   }
 
   set_r_cur_block(methodGraph, lastBlock);
-  this->methods.insert({&method, FirmMethod(methodType, (size_t)numParams, paramNodes)});
+  this->methods.insert({&method, FirmMethod(methodType, (size_t)numParams, paramNodes, localVars)});
   this->currentMethod = &method;
 
   ir_node *args_node = get_irg_args(methodGraph);
@@ -103,8 +103,9 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   set_r_value(methodGraph, 0, new_Proj(args_node, mode_P, 0));
   i = 1;
   for (auto &param : parameters) {
-    set_r_value(methodGraph, i, new_Proj(args_node, mode_Is, 0));
+    set_r_value(methodGraph, i, new_Proj(args_node, mode_Is, 0)); // TODO: Correct mode
     (void)param;
+    i++;
   }
 
   method.acceptChildren(this);

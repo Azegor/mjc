@@ -8,8 +8,10 @@ struct FirmMethod {
   ir_type *type;
   size_t nParams;
   ir_node **params;
-  FirmMethod(ir_type *type, size_t nParams, ir_node **params) :
-    type(type), nParams(nParams), params(params) {}
+  std::vector<ast::VariableDeclaration*> localVars;
+  FirmMethod(ir_type *type, size_t nParams, ir_node **params,
+             std::vector<ast::VariableDeclaration*> localVars) :
+    type(type), nParams(nParams), params(params), localVars(localVars) {}
 };
 
 struct FirmClass {
