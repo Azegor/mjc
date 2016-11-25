@@ -272,3 +272,19 @@ void FirmVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
     assert(false);
   }
 }
+
+void FirmVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
+  if (decl.getInitializer() != nullptr) {
+    decl.getInitializer()->accept(this);
+    auto firmMethod = &methods.at(this->currentMethod);
+    size_t pos = firmMethod->nParams; // first parameters, then local vars
+
+    for (auto &lv : firmMethod->localVars) {
+      if (lv == &decl)
+        break;
+      pos ++;
+    }
+
+    set_r_value(current_ir_graph, pos, popNode());
+  }
+}

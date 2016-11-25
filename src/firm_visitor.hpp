@@ -102,6 +102,7 @@ public:
   void visitUnaryExpression(ast::UnaryExpression &expr) override;
   void visitThisLiteral(ast::ThisLiteral &lit) override;
   void visitNullLiteral(ast::NullLiteral &lit) override;
+  void visitVariableDeclaration(ast::VariableDeclaration &decl) override;
 };
 
 #endif
