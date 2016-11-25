@@ -98,6 +98,8 @@ public:
   void visitBinaryExpression(ast::BinaryExpression &expr) override;
   void visitVarRef(ast::VarRef &ref) override;
   void visitUnaryExpression(ast::UnaryExpression &expr) override;
+  void visitThisLiteral(ast::ThisLiteral &lit) override;
+  void visitNullLiteral(ast::NullLiteral &lit) override;
 };
 
 #endif

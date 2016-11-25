@@ -157,6 +157,17 @@ void FirmVisitor::visitBoolLiteral(ast::BoolLiteral &lit) {
   pushNode(node);
 }
 
+void FirmVisitor::visitThisLiteral(ast::ThisLiteral &lit) {
+  (void)lit;
+  // we always have an explicit `this` parameter at position 0
+  pushNode(get_r_value(current_ir_graph, 0, mode_P));
+}
+
+void FirmVisitor::visitNullLiteral(ast::NullLiteral &lit) {
+  (void)lit;
+  pushNode(new_Const(new_tarval_from_long(0, mode_P))); // XXX Correct?
+}
+
 void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   expr.getLeft()->accept(this);
   ir_node *leftNode = popNode();
