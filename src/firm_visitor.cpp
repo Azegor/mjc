@@ -137,3 +137,9 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     assert(false);
   }
 }
+
+void FirmVisitor::visitIntLiteral(ast::IntLiteral &lit) {
+  // We only have signed 32 bit integers.
+  ir_node *node = new_Const(new_tarval_from_long(lit.getValue(), mode_Is));
+  pushNode(node);
+}

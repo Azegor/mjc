@@ -70,6 +70,7 @@ public:
   void visitClass(ast::Class &klass) override;
   void visitReturnStatement(ast::ReturnStatement &stmt) override;
   void visitMethodInvocation(ast::MethodInvocation &invocation) override;
+  void visitIntLiteral(ast::IntLiteral &lit) override;
 };
 
 #endif
