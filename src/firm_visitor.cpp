@@ -121,11 +121,10 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     // "to create the call we first create a node representing the address
     //  of the function we want to call" ... "then we use new_Call to
     //  create the call"
-    auto arg = dynamic_cast<ast::IntLiteral*>(invocation.getArguments()[0]);
-    ir_node *args[1] = {new_Const(new_tarval_from_long(arg->getValue(), mode_Is))};
-    assert(arg);
+    invocation.acceptChildren(this);
+
+    ir_node *args[1] = {popNode()};
     ir_node *store = get_store();
-    //ir_node *callee = this->sysoutAddress;
     ir_node *callee = new_Address(sysoutEntity);
     ir_node *callNode = new_Call(store, callee, 1, args, this->sysoutType);
 
