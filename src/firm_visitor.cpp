@@ -142,3 +142,19 @@ void FirmVisitor::visitIntLiteral(ast::IntLiteral &lit) {
   ir_node *node = new_Const(new_tarval_from_long(lit.getValue(), mode_Is));
   pushNode(node);
 }
+
+void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
+  if (expr.getOperation() == ast::BinaryExpression::Op::Plus) {
+    expr.getLeft()->accept(this);
+    ir_node *leftNode = popNode();
+    expr.getRight()->accept(this);
+    ir_node *rightNode = popNode();
+
+    ir_node *addNode = new_Add(leftNode, rightNode);
+    pushNode(addNode);
+
+  } else {
+    // TODO: Implement
+    assert(false);
+  }
+}

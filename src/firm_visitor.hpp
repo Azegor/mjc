@@ -71,6 +71,7 @@ public:
   void visitReturnStatement(ast::ReturnStatement &stmt) override;
   void visitMethodInvocation(ast::MethodInvocation &invocation) override;
   void visitIntLiteral(ast::IntLiteral &lit) override;
+  void visitBinaryExpression(ast::BinaryExpression &expr) override;
 };
 
 #endif
