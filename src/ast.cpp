@@ -133,4 +133,15 @@ void Visitor::visitUnaryExpression(UnaryExpression &unaryExpression) {
   unaryExpression.acceptChildren(this);
 }
 
+
+size_t Block::countVariableDeclarations() {
+  size_t n = 0;
+  for (auto &stmt : statements) {
+    if (dynamic_cast<VariableDeclaration*>(stmt.get()))
+      n ++;
+  }
+
+  return n;
+}
+
 } /* namespace ast */

@@ -321,6 +321,8 @@ public:
         stmt->accept(visitor);
     }
   }
+
+  size_t countVariableDeclarations();
 };
 using BlockPtr = std::unique_ptr<Block>;
 
