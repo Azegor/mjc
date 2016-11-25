@@ -286,7 +286,7 @@ class Lexer {
   std::istream &input;
   std::string filename;
 
-  int lastChar;
+  int lastChar = 0;
   // 1024 seems to be the sweet spot:
   static constexpr const int maxBufferSize = 1024;
   // input stream buffer
