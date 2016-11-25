@@ -28,6 +28,7 @@ void FirmVisitor::visitProgram(ast::Program &program) {
     klass->acceptChildren(this);
   }
 
+  assert(nodeStack.size() == 0);
   dump_all_ir_graphs("");
 }
 
@@ -41,6 +42,7 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   ir_graph *mainMethodGraph = new_ir_graph(entity, 0);
   set_current_ir_graph(mainMethodGraph);
 
+  this->currentMethod = &method;
   method.acceptChildren(this);
 
   irg_finalize_cons(mainMethodGraph);
@@ -79,15 +81,19 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   set_r_cur_block(methodGraph, get_irg_start_block(methodGraph));
   ir_node *args = get_irg_args(methodGraph);
 
-  int i = 0;
+  ir_node **paramNodes = new ir_node*[numParams];
+  paramNodes[0] = new_Proj(args, mode_Is, 0); // This parameter TODO: Correct mode
+  int i = 1;
   for(auto &param : parameters) {
     (void)param;
     // TODO: Save this somewhere?
-    new_Proj(args, mode_Is, i); // TODO: Correct mode
+    paramNodes[i] = new_Proj(args, mode_Is, i); // TODO: Correct mode
     i++;
   }
 
   set_r_cur_block(methodGraph, lastBlock);
+  this->methods.insert({&method, FirmMethod(methodType, (size_t)numParams, paramNodes)});
+  this->currentMethod = &method;
 
   method.acceptChildren(this);
 
@@ -192,5 +198,31 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   default:
     assert(false);
     break;
+  }
+}
+
+void FirmVisitor::visitVarRef(ast::VarRef &ref) {
+  (void) ref;
+  if (ref.getName() == "System") {
+    // XXX Have to add a dummy node here?
+    return;
+  }
+
+  if (auto param = dynamic_cast<ast::Parameter*>(ref.getDef())) {
+    // Param refs are only possible in regular methods
+    auto method = dynamic_cast<ast::RegularMethod*>(this->currentMethod);
+    auto firmMethod = &this->methods.at(this->currentMethod);
+    // Parameter names are unique at this point
+    auto params = method->getParameters();
+    size_t paramIndex = 0;
+    for (auto &p : params) {
+      if (p == param) {
+        break;
+      }
+      paramIndex ++;
+    }
+    assert(paramIndex < firmMethod->nParams);
+    pushNode(firmMethod->params[1 + paramIndex]); // 1 because of the this parameter
+    (void)firmMethod;
   }
 }

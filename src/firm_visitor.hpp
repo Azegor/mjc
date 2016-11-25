@@ -4,6 +4,14 @@
 #include "ast.hpp"
 #include "libfirm/firm.h"
 
+struct FirmMethod {
+  ir_type *type;
+  size_t nParams;
+  ir_node **params;
+  FirmMethod(ir_type *type, size_t nParams, ir_node **params) :
+    type(type), nParams(nParams), params(params) {}
+};
+
 class FirmVisitor : public ast::Visitor {
 private:
   ir_type *intType;
@@ -16,7 +24,10 @@ private:
 
   ir_type *currentClassType = nullptr;
 
+  ast::Method *currentMethod = nullptr;
+
   std::unordered_map<ast::Class *, ir_type *> classTypes;
+  std::unordered_map<ast::Method *, FirmMethod> methods;
 
   std::vector<ir_node*> nodeStack;
 
@@ -72,6 +83,7 @@ public:
   void visitMethodInvocation(ast::MethodInvocation &invocation) override;
   void visitIntLiteral(ast::IntLiteral &lit) override;
   void visitBinaryExpression(ast::BinaryExpression &expr) override;
+  void visitVarRef(ast::VarRef &ref) override;
 };
 
 #endif
