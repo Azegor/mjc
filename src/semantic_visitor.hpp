@@ -19,17 +19,7 @@ class SemanticVisitor : public ast::Visitor {
   static ast::DummyDefinition dummyMainArgDef;
 
   ast::Class *findClassByName(const std::string &className) {
-    // implemented with binary search. TODO: maybe consider a set instead
-    auto &classes = currentProgram->getClasses();
-    auto pos =
-        std::lower_bound(classes.begin(), classes.end(), className,
-                         [](const ast::ClassPtr &cls, const std::string &str) {
-                           return cls->getName() < str;
-                         });
-    if ((pos == classes.end()) || (className < (*pos)->getName())) {
-      return nullptr;
-    }
-    return pos->get();
+    return currentProgram->findClassByName(className);
   }
 
   ast::RegularMethod *findMethodInClass(ast::Class *klass,
