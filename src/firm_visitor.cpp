@@ -177,8 +177,12 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   case ast::BinaryExpression::Op::Mul:
     pushNode(new_Mul(leftNode, rightNode));
     break;
-  case ast::BinaryExpression::Op::Div:
+  case ast::BinaryExpression::Op::Div: {
+    ir_node *store = get_store();
+    // TODO: Wtf does the last parameter mean?
+    pushNode(new_Div(store, leftNode, rightNode, 0));
     break;
+  }
   case ast::BinaryExpression::Op::Mod: {
     ir_node *store = get_store();
     // TODO: Wtf does the last parameter mean?
