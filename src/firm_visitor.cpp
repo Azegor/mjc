@@ -70,6 +70,9 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
 
   method.acceptChildren(this);
 
+  // "... mature the current block, which means fixing the number of their predecessors"
+  mature_immBlock(get_r_cur_block(methodGraph));
+
   irg_finalize_cons(methodGraph);
 }
 
