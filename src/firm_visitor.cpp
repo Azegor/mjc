@@ -98,6 +98,15 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   this->methods.insert({&method, FirmMethod(methodType, (size_t)numParams, paramNodes)});
   this->currentMethod = &method;
 
+  ir_node *args_node = get_irg_args(methodGraph);
+  // Initialize all parameters/local variables
+  set_r_value(methodGraph, 0, new_Proj(args_node, mode_P, 0));
+  i = 1;
+  for (auto &param : parameters) {
+    set_r_value(methodGraph, i, new_Proj(args_node, mode_Is, 0));
+    (void)param;
+  }
+
   method.acceptChildren(this);
 
   // "... mature the current block, which means fixing the number of their predecessors"
@@ -243,7 +252,8 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
     }
     assert(paramIndex < firmMethod->nParams);
     pushNode(firmMethod->params[1 + paramIndex]); // 1 because of the this parameter
-    (void)firmMethod;
+  } else {
+    assert(false);
   }
 }
 
