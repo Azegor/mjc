@@ -68,6 +68,9 @@ public:
     for (auto& e : classTypes) {
       free_type(e.second);
     }
+    for (auto& e : methods) {
+      delete[] e.second.params;
+    }
     free_type(arrayType);
     free_type(boolType);
     free_type(intType);

@@ -192,6 +192,8 @@ ast::ParameterList Parser::parseParameterList() {
   default:
     return {}; // empty vector
   }
+
+  return {};
 }
 
 ast::ParameterPtr Parser::parseParameter() {
