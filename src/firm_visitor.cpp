@@ -252,7 +252,21 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
       paramIndex ++;
     }
     assert(paramIndex < firmMethod->nParams);
+    // TODO: Proj of that parameter? or get_r_value?
     pushNode(firmMethod->params[1 + paramIndex]); // 1 because of the this parameter
+  } else if (auto decl = dynamic_cast<ast::VariableDeclaration*>(ref.getDef())) {
+    auto firmMethod = &methods.at(this->currentMethod);
+    size_t pos = firmMethod->nParams; // first parameters, then local vars
+
+    for (auto &lv : firmMethod->localVars) {
+      if (lv == decl)
+        break;
+      pos ++;
+    }
+
+    // TODO: Use Proj here?
+    ir_node *val = get_r_value (current_ir_graph, pos, mode_Is); // TODO: Correct mode
+    pushNode(val);
   } else {
     assert(false);
   }
