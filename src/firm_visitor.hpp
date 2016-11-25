@@ -88,6 +88,7 @@ public:
   void visitIntLiteral(ast::IntLiteral &lit) override;
   void visitBinaryExpression(ast::BinaryExpression &expr) override;
   void visitVarRef(ast::VarRef &ref) override;
+  void visitUnaryExpression(ast::UnaryExpression &expr) override;
 };
 
 #endif

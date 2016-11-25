@@ -232,3 +232,18 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
     (void)firmMethod;
   }
 }
+
+void FirmVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
+  expr.acceptChildren(this);
+
+  switch(expr.getOperation()) {
+  case ast::UnaryExpression::Op::Not:
+    pushNode(new_Not(popNode()));
+    break;
+  case ast::UnaryExpression::Op::Neg:
+    pushNode(new_Minus(popNode()));
+    break;
+  default:
+    assert(false);
+  }
+}
