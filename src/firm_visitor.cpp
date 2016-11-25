@@ -51,18 +51,19 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
 
   set_method_param_type(methodType, 0, this->currentClassType);
 
-  int i = 0;
+  int numParams = 1;
   for (auto &param : parameters) {
     (void)param;
-    set_method_param_type(methodType, 1 + i, getIrType(param->getType()));
-    i++;
+    set_method_param_type(methodType, numParams, getIrType(param->getType()));
+    numParams++;
   }
 
   ir_entity *entity =
       new_entity(this->currentClassType,
                  new_id_from_str(method.getName().c_str()), methodType);
 
-  ir_graph *methodGraph = new_ir_graph(entity, 0);
+  ir_graph *methodGraph = new_ir_graph(entity,
+                                       numParams); // number of local variables including parameters
   set_current_ir_graph(methodGraph);
 
   method.acceptChildren(this);
