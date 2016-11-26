@@ -126,6 +126,7 @@ public:
   void visitNullLiteral(ast::NullLiteral &lit) override;
   void visitVariableDeclaration(ast::VariableDeclaration &decl) override;
   void visitField(ast::Field &field) override;
+  void visitFieldAccess(ast::FieldAccess &access) override;
 };
 
 #endif

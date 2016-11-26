@@ -416,3 +416,32 @@ void FirmVisitor::visitField(ast::Field &field) {
                               fieldType);
   firmClass->fieldEntities.push_back(FirmField{&field, ent});
 }
+
+void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
+  // sysout special case...
+  if (auto ref =dynamic_cast<ast::VarRef*>(access.getLeft())) {
+    if (access.getName() == "out" && ref->getName() == "System")
+      return;
+  }
+
+  auto firmClass = &classes.at(this->currentClass);
+  // Left is never null!
+  access.getLeft()->accept(this);
+  ir_node *leftNode = popNode();
+
+  ir_entity *rightEntity = nullptr;
+  for(auto &fieldEntity : firmClass->fieldEntities)
+    if (fieldEntity.field == access.getDef()) {
+      rightEntity = fieldEntity.entity;
+      break;
+    }
+  assert(rightEntity != nullptr);
+
+
+  ir_node *member = new_Member(leftNode, rightEntity);
+
+  ir_node *loadNode = new_Load(get_store(), member, mode_Is, firmClass->type, cons_none);
+  ir_node *proj = new_Proj(loadNode, mode_Is, 1);
+
+  pushNode(proj);
+}
