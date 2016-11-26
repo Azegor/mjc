@@ -88,6 +88,12 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   set_current_ir_graph(methodGraph);
   method.acceptChildren(this);
 
+  // If the return value is void, insert an empty return node
+  if (method.getReturnType()->getSemaType().isVoid()) {
+    ir_node *returnNode = new_Return(get_store(), 0, NULL);
+    add_immBlock_pred(get_irg_end_block(methodGraph), returnNode);
+  }
+
   // "... mature the current block, which means fixing the number of their predecessors"
   mature_immBlock(get_r_cur_block(methodGraph));
 
@@ -158,18 +164,21 @@ void FirmVisitor::visitClass(ast::Class &klass) {
 }
 
 void FirmVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
-  (void)stmt;
-  ir_graph *currentGraph = get_current_ir_graph();
+  if (stmt.getExpression() != nullptr) {
+    // TODO: This just ignores return statements without expression
+    //       But we still need to model the control flow for them.
+    ir_graph *currentGraph = get_current_ir_graph();
 
-  stmt.acceptChildren(this);
+    stmt.acceptChildren(this);
 
-  ir_node *results[1] = {popNode()};
+    ir_node *results[1] = {popNode()};
 
-  ir_node *store = get_store();
-  ir_node *ret = new_Return(store, 1, results);
-  ir_node *end = get_irg_end_block(currentGraph);
+    ir_node *store = get_store();
+    ir_node *ret = new_Return(store, 1, results);
+    ir_node *end = get_irg_end_block(currentGraph);
 
-  add_immBlock_pred(end, ret);
+    add_immBlock_pred(end, ret);
+  }
 }
 
 void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
