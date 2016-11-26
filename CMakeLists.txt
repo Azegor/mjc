@@ -6,7 +6,7 @@ project(mcj)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wextra -Werror -pedantic")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,undefined -fno-omit-frame-pointer -fno-common")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer -fno-common -fno-inline")
 # works only with clang
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address,undefined -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fno-common")
 
@@ -71,7 +71,9 @@ add_executable(mjc
   src/firm_visitor.cpp
 )
 
-add_dependencies(mjc libfirm)
+add_library(runtime STATIC src/runtime.c)
+
+add_dependencies(mjc libfirm runtime)
 target_link_libraries(mjc ${Boost_LIBRARIES} ${JEMALLOC_LIBRARIES} ${libfirm_LIBRARIES})
 
 
