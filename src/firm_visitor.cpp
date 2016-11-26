@@ -132,7 +132,7 @@ void FirmVisitor::visitClass(ast::Class &klass) {
                                           false, cc_cdecl_set, mtp_no_property);
 
     if (numReturnValues > 0)
-      set_method_res_type(methodType, 0, intType);
+      set_method_res_type(methodType, 0, this->getIrType(method->getReturnType()));
 
     ir_type *thisParamType = new_type_pointer(classType);
     set_method_param_type(methodType, 0, thisParamType);
