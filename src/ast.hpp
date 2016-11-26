@@ -894,6 +894,8 @@ public:
   VarRef(SourceLocation loc, SymbolTable::Symbol &sym)
       : PrimaryExpression(std::move(loc)), symbol(sym) {}
 
+  static ast::DummyDefinition dummySystem;
+
   void accept(Visitor *visitor) override { visitor->visitVarRef(*this); }
 
   SymbolTable::Symbol &getSymbol() const override { return symbol; }
@@ -971,6 +973,8 @@ public:
   FieldAccess(SourceLocation loc, ExprPtr lhs, std::string memberName)
       : Expression(std::move(loc)), left(std::move(lhs)),
         name(std::move(memberName)) {}
+
+  static ast::DummySystemOut dummySystemOut;
 
   void accept(Visitor *visitor) override { visitor->visitFieldAccess(*this); }
   void acceptChildren(Visitor *visitor) override {

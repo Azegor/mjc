@@ -1,7 +1,5 @@
 #include "semantic_visitor.hpp"
 
-ast::DummyDefinition SemanticVisitor::dummySystem;
-ast::DummySystemOut SemanticVisitor::dummySystemOut;
 ast::DummyDefinition SemanticVisitor::dummyMainArgDef;
 
 void SemanticVisitor::visitProgram(ast::Program &program) {
@@ -141,7 +139,7 @@ void SemanticVisitor::visitVarRef(ast::VarRef &varRef) {
   auto *def = symTbl.lookup(varRef.getSymbol());
   if (!def) {
     if (varRef.getName() == "System") {
-      def = &dummySystem;
+      def = &ast::VarRef::dummySystem;
     } else {
       error(varRef, "Unknown variable '" + varRef.getSymbol().name + "'");
     }
@@ -307,9 +305,9 @@ void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
 
   // special handling for System.out.println()
   if (auto ref = dynamic_cast<ast::VarRef *>(access.getLeft())) {
-    if (ref->getDef() == &dummySystem) {
+    if (ref->getDef() == &ast::VarRef::dummySystem) {
       if (access.getName() == "out") {
-        access.setDef(&dummySystemOut);
+        access.setDef(&ast::FieldAccess::dummySystemOut);
         return;
       } else {
         error(access,
@@ -318,7 +316,7 @@ void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
     }
   }
   if (auto left = dynamic_cast<ast::FieldAccess *>(access.getLeft())) {
-    if (left->getDef() == &dummySystemOut) {
+    if (left->getDef() == &ast::FieldAccess::dummySystemOut) {
       error(access, "invalid access '" + access.getName() + "' on System.out");
     }
   }
@@ -349,7 +347,7 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
   // special handling for System.out.println()
   if (auto left = dynamic_cast<ast::VarRef *>(invocation.getLeft())) {
     auto *def = left->getDef();
-    if (def == &dummySystem) {
+    if (def == &ast::VarRef::dummySystem) {
       error(invocation,
             "invalid method call '" + invocation.getName() + "' on 'System'");
     }
@@ -375,7 +373,7 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
                  dynamic_cast<ast::FieldAccess *>(invocation.getLeft())) {
     // System.out.println special case: VarRef(System) - FieldAccess(out) -
     // MethodInvocation(println)
-    if (left->getDef() == &dummySystemOut) {
+    if (left->getDef() == &ast::FieldAccess::dummySystemOut) {
       if (invocation.getName() == "println") {
         auto args = invocation.getArguments();
         if (args.size() != 1) {

@@ -15,8 +15,6 @@ class SemanticVisitor : public ast::Visitor {
   int mainMethodCount = 0;
   SymbolTable::SymbolTable symTbl;
 
-  static ast::DummyDefinition dummySystem;
-  static ast::DummySystemOut dummySystemOut;
   static ast::DummyDefinition dummyMainArgDef;
 
   ast::Class *findClassByName(const std::string &className) {

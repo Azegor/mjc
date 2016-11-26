@@ -321,8 +321,7 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
 }
 
 void FirmVisitor::visitVarRef(ast::VarRef &ref) {
-  (void) ref;
-  if (ref.getName() == "System") {
+  if (ref.getDef() == &ast::VarRef::dummySystem) {
     // XXX Have to add a dummy node here?
     return;
   }
@@ -414,9 +413,8 @@ void FirmVisitor::visitField(ast::Field &field) {
 
 void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
   // sysout special case...
-  if (auto ref =dynamic_cast<ast::VarRef*>(access.getLeft())) {
-    if (access.getName() == "out" && ref->getName() == "System")
-      return;
+  if (access.getDef() == &ast::FieldAccess::dummySystemOut) {
+    return;
   }
 
   auto firmClass = &classes.at(this->currentClass);

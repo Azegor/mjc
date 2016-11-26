@@ -3,6 +3,9 @@
 SymbolTable::Symbol ast::DummyDefinition::dummySymbol("<Dummy>");
 SymbolTable::Symbol ast::DummySystemOut::dummySymbol("System.out");
 
+ast::DummyDefinition ast::VarRef::dummySystem;
+ast::DummySystemOut ast::FieldAccess::dummySystemOut;
+
 static const char *typeKindToString(sem::TypeKind kind) {
   switch (kind) {
   case sem::TypeKind::Bool:
