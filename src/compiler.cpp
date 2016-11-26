@@ -186,8 +186,8 @@ void Compiler::analyzeAstSemantic(ast::Program *astRoot, Lexer &lexer) {
 }
 
 void Compiler::createFirmGraph(ast::Program *astRoot) {
-  FirmVisitor firm_visitor;
-  astRoot->accept(&firm_visitor);
+  FirmVisitor firmVisitor{true, true};
+  astRoot->accept(&firmVisitor);
 }
 
 static int exclusiveOptionsSum(bool b) { return b ? 1 : 0; }

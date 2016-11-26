@@ -1,7 +1,10 @@
 #include "firm_visitor.hpp"
 
-FirmVisitor::FirmVisitor() {
+FirmVisitor::FirmVisitor(bool print, bool verify) {
   ir_init();
+
+  this->printGraphs = print;
+  this->verifyGraphs = verify;
 
   intType = new_type_primitive(mode_Is);
   boolType = new_type_primitive(mode_Bu);
@@ -29,7 +32,10 @@ void FirmVisitor::visitProgram(ast::Program &program) {
   }
 
   assert(nodeStack.size() == 0);
-  dump_all_ir_graphs("");
+
+  if (printGraphs) {
+    dump_all_ir_graphs("");
+  }
 }
 
 void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
@@ -51,6 +57,10 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   // "... mature the current block, which means fixing the number of their predecessors"
   mature_immBlock(get_r_cur_block(mainMethodGraph));
   irg_finalize_cons(mainMethodGraph);
+
+  if (verifyGraphs) {
+    irg_verify(mainMethodGraph);
+  }
 }
 
 void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
@@ -77,6 +87,10 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   mature_immBlock(get_r_cur_block(methodGraph));
 
   irg_finalize_cons(methodGraph);
+
+  if (verifyGraphs) {
+    irg_verify(methodGraph);
+  }
 }
 
 void FirmVisitor::visitClass(ast::Class &klass) {

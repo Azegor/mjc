@@ -33,6 +33,9 @@ struct FirmClass {
 
 class FirmVisitor : public ast::Visitor {
 private:
+  bool printGraphs = false;
+  bool verifyGraphs = false;
+
   ir_type *intType;
   ir_type *boolType;
   ir_type *arrayType;
@@ -84,7 +87,7 @@ private:
   }
 
 public:
-  FirmVisitor();
+  FirmVisitor(bool print, bool verify);
   virtual ~FirmVisitor() {
     for (auto& e : classes) {
       free_type(e.second.type);
