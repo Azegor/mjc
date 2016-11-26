@@ -5,13 +5,15 @@
 #include "libfirm/firm.h"
 
 struct FirmMethod {
+  ir_graph *graph;
   ir_type *type;
   ir_entity *entity;
   size_t nParams;
   ir_node **params;
   std::vector<ast::VariableDeclaration*> localVars;
   FirmMethod(ir_type *type, ir_entity *entity, size_t nParams, ir_node **params,
-             std::vector<ast::VariableDeclaration*> localVars) :
+             std::vector<ast::VariableDeclaration*> localVars, ir_graph *graph) :
+    graph(graph),
     type(type), entity(entity), nParams(nParams), params(params), localVars(localVars) {}
 };
 

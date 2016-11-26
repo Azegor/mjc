@@ -20,9 +20,7 @@ void FirmVisitor::visitProgram(ast::Program &program) {
 
   // First, collect all class types
   for (auto &klass : classes) {
-    ir_type *classType = new_type_class(klass->getName().c_str());
-    ir_entity *classEntity = new_entity(get_glob_type(), klass->getName().c_str(), classType);
-    this->classes.insert({klass.get(), FirmClass(classType, classEntity)});
+    klass->accept(this); // Will not recurse into children
   }
 
   for (auto &klass : classes) {
@@ -45,7 +43,8 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   ir_graph *mainMethodGraph = new_ir_graph(entity, localVars.size());
   set_current_ir_graph(mainMethodGraph);
 
-  this->methods.insert({&method, FirmMethod(mainMethodType, entity, 0, nullptr, localVars)});
+  this->methods.insert({&method, FirmMethod(mainMethodType, entity, 0,
+        nullptr, localVars, mainMethodGraph)});
   this->currentMethod = &method;
   method.acceptChildren(this);
 
@@ -55,63 +54,23 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
 }
 
 void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
-  int numReturnValues = method.getReturnType()->getSemaType().isVoid() ? 0 : 1;
+  // Types in this->methods have already been created in visitClass!
   auto parameters = method.getParameters();
-  ir_type *methodType = new_type_method(parameters.size() + 1, numReturnValues,
-                                        false, cc_cdecl_set, mtp_no_property);
-
-  if (numReturnValues > 0)
-    set_method_res_type(methodType, 0, intType);
-
-  ir_type *thisParamType = new_type_pointer(classes.at(this->currentClass).type);
-  set_method_param_type(methodType, 0, thisParamType);
-
-  int numParams = 1;
-  for (auto &param : parameters) {
-    set_method_param_type(methodType, numParams, getIrType(param->getType()));
-    numParams++;
-  }
-
-  ir_entity *entity =
-      new_entity(classes.at(this->currentClass).type,
-                 new_id_from_str(method.getName().c_str()), methodType);
-
-  auto localVars = method.getBlock()->countVariableDeclarations();
-  /* "returns a new graph consisting of a start block, a regular block
-   * and an end block" */
-  ir_graph *methodGraph = new_ir_graph(entity,
-         numParams + localVars.size()); // number of local variables including parameters
-  set_current_ir_graph(methodGraph);
-
-  // Add projections for arguments
-  ir_node *lastBlock = get_r_cur_block(methodGraph);
-  // set the start block to be the current block
-  set_r_cur_block(methodGraph, get_irg_start_block(methodGraph));
-  ir_node *args = get_irg_args(methodGraph);
-
-  ir_node **paramNodes = new ir_node*[numParams];
-  paramNodes[0] = new_Proj(args, mode_Is, 0); // This parameter TODO: Correct mode
-  int i = 1;
-  for(auto &param : parameters) {
-    (void)param;
-    paramNodes[i] = new_Proj(args, mode_Is, i); // TODO: Correct mode
-    i++;
-  }
-
-  set_r_cur_block(methodGraph, lastBlock);
-  this->methods.insert({&method, FirmMethod(methodType, entity, (size_t)numParams, paramNodes, localVars)});
+  auto firmMethod = &this->methods.at(&method);
+  auto methodGraph = firmMethod->graph;
   this->currentMethod = &method;
 
   ir_node *args_node = get_irg_args(methodGraph);
   // Initialize all parameters/local variables
   set_r_value(methodGraph, 0, new_Proj(args_node, mode_P, 0));
-  i = 1;
+  size_t i = 1;
   for (auto &param : parameters) {
     set_r_value(methodGraph, i, new_Proj(args_node, mode_Is, 0)); // TODO: Correct mode
     (void)param;
     i++;
   }
 
+  set_current_ir_graph(methodGraph);
   method.acceptChildren(this);
 
   // "... mature the current block, which means fixing the number of their predecessors"
@@ -121,8 +80,61 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
 }
 
 void FirmVisitor::visitClass(ast::Class &klass) {
-  // Ignore
-  (void)klass;
+  ir_type *classType = new_type_class(klass.getName().c_str());
+  ir_entity *classEntity = new_entity(get_glob_type(), klass.getName().c_str(), classType);
+  this->classes.insert({&klass, FirmClass(classType, classEntity)});
+  // We do not recurse into children here since that will be done separately
+  // in visitProgram(). Instead, collect the types of all methods and to the same there.
+
+  auto methods = klass.getMethods()->getMethods();
+  for (auto &method : methods) {
+    int numReturnValues = method->getReturnType()->getSemaType().isVoid() ? 0 : 1;
+    auto parameters = method->getParameters();
+    ir_type *methodType = new_type_method(parameters.size() + 1, numReturnValues,
+                                          false, cc_cdecl_set, mtp_no_property);
+
+    if (numReturnValues > 0)
+      set_method_res_type(methodType, 0, intType);
+
+    ir_type *thisParamType = new_type_pointer(classType);
+    set_method_param_type(methodType, 0, thisParamType);
+
+    int numParams = 1; // includes explicit 'this' parameter
+    for (auto &param : parameters) {
+      set_method_param_type(methodType, numParams, getIrType(param->getType()));
+      numParams++;
+    }
+
+    ir_entity *entity = new_entity(classType,
+                                   new_id_from_str(method->getName().c_str()),
+                                   methodType);
+
+    auto localVars = method->getBlock()->countVariableDeclarations();
+    /* "returns a new graph consisting of a start block, a regular block
+     * and an end block" */
+    ir_graph *methodGraph = new_ir_graph(entity,
+           numParams + localVars.size()); // number of local variables including parameters
+    set_current_ir_graph(methodGraph);
+
+    // Add projections for arguments
+    ir_node *lastBlock = get_r_cur_block(methodGraph);
+    // set the start block to be the current block
+    set_r_cur_block(methodGraph, get_irg_start_block(methodGraph));
+    ir_node *args = get_irg_args(methodGraph);
+
+    ir_node **paramNodes = new ir_node*[numParams];
+    paramNodes[0] = new_Proj(args, mode_Is, 0); // This parameter TODO: Correct mode
+    int i = 1;
+    for(auto &param : parameters) {
+      (void)param;
+      paramNodes[i] = new_Proj(args, mode_Is, i); // TODO: Correct mode
+      i++;
+    }
+
+    set_r_cur_block(methodGraph, lastBlock);
+    this->methods.insert({method, FirmMethod(methodType, entity, (size_t)numParams,
+          paramNodes, localVars, methodGraph)});
+  }
 }
 
 void FirmVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {

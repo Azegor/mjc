@@ -662,6 +662,14 @@ public:
   void sortMethods() {
     std::stable_sort(methods.begin(), methods.end(), ast::SortUniquePtrPred());
   }
+
+  std::vector<RegularMethod *> getMethods() const {
+    std::vector<RegularMethod *> result;
+    for (size_t i = 0; i < methods.size(); i++) {
+      result.push_back(methods[i].get());
+    }
+    return result;
+  }
 };
 
 class MainMethodList : public Node {
