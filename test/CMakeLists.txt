@@ -152,6 +152,17 @@ foreach(file ${lexer_input_files})
 endforeach()
 MESSAGE(STATUS "  Added ${Count} invalid semantic tests")
 
+# check valid firm programs
+set(Count 0)
+file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/firmtest/*.java")
+foreach(file ${lexer_input_files})
+  math(EXPR Count "${Count} + 1")
+  get_filename_component(filename "${file}" NAME)
+  add_test(NAME "Firm_${filename}"
+           COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/firm_valid.sh" $<TARGET_FILE:mjc> "${file}")
+endforeach()
+MESSAGE(STATUS "  Added ${Count} libfirm tests")
+
 set(Count 0)
 file(GLOB lexer_input_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/exec/*.java")
 file(GLOB_RECURSE stdlib_files "${CMAKE_CURRENT_SOURCE_DIR}/testlib/*.java")
