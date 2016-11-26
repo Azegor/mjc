@@ -358,7 +358,7 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
     pushNode(val);
   } else if (auto field = dynamic_cast<ast::Field*>(ref.getDef())) {
     auto firmClass = &classes.at(this->currentClass);
-    bool found = false;
+    __attribute__((unused)) bool found = false;
     for (auto &fieldEnt : firmClass->fieldEntities) {
       if (fieldEnt.field == field) {
         ir_node *thisPointer = get_r_value(current_ir_graph, 0, mode_P);
