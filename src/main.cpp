@@ -48,6 +48,8 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
       ("dot-attr-ast", "print attributed AST as dot output")
       // check semantic of program
       ("firm-graph", "print attributed AST as dot output")
+      // libfirm codegen
+      ("gen-code", "Let libfirm generate code")
       // check semantic of program
       ("output,o", bpo::value<std::string>(&compilerOptions.outputDirName),
        "print attributed AST as dot output");
@@ -107,6 +109,9 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
     }
     if (var_map.count("firm-graph")) {
       compilerOptions.printFirmGraph = true;
+    }
+    if (var_map.count("gen-code")) {
+      compilerOptions.genCode = true;
     }
   } catch (bpo::required_option &e) {
     cl_cerr << co::mode(co::bold) << co::color(co::red)

@@ -172,7 +172,7 @@ int Compiler::printFirmGraph() {
   try {
     auto ast = parser.parseProgram();
     analyzeAstSemantic(ast.get(), parser.getLexer());
-    FirmVisitor firmVisitor{true, true};
+    FirmVisitor firmVisitor{true, true, options.genCode};
     ast->accept(&firmVisitor);
     if (firmVisitor.errorFound())
       return EXIT_FAILURE;

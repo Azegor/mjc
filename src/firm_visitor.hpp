@@ -35,6 +35,7 @@ class FirmVisitor : public ast::Visitor {
 private:
   bool printGraphs = false;
   bool verifyGraphs = false;
+  bool generateCode = false;
   int graphErrors = 0;
 
   ir_type *intType;
@@ -88,7 +89,7 @@ private:
   }
 
 public:
-  FirmVisitor(bool print, bool verify);
+  FirmVisitor(bool print, bool verify, bool gen);
   virtual ~FirmVisitor() {
     for (auto& e : classes) {
       free_type(e.second.type);

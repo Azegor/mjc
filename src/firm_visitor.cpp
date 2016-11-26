@@ -1,10 +1,11 @@
 #include "firm_visitor.hpp"
 
-FirmVisitor::FirmVisitor(bool print, bool verify) {
+FirmVisitor::FirmVisitor(bool print, bool verify, bool gen) {
   ir_init();
 
   this->printGraphs = print;
   this->verifyGraphs = verify;
+  this->generateCode = gen;
 
   intType = new_type_primitive(mode_Is);
   boolType = new_type_primitive(mode_Bu);
@@ -35,6 +36,17 @@ void FirmVisitor::visitProgram(ast::Program &program) {
 
   if (printGraphs) {
     dump_all_ir_graphs("");
+  }
+
+  if (generateCode) {
+    FILE *f = fopen("test.s", "w");
+    // XXX This only "works" on 64bit cpus
+    be_parse_arg("isa=amd64");
+    be_main(f, "test.java");
+    fclose(f);
+    system("gcc -c ../src/runtime.c -o runtime.o");
+    system("ar rcs libruntime.a runtime.o");
+    system("gcc -static test.s -o _test_ -L. -lruntime");
   }
 }
 
