@@ -45,7 +45,7 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   ir_graph *mainMethodGraph = new_ir_graph(entity, localVars.size());
   set_current_ir_graph(mainMethodGraph);
 
-  this->methods.insert({&method, FirmMethod(mainMethodType, 0, nullptr, localVars)});
+  this->methods.insert({&method, FirmMethod(mainMethodType, entity, 0, nullptr, localVars)});
   this->currentMethod = &method;
   method.acceptChildren(this);
 
@@ -99,7 +99,7 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   }
 
   set_r_cur_block(methodGraph, lastBlock);
-  this->methods.insert({&method, FirmMethod(methodType, (size_t)numParams, paramNodes, localVars)});
+  this->methods.insert({&method, FirmMethod(methodType, entity, (size_t)numParams, paramNodes, localVars)});
   this->currentMethod = &method;
 
   ir_node *args_node = get_irg_args(methodGraph);
@@ -156,8 +156,36 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     ir_node *newStore = new_Proj(callNode, get_modeM(), pn_Call_M);
     set_store(newStore);
   } else {
-    // TODO: Implement
-    assert(false);
+    auto left = invocation.getLeft();
+    // This should be true now after semantic analysis
+    assert(left->targetType.isClass());
+    // TODO: Implement this for non-ThisLiteral left-sides
+    assert(dynamic_cast<ast::ThisLiteral*>(left));
+    auto leftClass = currentProgram->findClassByName(left->targetType.name);
+    auto leftFirmClass = this->classes.at(leftClass);
+
+    auto firmMethod = &this->methods.at(invocation.getDef());
+
+    size_t nArgs = 1 + invocation.getArguments().size();
+    // TODO: Handle arguments
+    assert(nArgs == 1);
+    ir_node **args = new ir_node*[nArgs];
+    left->accept(this);
+    args[0] = popNode();
+    ir_node *store = get_store();
+    ir_node *callee = new_Address(firmMethod->entity);
+    ir_node *callNode = new_Call(store, callee, nArgs, args, firmMethod->type);
+
+    // Update the current store
+    ir_node *newStore = new_Proj(callNode, get_modeM(), pn_Call_M);
+    set_store(newStore);
+
+    // get the result
+    if (!invocation.targetType.isVoid()) {
+      ir_node *tuple = new_Proj(callNode, mode_T, pn_Call_T_result);
+      ir_node *result = new_Proj(tuple, mode_Is, 0); // TODO: Correct type
+      pushNode(result);
+    }
   }
 }
 

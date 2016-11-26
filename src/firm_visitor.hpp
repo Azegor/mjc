@@ -6,12 +6,13 @@
 
 struct FirmMethod {
   ir_type *type;
+  ir_entity *entity;
   size_t nParams;
   ir_node **params;
   std::vector<ast::VariableDeclaration*> localVars;
-  FirmMethod(ir_type *type, size_t nParams, ir_node **params,
+  FirmMethod(ir_type *type, ir_entity *entity, size_t nParams, ir_node **params,
              std::vector<ast::VariableDeclaration*> localVars) :
-    type(type), nParams(nParams), params(params), localVars(localVars) {}
+    type(type), entity(entity), nParams(nParams), params(params), localVars(localVars) {}
 };
 
 struct FirmField {
