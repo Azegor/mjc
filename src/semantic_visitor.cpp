@@ -59,6 +59,7 @@ void SemanticVisitor::visitMainMethodList(ast::MainMethodList &mainMethodList) {
 
 void SemanticVisitor::visitMainMethod(ast::MainMethod &mm) {
   currentMethod = &mm;
+  currentLocalVarDeclNr = 0;
   symTbl.insert(mm.getArgSymbol(), &dummyMainArgDef);
   mm.acceptChildren(this);
   currentMethod = nullptr;
@@ -72,6 +73,7 @@ void SemanticVisitor::visitMainMethod(ast::MainMethod &mm) {
 void SemanticVisitor::visitRegularMethod(ast::RegularMethod &method) {
   symTbl.enterScope(); // for parameters
   currentMethod = &method;
+  currentLocalVarDeclNr = 0;
   method.acceptChildren(this);
   symTbl.leaveScope();
   currentMethod = nullptr;
@@ -112,6 +114,8 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
     error(decl, "Variable '" + decl.getSymbol().name + "' already defined");
   }
   symTbl.insert(sym, &decl);
+
+  decl.setIndex(currentLocalVarDeclNr++);
 
   decl.acceptChildren(this);
 

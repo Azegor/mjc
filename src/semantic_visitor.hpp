@@ -11,6 +11,7 @@ class SemanticVisitor : public ast::Visitor {
   ast::Program *currentProgram = nullptr;
   ast::Class *currentClass = nullptr;
   ast::Method *currentMethod = nullptr;
+  int currentLocalVarDeclNr = 0;
   int mainMethodCount = 0;
   SymbolTable::SymbolTable symTbl;
 

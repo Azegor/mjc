@@ -171,18 +171,19 @@ void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
 }
 
 ast::ParameterList Parser::parseParameterList() {
+  int paramIndex = 0;
   ast::ParameterList params;
   switch (curTok.type) {
   case TT::Boolean:
   case TT::Identifier:
   case TT::Int:
   case TT::Void:
-    params.emplace_back(parseParameter());
+    params.emplace_back(parseParameter(++paramIndex));
     while (true) {
       switch (curTok.type) {
       case TT::Comma:
         readNextToken();
-        params.emplace_back(parseParameter());
+        params.emplace_back(parseParameter(++paramIndex));
         break;
       default:
         return params;
@@ -196,13 +197,13 @@ ast::ParameterList Parser::parseParameterList() {
   return {};
 }
 
-ast::ParameterPtr Parser::parseParameter() {
+ast::ParameterPtr Parser::parseParameter(int idx) {
   auto startPos = curTok.startPos();
   auto type = parseType();
   auto endPos = curTok.endPos();
   auto ident = expectGetIdentAndNext(TT::Identifier);
   return ast::make_Ptr<ast::Parameter>({startPos, endPos}, std::move(type),
-                                       strTbl.findOrInsert(ident));
+                                       strTbl.findOrInsert(ident), idx);
 }
 
 ast::TypePtr Parser::parseType() {

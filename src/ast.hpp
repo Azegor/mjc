@@ -535,16 +535,18 @@ using FieldPtr = std::unique_ptr<Field>;
 class Parameter : public Node, public SymbolTable::Definition {
   TypePtr type;
   SymbolTable::Symbol &symbol;
+  int idx;
 
 public:
-  Parameter(SourceLocation loc, TypePtr type, SymbolTable::Symbol &sym)
-      : Node(std::move(loc)), type(std::move(type)), symbol(sym) {}
+  Parameter(SourceLocation loc, TypePtr type, SymbolTable::Symbol &sym, int idx)
+      : Node(std::move(loc)), type(std::move(type)), symbol(sym), idx(idx) {}
 
   void accept(Visitor *visitor) override { visitor->visitParameter(*this); }
   void acceptChildren(Visitor *visitor) override { type->accept(visitor); }
   const std::string &getName() const { return symbol.name; }
   SymbolTable::Symbol &getSymbol() const override { return symbol; }
   Type *getType() const override { return type.get(); }
+  int getIndex() const { return idx; }
 };
 using ParameterPtr = std::unique_ptr<Parameter>;
 using ParameterList = std::vector<ParameterPtr>;
@@ -763,6 +765,7 @@ class VariableDeclaration : public BlockStatement,
   SymbolTable::Symbol &symbol;
   // might be nullptr
   ExprPtr initializer;
+  int idx;
 
 public:
   VariableDeclaration(SourceLocation loc, TypePtr type,
@@ -784,6 +787,9 @@ public:
   const std::string &getName() const { return symbol.name; }
   Type *getType() const override { return type.get(); }
   Expression *getInitializer() const { return initializer.get(); }
+
+  void setIndex(int i) { idx = i; }
+  int getIndex() const { return idx; }
 };
 
 class PrimaryExpression : public Expression {
