@@ -63,7 +63,8 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   irg_finalize_cons(mainMethodGraph);
 
   if (verifyGraphs) {
-    irg_verify(mainMethodGraph);
+    if (irg_verify(mainMethodGraph) == 0)
+      this->graphErrors++;
   }
 }
 
@@ -93,7 +94,8 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   irg_finalize_cons(methodGraph);
 
   if (verifyGraphs) {
-    irg_verify(methodGraph);
+    if (irg_verify(methodGraph) == 0)
+      this->graphErrors++;
   }
 }
 

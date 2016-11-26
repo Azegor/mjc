@@ -35,6 +35,7 @@ class FirmVisitor : public ast::Visitor {
 private:
   bool printGraphs = false;
   bool verifyGraphs = false;
+  int graphErrors = 0;
 
   ir_type *intType;
   ir_type *boolType;
@@ -101,6 +102,11 @@ public:
 
     ir_finish();
   };
+
+  bool errorFound() {
+    assert(this->verifyGraphs);
+    return this->graphErrors > 0;
+  }
 
   void visitProgram(ast::Program &program) override;
   void visitMainMethod(ast::MainMethod &method) override;

@@ -172,7 +172,11 @@ int Compiler::printFirmGraph() {
   try {
     auto ast = parser.parseProgram();
     analyzeAstSemantic(ast.get(), parser.getLexer());
-    createFirmGraph(ast.get());
+    FirmVisitor firmVisitor{true, true};
+    ast->accept(&firmVisitor);
+    if (firmVisitor.errorFound())
+      return EXIT_FAILURE;
+
     return EXIT_SUCCESS;
   } catch (CompilerError &e) {
     e.writeErrorMessage(std::cerr);
@@ -183,11 +187,6 @@ int Compiler::printFirmGraph() {
 void Compiler::analyzeAstSemantic(ast::Program *astRoot, Lexer &lexer) {
   SemanticVisitor semantic_visitor(lexer);
   astRoot->accept(&semantic_visitor);
-}
-
-void Compiler::createFirmGraph(ast::Program *astRoot) {
-  FirmVisitor firmVisitor{true, true};
-  astRoot->accept(&firmVisitor);
 }
 
 static int exclusiveOptionsSum(bool b) { return b ? 1 : 0; }
