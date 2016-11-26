@@ -349,10 +349,10 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
     bool found = false;
     for (auto &fieldEnt : firmClass->fieldEntities) {
       if (fieldEnt.field == field) {
-        // XXX: Always creates pointer types?
-        ir_node *member = new_Member(new_Address(firmClass->entity),
-                                     fieldEnt.entity);
-        pushNode(member);
+        ir_node *thisPointer = get_r_value(current_ir_graph, 0, mode_P);
+        ir_node *member = new_Member(thisPointer, fieldEnt.entity);
+        // TODO: The Conv here makes verify() happy but it's probably not correct.
+        pushNode(new_Conv(member, mode_Is));
         found = true;
         break;
       }
