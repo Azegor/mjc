@@ -4,6 +4,8 @@
 #include "ast.hpp"
 #include "libfirm/firm.h"
 
+#include <stack>
+
 struct FirmMethod {
   ir_graph *graph;
   ir_type *type;
@@ -55,7 +57,7 @@ private:
   std::unordered_map<ast::Class *, FirmClass> classes;
   std::unordered_map<ast::Method *, FirmMethod> methods;
 
-  std::vector<ir_node*> nodeStack;
+  std::stack<ir_node *> nodeStack;
 
   ir_type *getIrType(ast::Type *type) {
     auto sType = type->getSemaType();
@@ -77,13 +79,13 @@ private:
   }
 
   void pushNode(ir_node* node) {
-    nodeStack.push_back(node);
+    nodeStack.push(node);
   }
 
   ir_node* popNode() {
     assert(nodeStack.size() > 0);
-    ir_node *n = nodeStack[nodeStack.size() - 1];
-    nodeStack.erase(nodeStack.end() - 1);
+    ir_node *n = nodeStack.top();
+    nodeStack.pop();
 
     return n;
   }
