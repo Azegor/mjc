@@ -54,6 +54,10 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   this->currentMethod = &method;
   method.acceptChildren(this);
 
+  // TODO: This makes irg_verify() happy but is it the right thing to do?
+  ir_node *returnNode = new_Return(get_store(), 0, NULL);
+  add_immBlock_pred(get_irg_end_block(mainMethodGraph), returnNode);
+
   // "... mature the current block, which means fixing the number of their predecessors"
   mature_immBlock(get_r_cur_block(mainMethodGraph));
   irg_finalize_cons(mainMethodGraph);
