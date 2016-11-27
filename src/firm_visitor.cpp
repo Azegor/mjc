@@ -161,7 +161,7 @@ void FirmVisitor::visitClass(ast::Class &klass) {
     ir_node *args = get_irg_args(methodGraph);
 
     ir_node **paramNodes = new ir_node*[numParams];
-    paramNodes[0] = new_Proj(args, mode_Is, 0); // This parameter TODO: Correct mode
+    paramNodes[0] = new_Proj(args, mode_P, 0); // This parameter TODO: Correct mode
     int i = 1;
     for(auto &param : parameters) {
       (void)param;
