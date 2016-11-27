@@ -144,6 +144,18 @@ public:
   void visitField(ast::Field &field) override;
   void visitFieldAccess(ast::FieldAccess &access) override;
   void visitNewObjectExpression(ast::NewObjectExpression &expr) override;
+
+  // unimplemented:
+//   void visitParameter(ast::Parameter &parameter) override { (void)parameter; assert(false); }
+//   void visitPrimitiveType(ast::PrimitiveType &primitiveType) override { (void)primitiveType; assert(false); }
+//   void visitClassType(ast::ClassType &classType) override { (void)classType; assert(false); }
+//   void visitArrayType(ast::ArrayType &arrayType) override { (void)arrayType; assert(false); }
+//   void visitBlock(ast::Block &block) override { (void)block; assert(false); }
+//   void visitExpressionStatement(ast::ExpressionStatement &exprStmt) override { (void)exprStmt; assert(false); }
+//   void visitIfStatement(ast::IfStatement &ifStatement) override { (void)ifStatement; assert(false); }
+//   void visitWhileStatement(ast::WhileStatement &whileStatement) override { (void)whileStatement; assert(false); }
+//   void visitNewArrayExpression(ast::NewArrayExpression &newArrayExpression) override { (void)newArrayExpression; assert(false); }
+//   void visitArrayAccess(ast::ArrayAccess &arrayAccess) override { (void)arrayAccess; assert(false); }
 };
 
 #endif

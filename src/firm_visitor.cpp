@@ -67,7 +67,7 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   method.acceptChildren(this);
 
   // TODO: This makes irg_verify() happy but is it the right thing to do?
-  ir_node *returnNode = new_Return(get_store(), 0, NULL);
+  ir_node *returnNode = new_Return(get_store(), 0, nullptr);
   add_immBlock_pred(get_irg_end_block(mainMethodGraph), returnNode);
 
   // "... mature the current block, which means fixing the number of their predecessors"
@@ -92,7 +92,7 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
 
   // If the return value is void, insert an empty return node
   if (method.getReturnType()->getSemaType().isVoid()) {
-    ir_node *returnNode = new_Return(get_store(), 0, NULL);
+    ir_node *returnNode = new_Return(get_store(), 0, nullptr);
     add_immBlock_pred(get_irg_end_block(methodGraph), returnNode);
   }
 
@@ -121,9 +121,9 @@ void FirmVisitor::visitClass(ast::Class &klass) {
     ir_type *methodType = new_type_method(parameters.size() + 1, numReturnValues,
                                           false, cc_cdecl_set, mtp_no_property);
 
-    if (numReturnValues > 0)
+    if (numReturnValues > 0) {
       set_method_res_type(methodType, 0, this->getIrType(method->getReturnType()));
-
+    }
     ir_type *thisParamType = new_type_pointer(classType);
     set_method_param_type(methodType, 0, thisParamType);
 
@@ -263,22 +263,31 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
 
   switch (expr.getOperation()) {
   case ast::BinaryExpression::Op::Assign:
+    assert(false);
     break;
   case ast::BinaryExpression::Op::Or:
+    assert(false);
     break;
   case ast::BinaryExpression::Op::And:
+    assert(false);
     break;
   case ast::BinaryExpression::Op::Equals:
+    assert(false);
     break;
   case ast::BinaryExpression::Op::NotEquals:
+    assert(false);
     break;
   case ast::BinaryExpression::Op::Less:
+    assert(false);
     break;
   case ast::BinaryExpression::Op::LessEquals:
+    assert(false);
     break;
   case ast::BinaryExpression::Op::Greater:
+    assert(false);
     break;
   case ast::BinaryExpression::Op::GreaterEquals:
+    assert(false);
     break;
   case ast::BinaryExpression::Op::Plus:
     pushNode(new_Add(leftNode, rightNode));
