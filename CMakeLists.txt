@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 2.6)
 
 # add_definitions( -D__STDC_LIMIT_MACROS -D__STDC_CONSTANT_MACROS )
 
+cmake_policy(SET CMP0012 NEW)
+
 project(mcj)
 
 set(CMAKE_PREFIX_PATH "${CMAKE_CURRENT_BINARY_DIR}/install")
