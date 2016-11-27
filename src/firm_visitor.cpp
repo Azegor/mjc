@@ -211,12 +211,14 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     size_t nArgs = 1 + invocation.getArguments().size();
     // TODO: Handle arguments
     assert(nArgs == 1);
-    ir_node **args = new ir_node*[nArgs];
+    std::vector<ir_node *> args;
+    args.resize(nArgs);
     left->accept(this);
     args[0] = popNode();
     ir_node *store = get_store();
     ir_node *callee = new_Address(firmMethod->entity);
-    ir_node *callNode = new_Call(store, callee, nArgs, args, firmMethod->type);
+    ir_node *callNode =
+        new_Call(store, callee, nArgs, args.data(), firmMethod->type);
 
     // Update the current store
     ir_node *newStore = new_Proj(callNode, get_modeM(), pn_Call_M);
