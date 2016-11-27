@@ -114,6 +114,7 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
   symTbl.insert(sym, &decl);
 
   decl.setIndex(currentLocalVarDeclNr++);
+  currentMethod->addVarDecl(&decl);
 
   decl.acceptChildren(this);
 

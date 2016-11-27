@@ -57,7 +57,7 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   ir_entity *entity =
       new_entity(get_glob_type(), new_id_from_str("main"), mainMethodType);
 
-  auto localVars = method.getBlock()->countVariableDeclarations();
+  auto &localVars = method.getVarDecls();
   ir_graph *mainMethodGraph = new_ir_graph(entity, localVars.size());
   set_current_ir_graph(mainMethodGraph);
 
@@ -137,7 +137,7 @@ void FirmVisitor::visitClass(ast::Class &klass) {
                                    new_id_from_str(method->getName().c_str()),
                                    methodType);
 
-    auto localVars = method->getBlock()->countVariableDeclarations();
+    auto &localVars = method->getVarDecls();
     /* "returns a new graph consisting of a start block, a regular block
      * and an end block" */
     ir_graph *methodGraph = new_ir_graph(entity,

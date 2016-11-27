@@ -321,8 +321,6 @@ public:
         stmt->accept(visitor);
     }
   }
-
-  std::vector<VariableDeclaration*> countVariableDeclarations();
 };
 using BlockPtr = std::unique_ptr<Block>;
 
@@ -552,12 +550,18 @@ using ParameterPtr = std::unique_ptr<Parameter>;
 using ParameterList = std::vector<ParameterPtr>;
 
 class Method : public Node {
+  std::vector<VariableDeclaration* > varDecls;
 public:
   Method(SourceLocation loc) : Node(loc) {}
   virtual Type *getReturnType() const = 0;
   virtual const std::string &getName() const = 0;
 
   bool operator<(const Method &o) const { return getName() < o.getName(); }
+
+  void addVarDecl(VariableDeclaration* d) { varDecls.push_back(d); }
+  const std::vector<VariableDeclaration *> &getVarDecls() const {
+    return varDecls;
+  }
 };
 
 class RegularMethod : public Method {

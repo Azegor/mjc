@@ -136,16 +136,4 @@ void Visitor::visitUnaryExpression(UnaryExpression &unaryExpression) {
   unaryExpression.acceptChildren(this);
 }
 
-
-std::vector<VariableDeclaration*> Block::countVariableDeclarations() {
-  std::vector<VariableDeclaration*> decls;
-  for (auto &stmt : statements) {
-    if (auto d = dynamic_cast<VariableDeclaration*>(stmt.get())) {
-      decls.push_back(d);
-    }
-  }
-
-  return decls;
-}
-
 } /* namespace ast */
