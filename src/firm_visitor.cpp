@@ -350,8 +350,12 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
       if (fieldEnt.field == field) {
         ir_node *thisPointer = get_r_value(current_ir_graph, 0, mode_P);
         ir_node *member = new_Member(thisPointer, fieldEnt.entity);
-        // TODO: The Conv here makes verify() happy but it's probably not correct.
-        pushNode(new_Conv(member, mode_Is));
+        ir_node *loadNode = new_Load(get_store(), member, mode_Is, firmClass->type, cons_none);
+        ir_node *projM = new_Proj(loadNode, mode_M, pn_Load_M);
+        ir_node *projRes = new_Proj(loadNode, mode_Is, pn_Load_res);
+
+        set_store(projM);
+        pushNode(projRes);
         found = true;
         break;
       }
