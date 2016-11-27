@@ -44,11 +44,11 @@ ExternalProject_Add(libfirm
   CONFIGURE_COMMAND ""
   BUILD_COMMAND make -j
     -C "${CMAKE_CURRENT_SOURCE_DIR}/libfirm"
-    "variant=optimize"
+    "variant=debug"
     "top_builddir=${CMAKE_CURRENT_BINARY_DIR}/libfirm/build"
   INSTALL_COMMAND make -j
     -C "${CMAKE_CURRENT_SOURCE_DIR}/libfirm"
-    "variant=optimize"
+    "variant=debug"
     "top_builddir=${CMAKE_CURRENT_BINARY_DIR}/libfirm/build"
     "PREFIX=/"
     "DESTDIR=${CMAKE_PREFIX_PATH}"
