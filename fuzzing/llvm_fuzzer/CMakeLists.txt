@@ -22,6 +22,7 @@ add_executable(fuzzmjc
   ${MJC_SOURCES}
 )
 add_dependencies(fuzzmjc LLVMFuzzer)
+add_dependencies(fuzzmjc libfirm runtime)
 target_link_libraries(fuzzmjc
   $<TARGET_PROPERTY:mjc,LINK_LIBRARIES>
   $<TARGET_FILE:LLVMFuzzer>

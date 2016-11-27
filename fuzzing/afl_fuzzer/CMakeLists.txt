@@ -12,6 +12,8 @@ set_property(TARGET mjc_instr APPEND_STRING PROPERTY LINK_FLAGS "${RELEASE_FLAGS
 separate_arguments(RELEASE_FLAGS)
 set_property(TARGET mjc_instr APPEND PROPERTY COMPILE_OPTIONS "${RELEASE_FLAGS}")
 
+add_dependencies(mjc_instr libfirm runtime)
+
 # build afl-gcc binaries
 ExternalProject_Add(AFL
   SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/afl/
