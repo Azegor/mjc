@@ -453,8 +453,8 @@ void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
   ir_node *member = new_Member(leftNode, rightEntity);
 
   ir_node *loadNode = new_Load(get_store(), member, mode_Is, firmClass->type, cons_none);
-  ir_node *projM    = new_Proj(loadNode, mode_M, pn_Load_M);
   ir_node *projRes  = new_Proj(loadNode, mode_Is, pn_Load_res);
+  ir_node *projM    = new_Proj(loadNode, mode_M, pn_Load_M);
   set_store(projM);
 
   pushNode(projRes);
@@ -463,14 +463,12 @@ void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
 void FirmVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
   // TODO: Declare mallocEntity etc. only once and use a cast?
   auto thisClass = &classes.at(expr.getDef());
-  std::cout << static_cast<ast::Class*>(expr.getDef())->getName() << " size: " <<
-               get_type_size(thisClass->type) << std::endl;
   ir_type *classType = thisClass->type;
   ir_type *classPointerType = new_type_pointer(classType);
   ir_type *mallocType = new_type_method(1, 1, false, cc_cdecl_set, mtp_no_property);
-    set_method_param_type(mallocType, 0, intType);
+  set_method_param_type(mallocType, 0, intType);
   set_method_res_type(mallocType, 0, classPointerType);
-  ir_entity *mallocEntity = new_global_entity(get_glob_type(), "malloc", mallocType,
+  ir_entity *mallocEntity = new_global_entity(get_glob_type(), "calloc", mallocType,
                                               ir_visibility_external, IR_LINKAGE_DEFAULT);
 
   ir_node *args[1] = {new_Const(new_tarval_from_long(12, mode_Is))}; // allocated size in bytes
