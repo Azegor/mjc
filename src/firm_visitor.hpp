@@ -78,6 +78,22 @@ private:
     }
   }
 
+  ir_mode *getIrMode(ast::Type *type) {
+    auto sType = type->getSemaType();
+    switch(sType.kind) {
+    case sem::TypeKind::Int:
+      return mode_Is;
+    case sem::TypeKind::Bool:
+      return mode_Bu;
+    case sem::TypeKind::Array:
+    case sem::TypeKind::Class:
+      return mode_P;
+    default:
+      assert(false);
+      return nullptr;
+    }
+  }
+
   void pushNode(ir_node* node) {
     nodeStack.push(node);
   }

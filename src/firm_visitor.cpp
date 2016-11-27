@@ -351,9 +351,8 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
         break;
       pos ++;
     }
-
-    // TODO: Use Proj here?
-    ir_node *val = get_r_value (current_ir_graph, pos, mode_Is); // TODO: Correct mode
+    ir_node *val = get_r_value (current_ir_graph, pos,
+                                getIrMode(decl->getType()));
     pushNode(val);
   } else if (auto field = dynamic_cast<ast::Field*>(ref.getDef())) {
     auto firmClass = &classes.at(this->currentClass);
@@ -421,6 +420,7 @@ void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
   // Left is never null!
   access.getLeft()->accept(this);
   ir_node *leftNode = popNode();
+  assert(get_irn_mode(leftNode) == mode_P);
 
   ir_entity *rightEntity = nullptr;
   for(auto &fieldEntity : firmClass->fieldEntities)
