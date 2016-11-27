@@ -262,9 +262,24 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   ir_node *rightNode = popNode();
 
   switch (expr.getOperation()) {
-  case ast::BinaryExpression::Op::Assign:
-    assert(false);
+  case ast::BinaryExpression::Op::Assign: {
+    auto firmMethod = &methods.at(this->currentMethod);
+    if (auto varRef = dynamic_cast<ast::VarRef *>(expr.getLeft())) {
+      auto def = varRef->getDef();
+      if (auto locVar = dynamic_cast<ast::VariableDeclaration *>(def)) {
+        auto pos = firmMethod->nParams + locVar->getIndex();
+        set_value(pos, rightNode);
+      } else if (auto fieldDef = dynamic_cast<ast::Field *>(def)) {
+        (void)fieldDef;
+        assert(false);
+      } else {
+        assert(false);
+      }
+    } else {
+      assert(false);
+    }
     break;
+  }
   case ast::BinaryExpression::Op::Or:
     assert(false);
     break;
