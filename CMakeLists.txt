@@ -31,6 +31,10 @@ find_package(JeMalloc)
 
 include(ExternalProject) # load module
 
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+  set(ENV{CFLAGS} ${DEBUG_FLAGS}) # for firm
+endif()
+
 ExternalProject_Add(libfirm
   SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libfirm"
   BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/libfirm/build"
