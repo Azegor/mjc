@@ -272,22 +272,22 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
     assert(false);
     break;
   case ast::BinaryExpression::Op::Equals:
-    assert(false);
+    pushNode(new_Cmp(leftNode, rightNode, ir_relation_equal));
     break;
   case ast::BinaryExpression::Op::NotEquals:
-    assert(false);
+    pushNode(new_Cmp(leftNode, rightNode, ir_relation_less_greater));
     break;
   case ast::BinaryExpression::Op::Less:
-    assert(false);
+    pushNode(new_Cmp(leftNode, rightNode, ir_relation_less));
     break;
   case ast::BinaryExpression::Op::LessEquals:
-    assert(false);
+    pushNode(new_Cmp(leftNode, rightNode, ir_relation_less_equal));
     break;
   case ast::BinaryExpression::Op::Greater:
-    assert(false);
+    pushNode(new_Cmp(leftNode, rightNode, ir_relation_greater));
     break;
   case ast::BinaryExpression::Op::GreaterEquals:
-    assert(false);
+    pushNode(new_Cmp(leftNode, rightNode, ir_relation_greater_equal));
     break;
   case ast::BinaryExpression::Op::Plus:
     pushNode(new_Add(leftNode, rightNode));
