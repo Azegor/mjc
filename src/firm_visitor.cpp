@@ -434,9 +434,11 @@ void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
   ir_node *member = new_Member(leftNode, rightEntity);
 
   ir_node *loadNode = new_Load(get_store(), member, mode_Is, firmClass->type, cons_none);
-  ir_node *proj = new_Proj(loadNode, mode_Is, 1);
+  ir_node *projM    = new_Proj(loadNode, mode_M, pn_Load_M);
+  ir_node *projRes  = new_Proj(loadNode, mode_Is, pn_Load_res);
+  set_store(projM);
 
-  pushNode(proj);
+  pushNode(projRes);
 }
 
 void FirmVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
