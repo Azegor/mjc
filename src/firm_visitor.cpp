@@ -92,7 +92,7 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   set_r_value(methodGraph, 0, new_Proj(args_node, mode_P, 0));
   size_t i = 1;
   for (auto &param : parameters) {
-    set_r_value(methodGraph, i, new_Proj(args_node, mode_Is, 0)); // TODO: Correct mode
+    set_r_value(methodGraph, i, new_Proj(args_node, mode_Is, i)); // TODO: Correct mode
     (void)param;
     i++;
   }
