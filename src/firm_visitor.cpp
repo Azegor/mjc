@@ -438,3 +438,29 @@ void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
 
   pushNode(proj);
 }
+
+void FirmVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
+  // TODO: Declare mallocEntity etc. only once and use a cast?
+  auto thisClass = &classes.at(expr.getDef());
+  std::cout << static_cast<ast::Class*>(expr.getDef())->getName() << " size: " <<
+               get_type_size(thisClass->type) << std::endl;
+  ir_type *classType = thisClass->type;
+  ir_type *classPointerType = new_type_pointer(classType);
+  ir_type *mallocType = new_type_method(1, 1, false, cc_cdecl_set, mtp_no_property);
+    set_method_param_type(mallocType, 0, intType);
+  set_method_res_type(mallocType, 0, classPointerType);
+  ir_entity *mallocEntity = new_global_entity(get_glob_type(), "malloc", mallocType,
+                                              ir_visibility_external, IR_LINKAGE_DEFAULT);
+
+  ir_node *args[1] = {new_Const(new_tarval_from_long(12, mode_Is))}; // allocated size in bytes
+  ir_node *store = get_store();
+  ir_node *callee = new_Address(mallocEntity);
+  ir_node *callNode = new_Call(store, callee, 1, args, mallocType);
+  ir_node *newStore = new_Proj(callNode, mode_M, pn_Call_M);
+  set_store(newStore);
+
+  ir_node *tuple  = new_Proj(callNode, mode_T, pn_Call_T_result);
+  ir_node *result = new_Proj(tuple, mode_P, 0);
+
+  pushNode(result);
+}

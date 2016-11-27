@@ -127,6 +127,7 @@ public:
   void visitVariableDeclaration(ast::VariableDeclaration &decl) override;
   void visitField(ast::Field &field) override;
   void visitFieldAccess(ast::FieldAccess &access) override;
+  void visitNewObjectExpression(ast::NewObjectExpression &expr) override;
 };
 
 #endif
