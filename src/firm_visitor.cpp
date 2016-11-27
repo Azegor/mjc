@@ -87,16 +87,6 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   auto methodGraph = firmMethod->graph;
   this->currentMethod = &method;
 
-  ir_node *args_node = get_irg_args(methodGraph);
-  // Initialize all parameters/local variables
-  set_r_value(methodGraph, 0, new_Proj(args_node, mode_P, 0));
-  size_t i = 1;
-  for (auto &param : parameters) {
-    set_r_value(methodGraph, i, new_Proj(args_node, mode_Is, i)); // TODO: Correct mode
-    (void)param;
-    i++;
-  }
-
   set_current_ir_graph(methodGraph);
   method.acceptChildren(this);
 
@@ -161,11 +151,10 @@ void FirmVisitor::visitClass(ast::Class &klass) {
     ir_node *args = get_irg_args(methodGraph);
 
     ir_node **paramNodes = new ir_node*[numParams];
-    paramNodes[0] = new_Proj(args, mode_P, 0); // This parameter TODO: Correct mode
+    paramNodes[0] = new_Proj(args, mode_P, 0);
     int i = 1;
     for(auto &param : parameters) {
-      (void)param;
-      paramNodes[i] = new_Proj(args, mode_Is, i); // TODO: Correct mode
+      paramNodes[i] = new_Proj(args, getIrMode(param->getType()), i);
       i++;
     }
 
