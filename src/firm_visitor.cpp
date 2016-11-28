@@ -422,7 +422,7 @@ void FirmVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
 
 void FirmVisitor::visitField(ast::Field &field) {
   auto firmClass = &classes.at(this->currentClass);
-  ir_type *fieldType = new_type_primitive(mode_Is); // TODO: Use correct type;
+  ir_type *fieldType = getIrType(field.getType());
   ir_entity *ent = new_entity(firmClass->type,
                               field.getName().c_str(),
                               fieldType);
