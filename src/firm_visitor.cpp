@@ -9,7 +9,7 @@ FirmVisitor::FirmVisitor(bool print, bool verify, bool gen) {
 
   intType = new_type_primitive(mode_Is);
   boolType = new_type_primitive(mode_Bu);
-  arrayType = new_type_primitive(mode_P);
+  arrayType = new_type_primitive(mode_P); // TODO -> new_type_array
 
   // System.out.println takes just 1 param and returns void
   sysoutType = new_type_method(1, 0, false, cc_cdecl_set, mtp_no_property);
@@ -70,7 +70,7 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   ir_node *returnNode = new_Return(get_store(), 0, nullptr);
   add_immBlock_pred(get_irg_end_block(mainMethodGraph), returnNode);
 
-  // "... mature the current block, which means fixing the number of their predecessors"
+  // seals current block (-> all predecessors known)
   mature_immBlock(get_r_cur_block(mainMethodGraph));
   irg_finalize_cons(mainMethodGraph);
 
@@ -124,6 +124,7 @@ void FirmVisitor::visitClass(ast::Class &klass) {
     if (numReturnValues > 0) {
       set_method_res_type(methodType, 0, this->getIrType(method->getReturnType()));
     }
+    // new pointer-type pointing to existing type (classType)
     ir_type *thisParamType = new_type_pointer(classType);
     set_method_param_type(methodType, 0, thisParamType);
 
@@ -133,14 +134,14 @@ void FirmVisitor::visitClass(ast::Class &klass) {
       numParams++;
     }
 
-    ir_entity *entity = new_entity(classType,
+    ir_entity *methodEntity = new_entity(classType,
                                    new_id_from_str(method->getName().c_str()),
                                    methodType);
 
     auto &localVars = method->getVarDecls();
     /* "returns a new graph consisting of a start block, a regular block
      * and an end block" */
-    ir_graph *methodGraph = new_ir_graph(entity,
+    ir_graph *methodGraph = new_ir_graph(methodEntity,
            numParams + localVars.size()); // number of local variables including parameters
     set_current_ir_graph(methodGraph);
 
@@ -159,7 +160,7 @@ void FirmVisitor::visitClass(ast::Class &klass) {
     }
 
     set_r_cur_block(methodGraph, lastBlock);
-    this->methods.insert({method, FirmMethod(methodType, entity, (size_t)numParams,
+    this->methods.insert({method, FirmMethod(methodType, methodEntity, (size_t)numParams,
           paramNodes, localVars, methodGraph)});
   }
 }
