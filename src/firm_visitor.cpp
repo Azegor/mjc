@@ -152,11 +152,9 @@ void FirmVisitor::visitClass(ast::Class &klass) {
 
     ir_node **paramNodes = new ir_node*[numParams];
     paramNodes[0] = new_Proj(args, mode_P, 0);
-    set_r_value(methodGraph, 0, paramNodes[0]);
     int i = 1;
     for(auto &param : parameters) {
       paramNodes[i] = new_Proj(args, getIrMode(param->getType()), i);
-      set_r_value(methodGraph, i, paramNodes[i]);
       i++;
     }
 
@@ -247,7 +245,8 @@ void FirmVisitor::visitBoolLiteral(ast::BoolLiteral &lit) {
 void FirmVisitor::visitThisLiteral(ast::ThisLiteral &lit) {
   (void)lit;
   // we always have an explicit `this` parameter at position 0
-  pushNode(get_r_value(current_ir_graph, 0, mode_P));
+  auto firmMethod = &this->methods.at(currentMethod);
+  pushNode(firmMethod->params[0]);
 }
 
 void FirmVisitor::visitNullLiteral(ast::NullLiteral &lit) {
