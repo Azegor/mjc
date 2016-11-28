@@ -152,9 +152,11 @@ void FirmVisitor::visitClass(ast::Class &klass) {
 
     ir_node **paramNodes = new ir_node*[numParams];
     paramNodes[0] = new_Proj(args, mode_P, 0);
+    set_r_value(methodGraph, 0, paramNodes[0]);
     int i = 1;
     for(auto &param : parameters) {
       paramNodes[i] = new_Proj(args, getIrMode(param->getType()), i);
+      set_r_value(methodGraph, i, paramNodes[i]);
       i++;
     }
 
