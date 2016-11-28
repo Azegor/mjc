@@ -489,12 +489,19 @@ void FirmVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
 void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
 {
   // TODO: this is definitely totally wrong!
+  assert(false);
   arrayAccess.getArray()->accept(this);
   ir_node *arrayNode = popNode();
   arrayAccess.getIndex()->accept(this);
   ir_node *indexNode = popNode();
   ir_node *elemSize =
-  new_Const_long(mode_Is, arrayAccess.getArray()->targetType.calculateSize());
-  auto offset = new_Mul(indexNode, elemSize);
-  pushNode(new_Add(arrayNode, offset));
+    new_Const_long(mode_Is, arrayAccess.getArray()->targetType.calculateSize());
+  ir_node *offset = new_Mul(indexNode, elemSize);
+  ir_node *addr = new_Add(arrayNode, offset);
+  ir_node *loadNode = new_Load(get_store(), addr, mode_Is, nullptr/*arrayAccess.getArray()->type*/, cons_none);
+  ir_node *projM    = new_Proj(loadNode, mode_M, pn_Load_M);
+  ir_node *projRes  = new_Proj(loadNode, mode_Is, pn_Load_res);
+  set_store(projM);
+
+  pushNode(projRes);
 }
