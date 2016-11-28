@@ -203,8 +203,6 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     auto left = invocation.getLeft();
     // This should be true now after semantic analysis
     assert(left->targetType.isClass());
-    // TODO: Implement this for non-ThisLiteral left-sides
-    assert(dynamic_cast<ast::ThisLiteral*>(left));
     auto leftClass = currentProgram->findClassByName(left->targetType.name);
     auto leftFirmClass = this->classes.at(leftClass);
 
