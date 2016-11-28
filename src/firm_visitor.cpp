@@ -485,3 +485,16 @@ void FirmVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
 
   pushNode(result);
 }
+
+void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
+{
+  // TODO: this is definitely totally wrong!
+  arrayAccess.getArray()->accept(this);
+  ir_node *arrayNode = popNode();
+  arrayAccess.getIndex()->accept(this);
+  ir_node *indexNode = popNode();
+  ir_node *elemSize =
+  new_Const_long(mode_Is, arrayAccess.getArray()->targetType.calculateSize());
+  auto offset = new_Mul(indexNode, elemSize);
+  pushNode(new_Add(arrayNode, offset));
+}

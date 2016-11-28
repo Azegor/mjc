@@ -144,6 +144,7 @@ public:
   void visitField(ast::Field &field) override;
   void visitFieldAccess(ast::FieldAccess &access) override;
   void visitNewObjectExpression(ast::NewObjectExpression &expr) override;
+  void visitArrayAccess(ast::ArrayAccess &arrayAccess) override;
 
   // unimplemented:
 //   void visitParameter(ast::Parameter &parameter) override { (void)parameter; assert(false); }
@@ -155,7 +156,6 @@ public:
 //   void visitIfStatement(ast::IfStatement &ifStatement) override { (void)ifStatement; assert(false); }
 //   void visitWhileStatement(ast::WhileStatement &whileStatement) override { (void)whileStatement; assert(false); }
 //   void visitNewArrayExpression(ast::NewArrayExpression &newArrayExpression) override { (void)newArrayExpression; assert(false); }
-//   void visitArrayAccess(ast::ArrayAccess &arrayAccess) override { (void)arrayAccess; assert(false); }
 };
 
 #endif

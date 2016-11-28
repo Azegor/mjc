@@ -109,6 +109,16 @@ struct Type {
     }
   }
   bool operator!=(const sem::Type &other) const { return !(*this == other); }
+
+  size_t calculateSize() const {
+    switch(kind) {
+      case TypeKind::Array: assert(false);
+      case TypeKind::Class: assert(false);
+      case TypeKind::Bool: return 1;
+      case TypeKind::Int: return 4;
+      default: assert(false);
+    }
+  }
 };
 
 enum class ControlFlowBehavior {
