@@ -10,11 +10,18 @@ echo "src dir: ${src_dir}"
 echo "Compiler: ${compiler}"
 echo "In file: ${in_file}"
 
+name=${in_file##*/}
+out_dir=${binary_dir}/firm_output_${name}
+mkdir "${out_dir}"
+pushd "${out_dir}" >/dev/null
+
 # This will just dump a file called "test.s"
 compiler_out=$("${compiler}" --firm-graph --gen-code "${in_file}" 2>&1)
 compiler_retval=$?
 
-gcc -static test.s -o _test_ -L${binary_dir}/../ -lruntime
+gcc -static test.s -o _test_ -L"${binary_dir}/../" -lruntime
+
+popd >/dev/null
 
 if [[ ${compiler_retval} -ne 0 ]]; then
   echo "ERROR: Compiler returned ${compiler_retval} but ${in_file} is supposed to be valid"
@@ -24,12 +31,8 @@ if [[ ${compiler_retval} -ne 0 ]]; then
   exit 1
 fi
 
-
-# I really hope the absolute path doesn't contain more than 2 '.'
-IFS='.' read -r -a array <<< "$in_file"
-
-wanted_output=${array[1]}
-actual_output=$("${binary_dir}/_test_")
+wanted_output=$(cat "${in_file}.output")
+actual_output=$("${out_dir}/_test_")
 
 echo "wanted output: ${wanted_output}"
 echo "actual output: ${actual_output}"
