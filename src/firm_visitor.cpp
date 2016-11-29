@@ -1,5 +1,10 @@
 #include "firm_visitor.hpp"
 
+static const char * get_node_mode(ir_node *node) {
+  return get_mode_name(get_irn_mode(node));
+}
+
+
 FirmVisitor::FirmVisitor(bool print, bool verify, bool gen) {
   ir_init();
 
