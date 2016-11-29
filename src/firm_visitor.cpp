@@ -493,7 +493,34 @@ void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
   ir_node *arrayNode = getLoad(popNode());
   arrayAccess.getIndex()->accept(this);
   ir_node *indexNode = getLoad(popNode());
-  ir_node *sel = new_Sel(arrayNode, indexNode, get_irn_type_attr(arrayNode));
+  ir_node *sel = new_Sel(arrayNode, indexNode, new_type_array(intType, 1));
 
-  pushNode(sel);
+  // TODO: Load works only for rvalues
+  ir_node *loadNode = new_Load(get_store(), sel, mode_Is, intType, cons_none);
+  ir_node *projM = new_Proj(loadNode, mode_M, pn_Load_M);
+  ir_node *projRes = new_Proj(loadNode, mode_Is, pn_Load_res);
+  set_store(projM);
+
+  pushNode(projRes);
+}
+
+void FirmVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
+  ir_type *arrayType = new_type_array(intType, 0);
+  ir_type *mallocType = new_type_method(1, 1, false, cc_cdecl_set, mtp_no_property);
+  set_method_param_type(mallocType, 0, intType);
+  set_method_res_type(mallocType, 0, arrayType);
+  ir_entity *mallocEntity = new_global_entity(get_glob_type(), "calloc", mallocType,
+                                              ir_visibility_external, IR_LINKAGE_DEFAULT);
+
+  ir_node *args[1] = {new_Const(new_tarval_from_long(1024, mode_Is))};
+  ir_node *store = get_store();
+  ir_node *callee = new_Address(mallocEntity);
+  ir_node *callNode = new_Call(store, callee, 1, args, mallocType);
+  ir_node *newStore = new_Proj(callNode, mode_M, pn_Call_M);
+  set_store(newStore);
+
+  ir_node *tuple  = new_Proj(callNode, mode_T, pn_Call_T_result);
+  ir_node *result = new_Proj(tuple, mode_P, 0);
+
+  pushNode(result);
 }
