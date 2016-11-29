@@ -73,7 +73,7 @@ private:
       return this->arrayType;
     case sem::TypeKind::Class: {
       auto ct = dynamic_cast<ast::ClassType *>(type);
-      return this->classes.at(ct->getDef()).type();
+      return new_type_pointer(this->classes.at(ct->getDef()).type());
     }
     default:
       assert(false);
