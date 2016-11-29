@@ -166,21 +166,20 @@ void FirmVisitor::visitClass(ast::Class &klass) {
 }
 
 void FirmVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
-  if (stmt.getExpression() != nullptr) {
-    // TODO: This just ignores return statements without expression
-    //       But we still need to model the control flow for them.
-    ir_graph *currentGraph = get_current_ir_graph();
+  ir_node *store = get_store();
+  ir_node *end = get_irg_end_block(current_ir_graph);
+  ir_node *ret;
 
+  if (stmt.getExpression() != nullptr) {
     stmt.acceptChildren(this);
 
     ir_node *results[] = {getLoad(popNode())};
-
-    ir_node *store = get_store();
-    ir_node *ret = new_Return(store, 1, results);
-    ir_node *end = get_irg_end_block(currentGraph);
-
-    add_immBlock_pred(end, ret);
+    ret = new_Return(store, 1, results);
+  } else {
+    ret = new_Return(store, 0, nullptr);
   }
+
+  add_immBlock_pred(end, ret);
 }
 
 void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
