@@ -399,8 +399,10 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
     auto firmClass = &classes.at(this->currentClass);
     for (auto &fieldEnt : firmClass->fieldEntities) {
       if (fieldEnt.field == field) {
-        ir_node *thisPointer = get_r_value(current_ir_graph, 0, mode_P);
+        auto firmMethod = &this->methods.at(this->currentMethod);
+        ir_node *thisPointer = firmMethod->params[0];
         ir_node *member = new_Member(thisPointer, fieldEnt.entity);
+        assert(is_Member(member));
         pushNode(std::make_unique<FieldValue>(member));
         return;
       }
@@ -446,8 +448,8 @@ void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
   if (access.getDef() == &ast::FieldAccess::dummySystemOut) {
     return;
   }
-
-  auto firmClass = &classes.at(this->currentClass);
+  auto firmClass = &classes.at(
+      currentProgram->findClassByName(access.getLeft()->targetType.name));
   // Left is never null!
   access.getLeft()->accept(this);
   ir_node *leftNode = popNode()->load();
@@ -494,6 +496,7 @@ void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
   arrayAccess.getIndex()->accept(this);
   ir_node *indexNode = popNode()->load();
   ir_node *sel = new_Sel(arrayNode, indexNode, new_type_array(intType, 0));
+  assert(is_Sel(sel));
 
   pushNode(std::make_unique<ArrayValue>(sel)); // returns array pointer!
 }
