@@ -486,13 +486,11 @@ void FirmVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
 
 void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
 {
-  // TODO: this is definitely totally wrong!
-  assert(false);
   arrayAccess.getArray()->accept(this);
   ir_node *arrayNode = popNode();
   arrayAccess.getIndex()->accept(this);
   ir_node *indexNode = popNode();
-  ir_node *sel = new_Sel(arrayNode, indexNode, nullptr);
+  ir_node *sel = new_Sel(arrayNode, indexNode, get_irn_type_attr(arrayNode));
 
-  pushNode(sel); // TODO ???
+  pushNode(sel);
 }
