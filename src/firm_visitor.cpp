@@ -484,7 +484,7 @@ void FirmVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
   ir_entity *callocEntity = makeCalloc(classPointerType);
 
   ir_node *args[2] = {new_Const_long(mode_Is, 1),
-                      new_Size(mode_Is, thisClass->type)};
+                      new_Size(mode_Is, thisClass->type())};
   ir_node *store = get_store();
   ir_node *callee = new_Address(callocEntity);
   ir_node *callNode = new_Call(store, callee, 2, args, get_entity_type(callocEntity));
