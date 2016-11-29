@@ -194,7 +194,6 @@ void FirmVisitor::visitClass(ast::Class &klass) {
 }
 
 void FirmVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
-  ir_node *store = get_store();
   ir_node *end = get_irg_end_block(current_ir_graph);
   ir_node *ret;
 
@@ -202,9 +201,9 @@ void FirmVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
     stmt.acceptChildren(this);
 
     ir_node *results[] = {getLoad(popNode())};
-    ret = new_Return(store, 1, results);
+    ret = new_Return(get_store(), 1, results);
   } else {
-    ret = new_Return(store, 0, nullptr);
+    ret = new_Return(get_store(), 0, nullptr);
   }
 
   add_immBlock_pred(end, ret);
