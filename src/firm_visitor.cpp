@@ -200,7 +200,7 @@ void FirmVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
   if (stmt.getExpression() != nullptr) {
     stmt.acceptChildren(this);
 
-    ir_node *results[] = {getLoad(popNode())};
+    ir_node *results[] = {popNode()->load()};
     ret = new_Return(get_store(), 1, results);
   } else {
     ret = new_Return(get_store(), 0, nullptr);
@@ -216,7 +216,7 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     //  create the call"
     invocation.acceptChildren(this);
 
-    ir_node *args[] = {getLoad(popNode())}; // int argument
+    ir_node *args[] = {popNode()->load()}; // int argument
     ir_node *store = get_store();
     ir_node *callee = new_Address(sysoutEntity);
     ir_node *callNode = new_Call(store, callee, 1, args, this->sysoutType);
@@ -238,11 +238,11 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     std::vector<ir_node *> args;
     args.resize(nArgs);
     left->accept(this);
-    args[0] = getLoad(popNode());
+    args[0] = popNode()->load();
     int i = 1;
     for (auto arg : invocation.getArguments()) {
       arg->accept(this);
-      args[i] = getLoad(popNode());
+      args[i] = popNode()->load();
       ++i;
     }
     ir_node *store = get_store();
@@ -270,7 +270,8 @@ void FirmVisitor::visitIntLiteral(ast::IntLiteral &lit) {
 }
 
 void FirmVisitor::visitBoolLiteral(ast::BoolLiteral &lit) {
-  ir_node *node = new_Const(new_tarval_from_long(lit.getValue() ? 1 : 0, mode_Bu));
+  ir_node *node =
+      new_Const(new_tarval_from_long(lit.getValue() ? 1 : 0, mode_Bu));
   pushNode(node);
 }
 
@@ -279,6 +280,7 @@ void FirmVisitor::visitThisLiteral(ast::ThisLiteral &lit) {
   // we always have an explicit `this` parameter at position 0
   auto firmMethod = &this->methods.at(currentMethod);
   pushNode(firmMethod->params[0]);
+//   pushNode(std::make_unique<VarValue>(0, classes.at(currentClass).type()));
 }
 
 void FirmVisitor::visitNullLiteral(ast::NullLiteral &lit) {
@@ -288,28 +290,29 @@ void FirmVisitor::visitNullLiteral(ast::NullLiteral &lit) {
 
 void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   expr.getLeft()->accept(this);
-  ir_node *leftNode = getLoad(popNode());
+  auto leftNode = popNode();
   expr.getRight()->accept(this);
-  ir_node *rightNode = getLoad(popNode());
+  auto rightNode = popNode();
 
   switch (expr.getOperation()) {
   case ast::BinaryExpression::Op::Assign: {
-    auto firmMethod = &methods.at(this->currentMethod);
-    if (auto varRef = dynamic_cast<ast::VarRef *>(expr.getLeft())) {
-      auto def = varRef->getDef();
-      if (auto locVar = dynamic_cast<ast::VariableDeclaration *>(def)) {
-        auto pos = firmMethod->nParams + locVar->getIndex();
-        set_value(pos, rightNode);
-      } else if (auto fieldDef = dynamic_cast<ast::Field *>(def)) {
-        (void)fieldDef;
-        assert(false);
-      } else {
-        assert(false);
-      }
-    } else {
-      assert(false);
-    }
+    leftNode->store(rightNode->load());
     break;
+//     auto firmMethod = &methods.at(this->currentMethod);
+//     if (auto varRef = dynamic_cast<ast::VarRef *>(expr.getLeft())) {
+//       auto def = varRef->getDef();
+//       if (auto locVar = dynamic_cast<ast::VariableDeclaration *>(def)) {
+//         auto pos = firmMethod->nParams + locVar->getIndex();
+//         set_value(pos, rightNode);
+//       } else if (auto fieldDef = dynamic_cast<ast::Field *>(def)) {
+//         (void)fieldDef;
+//         assert(false);
+//       } else {
+//         assert(false);
+//       }
+//     } else {
+//       assert(false);
+//     }
   }
   case ast::BinaryExpression::Op::Or:
     assert(false);
@@ -318,37 +321,40 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
     assert(false);
     break;
   case ast::BinaryExpression::Op::Equals:
-    pushNode(new_Cmp(leftNode, rightNode, ir_relation_equal));
+    pushNode(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_equal));
     break;
   case ast::BinaryExpression::Op::NotEquals:
-    pushNode(new_Cmp(leftNode, rightNode, ir_relation_less_greater));
+    pushNode(
+        new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_greater));
     break;
   case ast::BinaryExpression::Op::Less:
-    pushNode(new_Cmp(leftNode, rightNode, ir_relation_less));
+    pushNode(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less));
     break;
   case ast::BinaryExpression::Op::LessEquals:
-    pushNode(new_Cmp(leftNode, rightNode, ir_relation_less_equal));
+    pushNode(
+        new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_equal));
     break;
   case ast::BinaryExpression::Op::Greater:
-    pushNode(new_Cmp(leftNode, rightNode, ir_relation_greater));
+    pushNode(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_greater));
     break;
   case ast::BinaryExpression::Op::GreaterEquals:
-    pushNode(new_Cmp(leftNode, rightNode, ir_relation_greater_equal));
+    pushNode(new_Cmp(leftNode->load(), rightNode->load(),
+                     ir_relation_greater_equal));
     break;
   case ast::BinaryExpression::Op::Plus:
-    pushNode(new_Add(leftNode, rightNode));
+    pushNode(new_Add(leftNode->load(), rightNode->load()));
     break;
   case ast::BinaryExpression::Op::Minus:
-    pushNode(new_Sub(leftNode, rightNode));
+    pushNode(new_Sub(leftNode->load(), rightNode->load()));
     break;
   case ast::BinaryExpression::Op::Mul:
-    pushNode(new_Mul(leftNode, rightNode));
+    pushNode(new_Mul(leftNode->load(), rightNode->load()));
     break;
   case ast::BinaryExpression::Op::Div: {
     ir_node *memory = get_store();
     ir_node *pin = new_Pin(memory);
     set_store(pin);
-    ir_node *divNode = new_DivRL(pin, leftNode, rightNode, 0);
+    ir_node *divNode = new_DivRL(pin, leftNode->load(), rightNode->load(), 0);
     pushNode(new_Proj(divNode, mode_Is, pn_Div_res));
     break;
   }
@@ -356,7 +362,7 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
     ir_node *memory = get_store();
     ir_node *pin = new_Pin(memory);
     set_store(pin);
-    ir_node *modNode = new_Mod(pin, leftNode, rightNode, 0);
+    ir_node *modNode = new_Mod(pin, leftNode->load(), rightNode->load(), 0);
     pushNode(new_Proj(modNode, mode_Is, pn_Mod_res));
     break;
   }
@@ -374,47 +380,32 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
 
   if (auto param = dynamic_cast<ast::Parameter*>(ref.getDef())) {
     // Param refs are only possible in regular methods
-    auto method = dynamic_cast<ast::RegularMethod*>(this->currentMethod);
+//     auto method = dynamic_cast<ast::RegularMethod*>(this->currentMethod);
     auto firmMethod = &this->methods.at(this->currentMethod);
-    // Parameter names are unique at this point
-    auto params = method->getParameters();
-    size_t paramIndex = 0;
-    for (auto &p : params) {
-      if (p == param) {
-        break;
-      }
-      paramIndex ++;
-    }
+    size_t paramIndex = param->getIndex();
     assert(paramIndex < firmMethod->nParams);
+//     auto paramType = method->getParameters()[paramIndex]->getType()->getSemaType();
     // TODO: Proj of that parameter? or get_r_value?
-    pushNode(firmMethod->params[1 + paramIndex]); // 1 because of the this parameter
+//     pushNode(firmMethod->params[paramIndex]);
+    pushNode(std::make_unique<VarValue>(paramIndex, getIrMode(param->getType())));
   } else if (auto decl = dynamic_cast<ast::VariableDeclaration*>(ref.getDef())) {
     auto firmMethod = &methods.at(this->currentMethod);
-    size_t pos = firmMethod->nParams; // first parameters, then local vars
-
-    for (auto &lv : firmMethod->localVars) {
-      if (lv == decl)
-        break;
-      pos ++;
-    }
-    ir_node *val = get_r_value (current_ir_graph, pos,
-                                getIrMode(decl->getType()));
-    pushNode(val);
+    size_t varIndex = firmMethod->nParams; // first parameters, then local vars
+    varIndex += decl->getIndex();
+    //     ir_node *val = get_r_value (current_ir_graph, varIndex,
+//                                 getIrMode(decl->getType()));
+    pushNode(std::make_unique<VarValue>(varIndex, getIrMode(decl->getType())));
   } else if (auto field = dynamic_cast<ast::Field*>(ref.getDef())) {
     auto firmClass = &classes.at(this->currentClass);
-    __attribute__((unused)) bool found = false;
     for (auto &fieldEnt : firmClass->fieldEntities) {
       if (fieldEnt.field == field) {
         ir_node *thisPointer = get_r_value(current_ir_graph, 0, mode_P);
         ir_node *member = new_Member(thisPointer, fieldEnt.entity);
-        pushNode(member);
-        found = true;
-        break;
+        pushNode(std::make_unique<FieldValue>(member));
+        return;
       }
     }
-
-    // Just to be sure
-    assert(found);
+    assert(false);
   } else {
     assert(false);
   }
@@ -425,10 +416,10 @@ void FirmVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
 
   switch(expr.getOperation()) {
   case ast::UnaryExpression::Op::Not:
-    pushNode(new_Not(getLoad(popNode())));
+    pushNode(new_Not(popNode()->load()));
     break;
   case ast::UnaryExpression::Op::Neg:
-    pushNode(new_Minus(getLoad(popNode())));
+    pushNode(new_Minus(popNode()->load()));
     break;
   default:
     assert(false);
@@ -442,7 +433,7 @@ void FirmVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
     size_t pos = firmMethod->nParams; // first parameters, then local vars
     pos += decl.getIndex();
 
-    set_r_value(current_ir_graph, pos, getLoad(popNode()));
+    set_r_value(current_ir_graph, pos, popNode()->load());
   }
 }
 
@@ -459,7 +450,7 @@ void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
   auto firmClass = &classes.at(this->currentClass);
   // Left is never null!
   access.getLeft()->accept(this);
-  ir_node *leftNode = getLoad(popNode());
+  ir_node *leftNode = popNode()->load();
   assert(get_irn_mode(leftNode) == mode_P);
 
   ir_entity *rightEntity = nullptr;
@@ -473,7 +464,7 @@ void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
 
   ir_node *member = new_Member(leftNode, rightEntity);
 
-  pushNode(member);
+  pushNode(std::make_unique<FieldValue>(member));
 }
 
 void FirmVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
@@ -499,17 +490,12 @@ void FirmVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
 void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
 {
   arrayAccess.getArray()->accept(this);
-  ir_node *arrayNode = getLoad(popNode());
+  ir_node *arrayNode = popNode()->load();
   arrayAccess.getIndex()->accept(this);
-  ir_node *indexNode = getLoad(popNode());
+  ir_node *indexNode = popNode()->load();
   ir_node *sel = new_Sel(arrayNode, indexNode, new_type_array(intType, 0));
 
-  ir_node *loadNode = new_Load(get_store(), sel, mode_Is, intType, cons_none);
-  ir_node *projM = new_Proj(loadNode, mode_M, pn_Load_M);
-  ir_node *projRes = new_Proj(loadNode, mode_Is, pn_Load_res);
-  set_store(projM);
-
-  pushNode(projRes); // returns array pointer!
+  pushNode(std::make_unique<ArrayValue>(sel)); // returns array pointer!
 }
 
 void FirmVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
@@ -518,7 +504,7 @@ void FirmVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
   ir_entity *callocEntity = makeCalloc(arrayType);
 
   expr.getSize()->accept(this);
-  ir_node *args[2] = {popNode(), new_Size(mode_Is, elementType)};
+  ir_node *args[2] = {popNode()->load(), new_Size(mode_Is, elementType)};
   ir_node *store = get_store();
   ir_node *callee = new_Address(callocEntity);
   ir_node *callNode = new_Call(store, callee, 2, args, get_entity_type(callocEntity));

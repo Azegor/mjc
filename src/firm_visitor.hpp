@@ -1,38 +1,73 @@
 #ifndef FIRM_VISITOR_H
 #define FIRM_VISITOR_H
 
-#include "ast.hpp"
-#include "libfirm/firm.h"
-
+#include <memory>
 #include <stack>
+
+#include "ast.hpp"
+#include <libfirm/firm.h>
+
 
 class Value {
 protected:
-  ir_type *type;
 public:
-  virtual ir_node * load() { assert(false); }
+  virtual ir_node *load() { assert(false); }
   virtual void store(ir_node *) { assert(false); }
-  ir_type * getType() const { return type; }
   operator ir_node *() { return load(); }
+  virtual ~Value() {}
 };
 class VarValue : public Value {
-  int varIndex;
+  size_t varIndex;
+  ir_mode *mode;
 public:
+  VarValue(size_t index, ir_mode *mode) : varIndex(index), mode(mode) {
+    assert(mode);
+  }
+  VarValue(size_t index, ir_type *type)
+  : VarValue(index, get_type_mode(type)) {}
   ir_node *load() override {
-    return get_r_value(current_ir_graph, varIndex, get_type_mode(type));
+    return get_r_value(current_ir_graph, varIndex, mode);
+  }
+  void store(ir_node *val) override {
+    set_value(varIndex, val);
   }
 };
 class FieldValue : public Value {
   ir_node * member;
+public:
+  FieldValue(ir_node *member) : member(member) {}
+  ir_node *load() override {
+    ir_type *type = get_entity_type(get_Member_entity(member));
+    ir_mode *mode = get_type_mode(type);
+    ir_printf("field type: %t, mode: %m\n", type, mode);
+    ir_node *loadNode = new_Load(get_store(), member, mode, type, cons_none);
+    ir_node *projRes  = new_Proj(loadNode, mode, pn_Load_res);
+    ir_node *projM    = new_Proj(loadNode, mode_M, pn_Load_M);
+    set_store(projM);
+    return projRes;
+  }
 };
 class ArrayValue : public Value {
-  // ...
+  ir_node *selNode;
+public:
+  ArrayValue(ir_node *sel) : selNode(sel) {}
+  ir_node *load() override {
+    ir_node *loadNode = new_Load(get_store(), selNode, mode_Is,
+                                 new_type_primitive(mode_Is), cons_none);
+    ir_node *projM = new_Proj(loadNode, mode_M, pn_Load_M);
+    ir_node *projRes = new_Proj(loadNode, mode_Is, pn_Load_res);
+    set_store(projM);
+    return projRes;
+  }
 };
 class RValue : public Value {
   ir_node *value;
 public:
+  RValue(ir_node *val) : value(val) {}
   ir_node * load() override { return value; }
 };
+
+using ValuePtr = std::unique_ptr<Value>;
 
 struct FirmMethod {
   ir_graph *graph;
@@ -88,7 +123,7 @@ private:
   std::unordered_map<ast::Class *, FirmClass> classes;
   std::unordered_map<ast::Method *, FirmMethod> methods;
 
-  std::stack<ir_node *> nodeStack;
+  std::stack<ValuePtr> nodeStack;
 
   ir_type *getIrType(ast::Type *type) {
     auto sType = type->getSemaType();
@@ -125,13 +160,17 @@ private:
     }
   }
 
-  void pushNode(ir_node* node) {
-    nodeStack.push(node);
+  void pushNode(ValuePtr node) {
+    nodeStack.push(std::move(node));
   }
 
-  ir_node* popNode() {
+  void pushNode(ir_node* node) {
+    nodeStack.push(std::make_unique<RValue>(node));
+  }
+
+  ValuePtr popNode() {
     assert(nodeStack.size() > 0);
-    ir_node *n = nodeStack.top();
+    ValuePtr n = std::move(nodeStack.top());
     nodeStack.pop();
 
     return n;
