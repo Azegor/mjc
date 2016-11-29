@@ -82,6 +82,7 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   // seals current block (-> all predecessors known)
   mature_immBlock(get_r_cur_block(mainMethodGraph));
   irg_finalize_cons(mainMethodGraph);
+  lower_highlevel_graph(mainMethodGraph);
 
   if (verifyGraphs) {
     if (irg_verify(mainMethodGraph) == 0)
@@ -109,6 +110,7 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   mature_immBlock(get_r_cur_block(methodGraph));
 
   irg_finalize_cons(methodGraph);
+  lower_highlevel_graph(methodGraph);
 
   if (verifyGraphs) {
     if (irg_verify(methodGraph) == 0)
