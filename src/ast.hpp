@@ -659,6 +659,14 @@ public:
   void sortFields() {
     std::stable_sort(fields.begin(), fields.end(), ast::SortUniquePtrPred());
   }
+
+  std::vector<Field *> getFields() const {
+    std::vector<Field *> result;
+    for (size_t i = 0; i < fields.size(); i++) {
+      result.push_back(fields[i].get());
+    }
+    return result;
+  }
 };
 
 class MethodList : public Node {

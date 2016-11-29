@@ -175,6 +175,22 @@ void FirmVisitor::visitClass(ast::Class &klass) {
     this->methods.insert({method, FirmMethod(methodEntity, (size_t)numParams,
           paramNodes, localVars, methodGraph)});
   }
+
+  auto fields = klass.getFields()->getFields();
+  auto firmClass = &classes.at(&klass);
+  int offset = 0;
+  for(auto &field : fields) {
+    ir_type *fieldType = getIrType(field->getType());
+    ir_entity *ent = new_entity(classType,
+                                field->getName().c_str(),
+                                fieldType);
+    set_entity_offset(ent, offset);
+    firmClass->fieldEntities.push_back(FirmField{field, ent});
+    offset += get_type_size(fieldType);
+  }
+
+  set_type_state(classType, layout_fixed);
+  set_type_size(classType, offset);
 }
 
 void FirmVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
@@ -432,12 +448,7 @@ void FirmVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
 }
 
 void FirmVisitor::visitField(ast::Field &field) {
-  auto firmClass = &classes.at(this->currentClass);
-  ir_type *fieldType = getIrType(field.getType());
-  ir_entity *ent = new_entity(firmClass->type(),
-                              field.getName().c_str(),
-                              fieldType);
-  firmClass->fieldEntities.push_back(FirmField{&field, ent});
+  (void) field;
 }
 
 void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
