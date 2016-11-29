@@ -1,5 +1,6 @@
 #include "firm_visitor.hpp"
 
+__attribute__((unused))
 static const char * get_node_mode(ir_node *node) {
   return get_mode_name(get_irn_mode(node));
 }
