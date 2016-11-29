@@ -9,6 +9,10 @@ static const char * get_node_mode(ir_node *node) {
 FirmVisitor::FirmVisitor(bool print, bool verify, bool gen) {
   ir_init();
 
+  //64 bit pointer mode
+  auto _mode_P = new_reference_mode("P64", irma_twos_complement, 64, 64);
+  set_modeP(_mode_P);
+
   this->printGraphs = print;
   this->verifyGraphs = verify;
   this->generateCode = gen;
@@ -22,10 +26,6 @@ FirmVisitor::FirmVisitor(bool print, bool verify, bool gen) {
   set_method_param_type(sysoutType, 0, intType);
   sysoutEntity = new_global_entity(get_glob_type(), "print_int", sysoutType,
                                    ir_visibility_external, IR_LINKAGE_DEFAULT);
-
-  //64 bit pointer mode
-  auto mode_P = new_reference_mode("P64", irma_twos_complement, 64, 64);
-  set_modeP(mode_P);
 }
 
 void FirmVisitor::visitProgram(ast::Program &program) {
@@ -83,6 +83,7 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   // seals current block (-> all predecessors known)
   mature_immBlock(get_r_cur_block(mainMethodGraph));
   irg_finalize_cons(mainMethodGraph);
+  dump_ir_graph(current_ir_graph, "");
   lower_highlevel_graph(mainMethodGraph);
 
   if (verifyGraphs) {
@@ -111,6 +112,7 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   mature_immBlock(get_r_cur_block(methodGraph));
 
   irg_finalize_cons(methodGraph);
+  dump_ir_graph(current_ir_graph, "");
   lower_highlevel_graph(methodGraph);
 
   if (verifyGraphs) {
@@ -265,13 +267,12 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
 
 void FirmVisitor::visitIntLiteral(ast::IntLiteral &lit) {
   // We only have signed 32 bit integers.
-  ir_node *node = new_Const(new_tarval_from_long(lit.getValue(), mode_Is));
+  ir_node *node = new_Const_long(mode_Is, lit.getValue());
   pushNode(node);
 }
 
 void FirmVisitor::visitBoolLiteral(ast::BoolLiteral &lit) {
-  ir_node *node =
-      new_Const(new_tarval_from_long(lit.getValue() ? 1 : 0, mode_Bu));
+  ir_node *node = new_Const_long(mode_Bu, lit.getValue() ? 1 : 0);
   pushNode(node);
 }
 
