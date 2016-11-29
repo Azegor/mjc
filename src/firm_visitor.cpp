@@ -16,6 +16,10 @@ FirmVisitor::FirmVisitor(bool print, bool verify, bool gen) {
   set_method_param_type(sysoutType, 0, intType);
   sysoutEntity = new_global_entity(get_glob_type(), "print_int", sysoutType,
                                    ir_visibility_external, IR_LINKAGE_DEFAULT);
+
+  //64 bit pointer mode
+  auto mode_P = new_reference_mode("P64", irma_twos_complement, 64, 64);
+  set_modeP(mode_P);
 }
 
 void FirmVisitor::visitProgram(ast::Program &program) {
