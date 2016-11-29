@@ -503,7 +503,7 @@ void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
   ir_node *arrayNode = getLoad(popNode());
   arrayAccess.getIndex()->accept(this);
   ir_node *indexNode = getLoad(popNode());
-  ir_node *sel = new_Sel(arrayNode, indexNode, new_type_array(intType, 1));
+  ir_node *sel = new_Sel(arrayNode, indexNode, new_type_array(intType, 0));
 
   // TODO: Load works only for rvalues
   ir_node *loadNode = new_Load(get_store(), sel, mode_Is, intType, cons_none);
@@ -516,7 +516,7 @@ void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
 
 void FirmVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
   auto elementType = getIrType(expr.getArrayType()->getElementType());
-  ir_type *arrayType = new_type_array(elementType, 0);
+  ir_type *arrayType = new_type_pointer(elementType);
   ir_entity *callocEntity = makeCalloc(arrayType);
 
   expr.getSize()->accept(this);
