@@ -478,21 +478,16 @@ void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
 }
 
 void FirmVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
-  // TODO: Declare mallocEntity etc. only once and use a cast?
   auto thisClass = &classes.at(expr.getDef());
   ir_type *classType = thisClass->type();
   ir_type *classPointerType = new_type_pointer(classType);
-  ir_type *mallocType = new_type_method(2, 1, false, cc_cdecl_set, mtp_no_property);
-  set_method_param_type(mallocType, 0, intType);
-  set_method_param_type(mallocType, 1, intType);
-  set_method_res_type(mallocType, 0, classPointerType);
-  ir_entity *mallocEntity = new_global_entity(get_glob_type(), "calloc", mallocType,
-                                              ir_visibility_external, IR_LINKAGE_DEFAULT);
+  ir_entity *callocEntity = makeCalloc(classPointerType);
 
-  ir_node *args[2] = {new_Const_long(mode_Is, 1),new_Size(mode_Is, thisClass->type)};
+  ir_node *args[2] = {new_Const_long(mode_Is, 1),
+                      new_Size(mode_Is, thisClass->type)};
   ir_node *store = get_store();
-  ir_node *callee = new_Address(mallocEntity);
-  ir_node *callNode = new_Call(store, callee, 2, args, mallocType);
+  ir_node *callee = new_Address(callocEntity);
+  ir_node *callNode = new_Call(store, callee, 2, args, get_entity_type(callocEntity));
   ir_node *newStore = new_Proj(callNode, mode_M, pn_Call_M);
   set_store(newStore);
 
@@ -522,17 +517,13 @@ void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
 void FirmVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
   auto elementType = getIrType(expr.getArrayType()->getElementType());
   ir_type *arrayType = new_type_array(elementType, 0);
-  ir_type *mallocType = new_type_method(1, 1, false, cc_cdecl_set, mtp_no_property);
-  set_method_param_type(mallocType, 0, intType);
-  set_method_res_type(mallocType, 0, arrayType);
-  ir_entity *mallocEntity = new_global_entity(get_glob_type(), "calloc", mallocType,
-                                              ir_visibility_external, IR_LINKAGE_DEFAULT);
+  ir_entity *callocEntity = makeCalloc(arrayType);
 
   expr.getSize()->accept(this);
-  ir_node *args[1] = {popNode()};
+  ir_node *args[2] = {popNode(), new_Size(mode_Is, elementType)};
   ir_node *store = get_store();
-  ir_node *callee = new_Address(mallocEntity);
-  ir_node *callNode = new_Call(store, callee, 1, args, mallocType);
+  ir_node *callee = new_Address(callocEntity);
+  ir_node *callNode = new_Call(store, callee, 2, args, get_entity_type(callocEntity));
   ir_node *newStore = new_Proj(callNode, mode_M, pn_Call_M);
   set_store(newStore);
 

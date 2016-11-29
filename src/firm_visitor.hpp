@@ -108,6 +108,17 @@ private:
 
     return n;
   }
+  
+  ir_entity *makeCalloc(ir_type *returnType) {
+    ir_type *callocType = new_type_method(2, 1, false, cc_cdecl_set, mtp_no_property);
+    set_method_param_type(callocType, 0, intType);
+    set_method_param_type(callocType, 1, intType);
+    set_method_res_type(callocType, 0, returnType);
+    ir_entity *callocEntity = new_global_entity(get_glob_type(), "calloc", callocType,
+                                                ir_visibility_external, IR_LINKAGE_DEFAULT);
+
+    return callocEntity;
+  }
 
   ir_node *getLoad(ir_node* src) {
     if (is_Member(src)) {
