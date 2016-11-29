@@ -12,7 +12,7 @@ echo "In file: ${in_file}"
 
 name=${in_file##*/}
 out_dir=${binary_dir}/firm_output_${name}
-mkdir "${out_dir}"
+mkdir -p "${out_dir}"
 pushd "${out_dir}" >/dev/null
 
 # This will just dump a file called "test.s"
