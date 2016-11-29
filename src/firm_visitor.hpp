@@ -8,29 +8,32 @@
 
 struct FirmMethod {
   ir_graph *graph;
-  ir_type *type;
   ir_entity *entity;
   size_t nParams;
   ir_node **params;
   std::vector<ast::VariableDeclaration*> localVars;
-  FirmMethod(ir_type *type, ir_entity *entity, size_t nParams, ir_node **params,
+  FirmMethod(ir_entity *entity, size_t nParams, ir_node **params,
              std::vector<ast::VariableDeclaration*> localVars, ir_graph *graph) :
-    graph(graph),
-    type(type), entity(entity), nParams(nParams), params(params), localVars(localVars) {}
+    graph(graph), entity(entity), nParams(nParams), params(params), localVars(localVars) {}
+
+  ir_type * type() { return get_entity_type(entity); }
 };
 
 struct FirmField {
   ast::Field *field;
   ir_entity *entity;
-  FirmField(ast::Field *field, ir_entity *entity) : field(field), entity(entity) {}
+  FirmField(ast::Field *field, ir_entity *entity)
+      : field(field), entity(entity) {}
+
+  ir_type * type() { return get_entity_type(entity); }
 };
 
 struct FirmClass {
-  ir_type *type;
   ir_entity *entity;
   std::vector<FirmField> fieldEntities;
-  FirmClass(ir_type *type, ir_entity* entity) :
-    type(type), entity(entity) {}
+  FirmClass(ir_entity* entity) : entity(entity) {}
+
+  ir_type * type() { return get_entity_type(entity); }
 };
 
 class FirmVisitor : public ast::Visitor {
@@ -70,7 +73,7 @@ private:
       return this->arrayType;
     case sem::TypeKind::Class: {
       auto ct = dynamic_cast<ast::ClassType *>(type);
-      return this->classes.at(ct->getDef()).type;
+      return this->classes.at(ct->getDef()).type();
     }
     default:
       assert(false);
@@ -110,7 +113,7 @@ public:
   FirmVisitor(bool print, bool verify, bool gen);
   virtual ~FirmVisitor() {
     for (auto& e : classes) {
-      free_type(e.second.type);
+      free_type(e.second.type());
     }
     for (auto& e : methods) {
       delete[] e.second.params;

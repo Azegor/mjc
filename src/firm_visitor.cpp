@@ -61,7 +61,7 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   ir_graph *mainMethodGraph = new_ir_graph(entity, localVars.size());
   set_current_ir_graph(mainMethodGraph);
 
-  this->methods.insert({&method, FirmMethod(mainMethodType, entity, 0,
+  this->methods.insert({&method, FirmMethod(entity, 0,
         nullptr, localVars, mainMethodGraph)});
   this->currentMethod = &method;
   method.acceptChildren(this);
@@ -110,7 +110,7 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
 void FirmVisitor::visitClass(ast::Class &klass) {
   ir_type *classType = new_type_class(klass.getName().c_str());
   ir_entity *classEntity = new_entity(get_glob_type(), klass.getName().c_str(), classType);
-  this->classes.insert({&klass, FirmClass(classType, classEntity)});
+  this->classes.insert({&klass, FirmClass(classEntity)});
   // We do not recurse into children here since that will be done separately
   // in visitProgram(). Instead, collect the types of all methods and to the same there.
 
@@ -160,7 +160,7 @@ void FirmVisitor::visitClass(ast::Class &klass) {
     }
 
     set_r_cur_block(methodGraph, lastBlock);
-    this->methods.insert({method, FirmMethod(methodType, methodEntity, (size_t)numParams,
+    this->methods.insert({method, FirmMethod(methodEntity, (size_t)numParams,
           paramNodes, localVars, methodGraph)});
   }
 }
@@ -217,7 +217,7 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     ir_node *store = get_store();
     ir_node *callee = new_Address(firmMethod->entity);
     ir_node *callNode =
-        new_Call(store, callee, nArgs, args.data(), firmMethod->type);
+        new_Call(store, callee, nArgs, args.data(), firmMethod->type());
 
     // Update the current store
     ir_node *newStore = new_Proj(callNode, get_modeM(), pn_Call_M);
@@ -376,7 +376,7 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
       if (fieldEnt.field == field) {
         ir_node *thisPointer = get_r_value(current_ir_graph, 0, mode_P);
         ir_node *member = new_Member(thisPointer, fieldEnt.entity);
-        ir_node *loadNode = new_Load(get_store(), member, mode_Is, firmClass->type, cons_none);
+        ir_node *loadNode = new_Load(get_store(), member, mode_Is, firmClass->type(), cons_none);
         ir_node *projM = new_Proj(loadNode, mode_M, pn_Load_M);
         ir_node *projRes = new_Proj(loadNode, mode_Is, pn_Load_res);
 
@@ -423,7 +423,7 @@ void FirmVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
 void FirmVisitor::visitField(ast::Field &field) {
   auto firmClass = &classes.at(this->currentClass);
   ir_type *fieldType = getIrType(field.getType());
-  ir_entity *ent = new_entity(firmClass->type,
+  ir_entity *ent = new_entity(firmClass->type(),
                               field.getName().c_str(),
                               fieldType);
   firmClass->fieldEntities.push_back(FirmField{&field, ent});
@@ -452,7 +452,7 @@ void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
 
   ir_node *member = new_Member(leftNode, rightEntity);
 
-  ir_node *loadNode = new_Load(get_store(), member, mode_Is, firmClass->type, cons_none);
+  ir_node *loadNode = new_Load(get_store(), member, mode_Is, firmClass->type(), cons_none);
   ir_node *projRes  = new_Proj(loadNode, mode_Is, pn_Load_res);
   ir_node *projM    = new_Proj(loadNode, mode_M, pn_Load_M);
   set_store(projM);
@@ -463,7 +463,7 @@ void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
 void FirmVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
   // TODO: Declare mallocEntity etc. only once and use a cast?
   auto thisClass = &classes.at(expr.getDef());
-  ir_type *classType = thisClass->type;
+  ir_type *classType = thisClass->type();
   ir_type *classPointerType = new_type_pointer(classType);
   ir_type *mallocType = new_type_method(1, 1, false, cc_cdecl_set, mtp_no_property);
   set_method_param_type(mallocType, 0, intType);
