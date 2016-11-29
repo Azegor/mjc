@@ -508,14 +508,16 @@ void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
 }
 
 void FirmVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
-  ir_type *arrayType = new_type_array(intType, 0);
+  auto elementType = getIrType(expr.getArrayType()->getElementType());
+  ir_type *arrayType = new_type_array(elementType, 0);
   ir_type *mallocType = new_type_method(1, 1, false, cc_cdecl_set, mtp_no_property);
   set_method_param_type(mallocType, 0, intType);
   set_method_res_type(mallocType, 0, arrayType);
   ir_entity *mallocEntity = new_global_entity(get_glob_type(), "calloc", mallocType,
                                               ir_visibility_external, IR_LINKAGE_DEFAULT);
 
-  ir_node *args[1] = {new_Const(new_tarval_from_long(1024, mode_Is))};
+  expr.getSize()->accept(this);
+  ir_node *args[1] = {popNode()};
   ir_node *store = get_store();
   ir_node *callee = new_Address(mallocEntity);
   ir_node *callNode = new_Call(store, callee, 1, args, mallocType);
