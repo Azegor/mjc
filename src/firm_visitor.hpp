@@ -124,7 +124,7 @@ private:
     if (is_Member(src)) {
       ir_type * type = get_entity_type(get_Member_entity(src));
       ir_mode * mode = get_type_mode(type);
-      ir_printf("type: %t, mode: %m\n", type, mode);
+      ir_printf("field type: %t, mode: %m\n", type, mode);
       ir_node *loadNode = new_Load(get_store(), src, mode, type, cons_none);
       ir_node *projRes  = new_Proj(loadNode, mode, pn_Load_res);
       ir_node *projM    = new_Proj(loadNode, mode_M, pn_Load_M);
@@ -132,15 +132,16 @@ private:
       return projRes;
     } else if (is_Sel(src)) { // Array
       // TODO: ist this correct?
-      ir_type * type = get_Sel_type(src); // TODO: getElementType?
+      ir_type * type = get_pointer_points_to_type(get_Sel_type(src)); // TODO: getElementType?
       ir_mode * mode = get_type_mode(type);
-      ir_printf("type: %t, mode: %m\n", type, mode);
+      ir_printf("array type: %t, mode: %m\n", type, mode);
       ir_node *loadNode = new_Load(get_store(), src, mode, type, cons_none);
       ir_node *projRes  = new_Proj(loadNode, mode_Is, pn_Load_res);
       ir_node *projM    = new_Proj(loadNode, mode_M, pn_Load_M);
       set_store(projM);
       return projRes;
     } else {
+      ir_printf("Node: %O, %N\n", src, src);
       return src;
     }
   }

@@ -504,13 +504,12 @@ void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
   ir_node *indexNode = getLoad(popNode());
   ir_node *sel = new_Sel(arrayNode, indexNode, new_type_array(intType, 0));
 
-  // TODO: Load works only for rvalues
   ir_node *loadNode = new_Load(get_store(), sel, mode_Is, intType, cons_none);
   ir_node *projM = new_Proj(loadNode, mode_M, pn_Load_M);
   ir_node *projRes = new_Proj(loadNode, mode_Is, pn_Load_res);
   set_store(projM);
 
-  pushNode(projRes);
+  pushNode(projRes); // returns array pointer!
 }
 
 void FirmVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
