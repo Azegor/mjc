@@ -488,7 +488,7 @@ void FirmVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
   ir_entity *mallocEntity = new_global_entity(get_glob_type(), "calloc", mallocType,
                                               ir_visibility_external, IR_LINKAGE_DEFAULT);
 
-  ir_node *args[1] = {new_Const(new_tarval_from_long(12, mode_Is))}; // allocated size in bytes
+  ir_node *args[1] = {new_Size(mode_Is, thisClass->type)};
   ir_node *store = get_store();
   ir_node *callee = new_Address(mallocEntity);
   ir_node *callNode = new_Call(store, callee, 1, args, mallocType);
