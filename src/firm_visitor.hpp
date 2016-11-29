@@ -6,6 +6,34 @@
 
 #include <stack>
 
+class Value {
+protected:
+  ir_type *type;
+public:
+  virtual ir_node * load() { assert(false); }
+  virtual void store(ir_node *) { assert(false); }
+  ir_type * getType() const { return type; }
+  operator ir_node *() { return load(); }
+};
+class VarValue : public Value {
+  int varIndex;
+public:
+  ir_node *load() override {
+    return get_r_value(current_ir_graph, varIndex, get_type_mode(type));
+  }
+};
+class FieldValue : public Value {
+  ir_node * member;
+};
+class ArrayValue : public Value {
+  // ...
+};
+class RValue : public Value {
+  ir_node *value;
+public:
+  ir_node * load() override { return value; }
+};
+
 struct FirmMethod {
   ir_graph *graph;
   ir_entity *entity;
