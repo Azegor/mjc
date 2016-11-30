@@ -479,9 +479,15 @@ void FirmVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
   expr.acceptChildren(this);
 
   switch(expr.getOperation()) {
-  case ast::UnaryExpression::Op::Not:
-    pushNode(new_Not(popNode()->load()));
-    break;
+  case ast::UnaryExpression::Op::Not: {
+    ir_node *zero = new_Const_long(mode_Bu, 0);
+    ir_node *outNode = new_Cond(new_Cmp(popNode()->load(), zero, ir_relation_equal));
+    if (! control_flow_from_expr) {
+      outNode = condToBoolean(outNode);
+    }
+    control_flow_from_expr = false;
+    pushNode(outNode);
+    break; }
   case ast::UnaryExpression::Op::Neg:
     pushNode(new_Minus(popNode()->load()));
     break;
