@@ -149,7 +149,7 @@ void FirmVisitor::visitClass(ast::Class &klass) {
     }
 
     ir_entity *methodEntity = new_entity(classType,
-                                   new_id_from_str(method->getName().c_str()),
+                                   new_id_from_str(method->getMangledName().c_str()),
                                    methodType);
 
     auto &localVars = method->getVarDecls();

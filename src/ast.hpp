@@ -268,6 +268,7 @@ protected:
 
 public:
   virtual sem::Type getSemaType() const = 0;
+  virtual std::string getMangledName() const = 0;
 };
 using TypePtr = std::unique_ptr<Type>;
 
@@ -379,9 +380,27 @@ public:
       res.setVoid();
       break;
     default:
+      assert(false);
       break;
     }
     return res;
+  }
+
+  std::string getMangledName() const override {
+    switch (type) {
+      case PrimType::Boolean:
+        return "b";
+        break;
+      case PrimType::Int:
+        return "i";
+        break;
+      case PrimType::Void:
+        return "v";
+        break;
+      default:
+        assert(false);
+        break;
+    }
   }
 
   void accept(Visitor *visitor) override { visitor->visitPrimitiveType(*this); }
@@ -406,6 +425,10 @@ public:
     res.setClass(getName());
     return res;
   }
+
+  std::string getMangledName() const override {
+    return std::to_string(name.length()) + name;
+  }
 };
 
 class ArrayType : public Type {
@@ -429,6 +452,10 @@ public:
     auto innerType = elementType->getSemaType();
     res.setArray(innerType.kind, dimension, innerType.name);
     return res;
+  }
+
+  std::string getMangledName() const override {
+    return std::string('P', dimension) + elementType->getMangledName();
   }
 };
 using ArrayTypePtr = std::unique_ptr<ArrayType>;
@@ -577,6 +604,7 @@ public:
 class RegularMethod : public Method {
   TypePtr returnType;
   std::string name;
+  std::string mangledName;
   // might be empty
   ParameterList parameters;
   BlockPtr block;
@@ -613,6 +641,22 @@ public:
     }
     block->accept(visitor);
   }
+
+  void createMangledName(std::string className) {
+    std::stringstream mName;
+    mName << "_ZN" << className.length() << className << name.length() << name;
+    mName << "E";
+    if (parameters.empty()) {
+      mName << "v";
+    } else {
+      for (auto& p : parameters) {
+        auto type = p->getType();
+        mName << type->getMangledName();
+      }
+    }
+    mangledName = mName.str();
+  }
+  std::string getMangledName() const { return mangledName; }
 };
 using RegularMethodPtr = std::unique_ptr<RegularMethod>;
 

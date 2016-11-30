@@ -83,6 +83,7 @@ void SemanticVisitor::visitRegularMethod(ast::RegularMethod &method) {
       method.getBlock()->cfb != sem::ControlFlowBehavior::Return) {
     error(method, "Non-Void method must return a value on every path", true);
   }
+  method.createMangledName(currentClass->getName());
 }
 
 void SemanticVisitor::visitBlock(ast::Block &block) {
