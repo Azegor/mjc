@@ -254,6 +254,7 @@ public:
   void visitNewObjectExpression(ast::NewObjectExpression &expr) override;
   void visitArrayAccess(ast::ArrayAccess &arrayAccess) override;
   void visitNewArrayExpression(ast::NewArrayExpression &newArrayExpression) override;
+  void visitExpressionStatement(ast::ExpressionStatement &) override;
 
   // unimplemented:
 //   void visitParameter(ast::Parameter &parameter) override { (void)parameter; assert(false); }
@@ -261,7 +262,6 @@ public:
 //   void visitClassType(ast::ClassType &classType) override { (void)classType; assert(false); }
 //   void visitArrayType(ast::ArrayType &arrayType) override { (void)arrayType; assert(false); }
 //   void visitBlock(ast::Block &block) override { (void)block; assert(false); }
-//   void visitExpressionStatement(ast::ExpressionStatement &exprStmt) override { (void)exprStmt; assert(false); }
 //   void visitIfStatement(ast::IfStatement &ifStatement) override { (void)ifStatement; assert(false); }
 //   void visitWhileStatement(ast::WhileStatement &whileStatement) override { (void)whileStatement; assert(false); }
 };

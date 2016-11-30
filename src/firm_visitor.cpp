@@ -233,6 +233,7 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     // Update the current store
     ir_node *newStore = new_Proj(callNode, get_modeM(), pn_Call_M);
     set_store(newStore);
+    pushNode(nullptr); // needs to return a node for consistency!
   } else {
     auto left = invocation.getLeft();
     // This should be true now after semantic analysis
@@ -268,6 +269,8 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
       ir_node *tuple = new_Proj(callNode, mode_T, pn_Call_T_result);
       ir_node *result = new_Proj(tuple, mode_Is, 0); // TODO: Correct type
       pushNode(result);
+    } else {
+      pushNode(nullptr); // needs to return a node for consistency!
     }
   }
 }
@@ -305,6 +308,7 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   switch (expr.getOperation()) {
   case ast::BinaryExpression::Op::Assign: {
     leftNode->store(rightNode->load());
+    pushNode(leftNode->load());
     break;
 //     auto firmMethod = &methods.at(this->currentMethod);
 //     if (auto varRef = dynamic_cast<ast::VarRef *>(expr.getLeft())) {
@@ -526,4 +530,9 @@ void FirmVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
   ir_node *result = new_Proj(tuple, mode_P, 0);
 
   pushNode(result);
+}
+
+void FirmVisitor::visitExpressionStatement(ast::ExpressionStatement &exprStmt) {
+  exprStmt.acceptChildren(this);
+  popNode(); // discard any values form the expression
 }

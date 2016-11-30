@@ -649,7 +649,7 @@ public:
     if (parameters.empty()) {
       mName << "v";
     } else {
-      for (auto& p : parameters) {
+      for (auto &p : parameters) {
         auto type = p->getType();
         mName << type->getMangledName();
       }
