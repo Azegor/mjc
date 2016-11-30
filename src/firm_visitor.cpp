@@ -563,14 +563,12 @@ void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
   ir_node *arrayNode = popNode()->load();
   arrayAccess.getIndex()->accept(this);
   ir_node *indexNode = popNode()->load();
-  ir_type *arrayType = getIrType(arrayAccess.getArray()->targetType); // correctly handles multiple dimensions
-//   ir_printf("array type: %t\n", arrayType);
-  ir_node *sel = new_Sel(arrayNode, indexNode, arrayType);
-  assert(is_Sel(sel));
+  size_t elemSize = arrayAccess.getArray()->targetType.getArrayInnerType().calculateSize();
+  ir_node *addr = new_Add(arrayNode, new_Mul(new_Conv(indexNode, mode_Ls), new_Const_long(mode_Ls, elemSize)));
 
   auto elementType =
       getIrType(arrayAccess.getArray()->targetType.getArrayInnerType());
-  pushNode(std::make_unique<ArrayValue>(sel, elementType)); // returns array pointer!
+  pushNode(std::make_unique<ArrayValue>(addr, elementType));
 }
 
 void FirmVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
