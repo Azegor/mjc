@@ -238,6 +238,7 @@ public:
   void visitProgram(ast::Program &program) override;
   void visitMainMethod(ast::MainMethod &method) override;
   void visitRegularMethod(ast::RegularMethod &method) override;
+  void createClassEntity(ast::Class &klass);
   void visitClass(ast::Class &klass) override;
   void visitReturnStatement(ast::ReturnStatement &stmt) override;
   void visitMethodInvocation(ast::MethodInvocation &invocation) override;

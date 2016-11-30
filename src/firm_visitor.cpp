@@ -41,6 +41,9 @@ void FirmVisitor::visitProgram(ast::Program &program) {
 
   // First, collect all class types
   for (auto &klass : classes) {
+    createClassEntity(*klass); // Will not create methods
+  }
+  for (auto &klass : classes) {
     klass->accept(this); // Will not recurse into children
   }
 
@@ -128,12 +131,18 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   }
 }
 
-void FirmVisitor::visitClass(ast::Class &klass) {
+void FirmVisitor::createClassEntity(ast::Class &klass) {
+  // create separately since methods may use other classes als return or parameter type
   ir_type *classType = new_type_class(klass.getName().c_str());
   ir_entity *classEntity = new_entity(get_glob_type(), klass.getName().c_str(), classType);
   this->classes.insert({&klass, FirmClass(classEntity)});
+}
+
+void FirmVisitor::visitClass(ast::Class &klass) {
   // We do not recurse into children here since that will be done separately
   // in visitProgram(). Instead, collect the types of all methods and to the same there.
+
+  ir_type *classType = get_entity_type(classes.at(&klass).entity);
 
   auto methods = klass.getMethods()->getMethods();
   for (auto &method : methods) {
