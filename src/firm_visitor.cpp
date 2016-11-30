@@ -9,6 +9,13 @@ static const char * get_node_mode(ir_node *node) {
 FirmVisitor::FirmVisitor(bool print, bool verify, bool gen) {
   ir_init();
 
+  // disable libfirm optimizations
+  // they can fuck things up by changing things we just added, e.g.
+  //     node = new_Cmp
+  //     is_Cmp(node) -> 0
+  // jFirm does this as well
+  all_optimizations_off();
+
   //64 bit pointer mode
   auto _mode_P = new_reference_mode("P64", irma_twos_complement, 64, 64);
   set_modeP(_mode_P);
