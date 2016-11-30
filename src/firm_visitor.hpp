@@ -11,8 +11,8 @@
 class Value {
 protected:
 public:
-  virtual ir_node *load() { assert(false); }
-  virtual void store(ir_node *) { assert(false); }
+  virtual ir_node *load() { __builtin_trap(); }
+  virtual void store(ir_node *) { __builtin_trap(); }
   operator ir_node *() { return load(); }
   virtual ~Value() {}
 

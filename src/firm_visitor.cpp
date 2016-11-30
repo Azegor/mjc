@@ -443,12 +443,8 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
   if (auto param = dynamic_cast<ast::Parameter*>(ref.getDef())) {
     // Param refs are only possible in regular methods
 //     auto method = dynamic_cast<ast::RegularMethod*>(this->currentMethod);
-    auto firmMethod = &this->methods.at(this->currentMethod);
     size_t paramIndex = param->getIndex();
-    assert(paramIndex < firmMethod->nParams);
-//     auto paramType = method->getParameters()[paramIndex]->getType()->getSemaType();
-    // TODO: Proj of that parameter? or get_r_value?
-//     pushNode(firmMethod->params[paramIndex]);
+    assert(paramIndex < this->methods.at(this->currentMethod).nParams);
     pushNode(std::make_unique<VarValue>(paramIndex, getIrMode(param->getType())));
   } else if (auto decl = dynamic_cast<ast::VariableDeclaration*>(ref.getDef())) {
     auto firmMethod = &methods.at(this->currentMethod);

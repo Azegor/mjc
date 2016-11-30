@@ -133,6 +133,7 @@ struct Type {
         return 4;
       default: assert(false);
     }
+    __builtin_trap();
   }
 };
 
@@ -416,6 +417,7 @@ public:
         assert(false);
         break;
     }
+    __builtin_trap();
   }
 
   void accept(Visitor *visitor) override { visitor->visitPrimitiveType(*this); }
