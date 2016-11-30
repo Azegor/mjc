@@ -14,7 +14,7 @@ FirmVisitor::FirmVisitor(bool print, bool verify, bool gen) {
   //     node = new_Cmp
   //     is_Cmp(node) -> 0
   // jFirm does this as well
-  all_optimizations_off();
+  set_optimize(0);
 
   //64 bit pointer mode
   auto _mode_P = new_reference_mode("P64", irma_twos_complement, 64, 64);
