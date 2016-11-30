@@ -71,7 +71,8 @@ void FirmVisitor::visitProgram(ast::Program &program) {
 
 void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   ir_type *mainMethodType =
-      new_type_method(0, 0, false, cc_cdecl_set, mtp_no_property);
+      new_type_method(0, 1, false, cc_cdecl_set, mtp_no_property);
+  set_method_res_type(mainMethodType, 0, intType);
 
   ir_entity *entity =
       new_entity(get_glob_type(), new_id_from_str("main"), mainMethodType);
@@ -85,8 +86,8 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   this->currentMethod = &method;
   method.acceptChildren(this);
 
-  // TODO: This makes irg_verify() happy but is it the right thing to do?
-  ir_node *returnNode = new_Return(get_store(), 0, nullptr);
+  ir_node *results[] = {new_Const_long(mode_Is, 0)};
+  ir_node *returnNode  = new_Return(get_store(), 1, results);
   add_immBlock_pred(get_irg_end_block(mainMethodGraph), returnNode);
 
   // seals current block (-> all predecessors known)
@@ -220,6 +221,10 @@ void FirmVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
     ir_node *results[] = {popNode()->load()};
     ret = new_Return(get_store(), 1, results);
   } else {
+    if (dynamic_cast<ast::MainMethod *>(currentMethod)) {
+      ir_node *results[] = {new_Const_long(mode_Is, 0)};
+      ret = new_Return(get_store(), 1, results);
+    }
     ret = new_Return(get_store(), 0, nullptr);
   }
 
