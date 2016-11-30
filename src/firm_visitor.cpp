@@ -358,27 +358,27 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
     assert(false);
     break;
   case ast::BinaryExpression::Op::Equals:
-    outNode = new_Cmp(leftNode->load(), rightNode->load(), ir_relation_equal);
+    outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_equal));
     want_conversion = true;
     break;
   case ast::BinaryExpression::Op::NotEquals:
-    outNode = new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_greater);
+    outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_greater));
     want_conversion = true;
     break;
   case ast::BinaryExpression::Op::Less:
-    outNode = new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less);
+    outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less));
     want_conversion = true;
     break;
   case ast::BinaryExpression::Op::LessEquals:
-    outNode = new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_equal);
+    outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_equal));
     want_conversion = true;
     break;
   case ast::BinaryExpression::Op::Greater:
-    outNode = new_Cmp(leftNode->load(), rightNode->load(), ir_relation_greater);
+    outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_greater));
     want_conversion = true;
     break;
   case ast::BinaryExpression::Op::GreaterEquals:
-    outNode = new_Cmp(leftNode->load(), rightNode->load(), ir_relation_greater_equal);
+    outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_greater_equal));
     want_conversion = true;
     break;
   case ast::BinaryExpression::Op::Plus:
@@ -412,10 +412,9 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   }
 
   if(outNode) {
-    if(want_conversion && ! control_flow_from_binary) {
-      ir_node *condNode = new_Cond(outNode);
-      ir_node *projFalse = new_Proj(condNode, mode_X, pn_Cond_false);
-      ir_node *projTrue = new_Proj(condNode, mode_X, pn_Cond_true);
+    if(want_conversion && ! control_flow_from_expr) {
+      ir_node *projFalse = new_Proj(outNode, mode_X, pn_Cond_false);
+      ir_node *projTrue = new_Proj(outNode, mode_X, pn_Cond_true);
 
       ir_node* const blockIn[] = { projFalse, projTrue };
       ir_node *exitBlock = new_Block(2, blockIn);
@@ -424,6 +423,8 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
       ir_node *trueNode = new_Const_long(mode_Bu, 1);
       ir_node* const PhiIn[] = { falseNode, trueNode }; 
       outNode = new_Phi(2, PhiIn, mode_Bu);
+
+      control_flow_from_expr = false;
     }
     pushNode(outNode);
   }
