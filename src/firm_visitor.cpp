@@ -321,8 +321,9 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
 
   switch (expr.getOperation()) {
   case ast::BinaryExpression::Op::Assign: {
-    leftNode->store(rightNode->load());
-    pushNode(std::move(leftNode));
+    auto rightVal = rightNode->load();
+    leftNode->store(rightVal);
+    pushNode(rightVal); // might be used further TODO: is this correct so?
     break;
 //     auto firmMethod = &methods.at(this->currentMethod);
 //     if (auto varRef = dynamic_cast<ast::VarRef *>(expr.getLeft())) {
