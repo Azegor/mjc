@@ -4,7 +4,7 @@ MESSAGE(STATUS "Adding tests")
 if (CMAKE_CONFIGURATION_TYPES)
     add_custom_target(check
         ${CMAKE_CTEST_COMMAND}
-            --force-new-ctest-process --quiet --parallel $(JOBS)
+            --force-new-ctest-process --quiet
             --build-config "$<CONFIGURATION>"
         && printf "\\033[1m\\033[32m::: All tests passed!\\033[39m\\033[0m\\n"
         || ${CMAKE_CTEST_COMMAND}
@@ -15,10 +15,10 @@ if (CMAKE_CONFIGURATION_TYPES)
 else()
     add_custom_target(check
         ${CMAKE_CTEST_COMMAND}
-            --force-new-ctest-process --quiet --parallel $(JOBS)
+            --force-new-ctest-process --quiet
         && printf "\\033[1m\\033[32m::: All tests passed!\\033[39m\\033[0m\\n"
         || ${CMAKE_CTEST_COMMAND}
-            --force-new-ctest-process --rerun-failed --output-on-failure --parallel $(JOBS)
+            --force-new-ctest-process --rerun-failed --output-on-failure
         VERBATIM
     )
 endif()
