@@ -39,12 +39,20 @@ public:
   ir_node *load() override {
     ir_type *type = get_entity_type(get_Member_entity(member));
     ir_mode *mode = get_type_mode(type);
-    ir_printf("field type: %t, mode: %m\n", type, mode);
+    ir_printf("load field type: %t, mode: %m\n", type, mode);
     ir_node *loadNode = new_Load(get_store(), member, mode, type, cons_none);
     ir_node *projRes  = new_Proj(loadNode, mode, pn_Load_res);
     ir_node *projM    = new_Proj(loadNode, mode_M, pn_Load_M);
     set_store(projM);
     return projRes;
+  }
+  void store(ir_node *val) override {
+    ir_type *type = get_entity_type(get_Member_entity(member));
+    ir_mode *mode = get_type_mode(type);
+    ir_printf("store field type: %t, mode: %m\n", type, mode);
+    ir_node *storeNode = new_Store(get_store(), member, val, type, cons_none);
+    ir_node *projM    = new_Proj(storeNode, mode_M, pn_Load_M);
+    set_store(projM);
   }
 };
 class ArrayValue : public Value {
@@ -58,6 +66,12 @@ public:
     ir_node *projRes = new_Proj(loadNode, mode_Is, pn_Load_res);
     set_store(projM);
     return projRes;
+  }
+  void store(ir_node *val) override {
+    ir_node *storeNode = new_Store(get_store(), selNode, val,
+                                   new_type_primitive(mode_Is), cons_none);
+    ir_node *projM = new_Proj(storeNode, mode_M, pn_Load_M);
+    set_store(projM);
   }
 };
 class RValue : public Value {
