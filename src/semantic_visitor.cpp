@@ -531,11 +531,17 @@ void SemanticVisitor::visitArrayAccess(ast::ArrayAccess &access) {
   access.acceptChildren(this);
 
   if (!access.getIndex()->targetType.isInt()) {
-    error(*access.getIndex(), "Array indices must be integer expressions");
+    std::stringstream msg;
+    msg << "Array indices must be integer expressions, but have "
+        << access.getIndex()->targetType;
+    error(*access.getIndex(), msg.str());
   }
 
   if (!access.getArray()->targetType.isArray()) {
-    error(*access.getArray(), "Array access on non-array expression");
+    std::stringstream msg;
+    msg << "Array access on non-array expression, but have "
+        << access.getIndex()->targetType;
+    error(*access.getArray(), msg.str());
   }
 
   // access.targetType is array type -> decrease dimension by one
