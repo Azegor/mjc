@@ -598,54 +598,42 @@ void FirmVisitor::visitExpressionStatement(ast::ExpressionStatement &exprStmt) {
 }
 
 void FirmVisitor::visitIfStatement(ast::IfStatement &stmt) {
+  control_flow_from_expr = true;
   stmt.getCondition()->accept(this);
-#if 0
-  ir_node *exprNode = popNode();
-  ir_node *cmpNode = new_Cmp(exprNode, new_Const_long(mode_Bu, 1),
-                             ir_relation_equal);
-  ir_node *condNode = new_Cond(cmpNode);
-
-  std::cout << get_node_mode(condNode) << std::endl;
+  ir_node *condNode = popNode()->load();
 
   ir_node *trueProj = new_Proj(condNode, mode_X, pn_Cond_true);
   ir_node *falseProj = new_Proj(condNode, mode_X, pn_Cond_false);
 
-  ir_node *thenBlock = nullptr;
-  ir_node *endThen = nullptr;
-  ir_node *endElse = nullptr;
+  ir_node *afterBlock = new_immBlock();
 
   if (stmt.getThenStatement() != nullptr) {
-    thenBlock = new_immBlock();
+    ir_node *thenBlock = new_immBlock();
     add_immBlock_pred(thenBlock, trueProj);
     set_cur_block(thenBlock);
 
     stmt.getThenStatement()->accept(this);
-    endThen = new_Jmp();
-    set_Block_matured(thenBlock, true);
+    add_immBlock_pred(afterBlock, new_Jmp());
+    mature_immBlock(thenBlock);
+  } else {
+    add_immBlock_pred(afterBlock, trueProj);
   }
-
 
   if (stmt.getElseStatement() != nullptr) {
-    ir_node *falseBlock = new_immBlock();
-    add_immBlock_pred(falseBlock, falseProj);
-    set_cur_block(falseBlock);
+    ir_node *elseBlock = new_immBlock();
+    add_immBlock_pred(elseBlock, falseProj);
+    set_cur_block(elseBlock);
 
     stmt.getElseStatement()->accept(this);
-    endElse = new_Jmp();
-    set_Block_matured(falseBlock, true);
+    add_immBlock_pred(afterBlock, new_Jmp());
+    mature_immBlock(elseBlock);
+  } else {
+    add_immBlock_pred(afterBlock, falseProj);
   }
 
 
-  ir_node *blockAfter = new_immBlock();
-  if (endThen)
-    add_immBlock_pred(blockAfter, endThen);
+  set_cur_block(afterBlock);
 
-  if (endElse)
-    add_immBlock_pred(blockAfter, endElse);
-
-  set_cur_block(blockAfter);
-
-#endif
 
   //ir_node *end = get_irg_end_block(current_ir_graph);
   //add_immBlock_pred(end, blockAfter);
