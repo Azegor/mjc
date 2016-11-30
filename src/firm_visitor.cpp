@@ -504,7 +504,7 @@ void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
 
 void FirmVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
   auto elementType = getIrType(expr.getArrayType()->getElementType());
-  ir_type *arrayType = new_type_array(elementType, 0);
+  ir_type *arrayType = new_type_pointer(elementType);
   ir_entity *callocEntity = makeCalloc(arrayType);
 
   expr.getSize()->accept(this);
