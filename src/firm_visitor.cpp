@@ -63,9 +63,13 @@ void FirmVisitor::visitProgram(ast::Program &program) {
     be_parse_arg("isa=amd64");
     be_main(f, "test.java");
     fclose(f);
-    system("gcc -c ../src/runtime.c -o runtime.o");
-    system("ar rcs libruntime.a runtime.o");
-    system("gcc -static test.s -o _test_ -L. -lruntime");
+    int res = 0;
+    res |= system("gcc -c ../src/runtime.c -o runtime.o");
+    res |= system("ar rcs libruntime.a runtime.o");
+    res |= system("gcc -static test.s -o _test_ -L. -lruntime");
+    if (res) {
+      throw std::runtime_error("Error while linking binary");
+    }
   }
 }
 
