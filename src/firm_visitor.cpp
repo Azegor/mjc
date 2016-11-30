@@ -26,7 +26,6 @@ FirmVisitor::FirmVisitor(bool print, bool verify, bool gen) {
 
   intType = new_type_primitive(mode_Is);
   boolType = new_type_primitive(mode_Bu);
-  arrayType = new_type_primitive(mode_P); // TODO -> new_type_array
 
   // System.out.println takes just 1 param and returns void
   sysoutType = new_type_method(1, 0, false, cc_cdecl_set, mtp_no_property);
@@ -516,18 +515,22 @@ void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
   ir_node *arrayNode = popNode()->load();
   arrayAccess.getIndex()->accept(this);
   ir_node *indexNode = popNode()->load();
-  ir_node *sel = new_Sel(arrayNode, indexNode, new_type_array(intType, 0));
+  ir_type *arrayType = getIrType(arrayAccess.getArray()->targetType); // correctly handles multiple dimensions
+  ir_printf("array type: %t\n", arrayType);
+  ir_node *sel = new_Sel(arrayNode, indexNode, arrayType);
   assert(is_Sel(sel));
 
-  pushNode(std::make_unique<ArrayValue>(sel)); // returns array pointer!
+  auto elementType =
+      getIrType(arrayAccess.getArray()->targetType.getArrayInnerType());
+  pushNode(std::make_unique<ArrayValue>(sel, elementType)); // returns array pointer!
 }
 
 void FirmVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
-  auto elementType = getIrType(expr.getArrayType()->getElementType());
-  ir_type *arrayType = new_type_pointer(elementType);
+  ir_type *arrayType = getIrType(expr.getArrayType()); // correctly handles multiple dimensions
   ir_entity *callocEntity = makeCalloc(arrayType);
 
   expr.getSize()->accept(this);
+  auto elementType = getIrType(expr.getArrayType()->getSemaType().getArrayInnerType());
   ir_node *args[2] = {popNode()->load(), new_Size(mode_Is, elementType)};
   ir_node *store = get_store();
   ir_node *callee = new_Address(callocEntity);

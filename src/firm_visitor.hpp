@@ -15,6 +15,13 @@ public:
   virtual void store(ir_node *) { assert(false); }
   operator ir_node *() { return load(); }
   virtual ~Value() {}
+
+  static ir_mode *getModeForType(ir_type *t) {
+    if (is_Array_type(t)) {
+      return mode_P;
+    }
+    return get_type_mode(t);
+  }
 };
 class VarValue : public Value {
   size_t varIndex;
@@ -35,11 +42,15 @@ public:
 class FieldValue : public Value {
   ir_node * member;
 public:
-  FieldValue(ir_node *member) : member(member) {}
+  FieldValue(ir_node *member) : member(member) {
+    assert(member);
+  }
   ir_node *load() override {
     ir_type *type = get_entity_type(get_Member_entity(member));
-    ir_mode *mode = get_type_mode(type);
-    ir_printf("load field type: %t, mode: %m\n", type, mode);
+    assert(type);
+    ir_mode *mode = getModeForType(type);
+    assert(mode);
+//     ir_printf("load field; type: %t, mode: %m\n", type, mode);
     ir_node *loadNode = new_Load(get_store(), member, mode, type, cons_none);
     ir_node *projRes  = new_Proj(loadNode, mode, pn_Load_res);
     ir_node *projM    = new_Proj(loadNode, mode_M, pn_Load_M);
@@ -48,8 +59,8 @@ public:
   }
   void store(ir_node *val) override {
     ir_type *type = get_entity_type(get_Member_entity(member));
-    ir_mode *mode = get_type_mode(type);
-    ir_printf("store field type: %t, mode: %m\n", type, mode);
+    assert(type);
+//     ir_printf("store field; type: %t\n", type);
     ir_node *storeNode = new_Store(get_store(), member, val, type, cons_none);
     ir_node *projM    = new_Proj(storeNode, mode_M, pn_Load_M);
     set_store(projM);
@@ -57,19 +68,24 @@ public:
 };
 class ArrayValue : public Value {
   ir_node *selNode;
+  ir_type *elemType;
 public:
-  ArrayValue(ir_node *sel) : selNode(sel) {}
+  ArrayValue(ir_node *sel, ir_type *elemType) : selNode(sel), elemType(elemType) {
+    assert(selNode);
+    assert(elemType);
+  }
   ir_node *load() override {
-    ir_node *loadNode = new_Load(get_store(), selNode, mode_Is,
-                                 new_type_primitive(mode_Is), cons_none);
+    ir_mode *mode = getModeForType(elemType);
+//     ir_printf("load array; element type: %t, mode: %m\n", elemType, mode);
+    ir_node *loadNode = new_Load(get_store(), selNode, mode, elemType, cons_none);
     ir_node *projM = new_Proj(loadNode, mode_M, pn_Load_M);
-    ir_node *projRes = new_Proj(loadNode, mode_Is, pn_Load_res);
+    ir_node *projRes = new_Proj(loadNode, mode, pn_Load_res);
     set_store(projM);
     return projRes;
   }
   void store(ir_node *val) override {
-    ir_node *storeNode = new_Store(get_store(), selNode, val,
-                                   new_type_primitive(mode_Is), cons_none);
+//     ir_printf("store array; element type: %t\n", elemType);
+    ir_node *storeNode = new_Store(get_store(), selNode, val, elemType, cons_none);
     ir_node *projM = new_Proj(storeNode, mode_M, pn_Load_M);
     set_store(projM);
   }
@@ -122,7 +138,7 @@ private:
 
   ir_type *intType;
   ir_type *boolType;
-  ir_type *arrayType;
+//   std::unordered_map<ir_type *> arrayTypes; // TODO cache?
 
   // System.out.println special case
   ir_type *sysoutType;
@@ -141,16 +157,21 @@ private:
 
   ir_type *getIrType(ast::Type *type) {
     auto sType = type->getSemaType();
-    switch (sType.kind) {
+    return getIrType(sType);
+  }
+  ir_type *getIrType(const sem::Type &type) {
+    switch (type.kind) {
     case sem::TypeKind::Int:
       return this->intType;
     case sem::TypeKind::Bool:
       return this->boolType;
-    case sem::TypeKind::Array:
-      return this->arrayType;
+    case sem::TypeKind::Array: {
+      sem::Type innerType = type.getArrayInnerType();
+      return new_type_array(getIrType(innerType), 0);
+    }
     case sem::TypeKind::Class: {
-      auto ct = dynamic_cast<ast::ClassType *>(type);
-      return new_type_pointer(this->classes.at(ct->getDef()).type());
+      auto cls = this->currentProgram->findClassByName(type.name);
+      return new_type_pointer(this->classes.at(cls).type());
     }
     default:
       assert(false);
@@ -237,7 +258,6 @@ public:
     for (auto& e : methods) {
       delete[] e.second.params;
     }
-    free_type(arrayType);
     free_type(boolType);
     free_type(intType);
 

@@ -79,6 +79,18 @@ struct Type {
   bool isVoidArray() const { return isArray() && innerKind == TypeKind::Void; }
   bool isVoidOrVoidArray() const { return isVoid() || isVoidArray(); }
 
+  Type getArrayInnerType() const {
+    assert(kind == TypeKind::Array && dimension > 0);
+    Type res = *this;
+    res.dimension--;
+    if (res.dimension == 0)
+    {
+      res.kind = res.innerKind;
+      res.innerKind = TypeKind::Unresolved;
+    }
+    return res;
+  }
+
   bool operator==(const sem::Type &other) const {
     switch (this->kind) {
     case TypeKind::Class:
@@ -112,10 +124,13 @@ struct Type {
 
   size_t calculateSize() const {
     switch(kind) {
-      case TypeKind::Array: assert(false);
-      case TypeKind::Class: assert(false);
-      case TypeKind::Bool: return 1;
-      case TypeKind::Int: return 4;
+      case TypeKind::Array:
+      case TypeKind::Class:
+        return 8;
+      case TypeKind::Bool:
+        return 1;
+      case TypeKind::Int:
+        return 4;
       default: assert(false);
     }
   }
