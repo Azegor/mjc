@@ -154,6 +154,7 @@ private:
   std::unordered_map<ast::Method *, FirmMethod> methods;
 
   std::stack<ValuePtr> nodeStack;
+  bool control_flow_from_binary = false;
 
   ir_type *getIrType(ast::Type *type) {
     auto sType = type->getSemaType();

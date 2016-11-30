@@ -318,6 +318,8 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   auto leftNode = popNode();
   expr.getRight()->accept(this);
   auto rightNode = popNode();
+  ir_node* outNode = nullptr;
+  bool want_conversion = false;
 
   switch (expr.getOperation()) {
   case ast::BinaryExpression::Op::Assign: {
@@ -348,41 +350,44 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
     assert(false);
     break;
   case ast::BinaryExpression::Op::Equals:
-    pushNode(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_equal));
+    outNode = new_Cmp(leftNode->load(), rightNode->load(), ir_relation_equal);
+    want_conversion = true;
     break;
   case ast::BinaryExpression::Op::NotEquals:
-    pushNode(
-        new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_greater));
+    outNode = new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_greater);
+    want_conversion = true;
     break;
   case ast::BinaryExpression::Op::Less:
-    pushNode(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less));
+    outNode = new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less);
+    want_conversion = true;
     break;
   case ast::BinaryExpression::Op::LessEquals:
-    pushNode(
-        new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_equal));
+    outNode = new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_equal);
+    want_conversion = true;
     break;
   case ast::BinaryExpression::Op::Greater:
-    pushNode(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_greater));
+    outNode = new_Cmp(leftNode->load(), rightNode->load(), ir_relation_greater);
+    want_conversion = true;
     break;
   case ast::BinaryExpression::Op::GreaterEquals:
-    pushNode(new_Cmp(leftNode->load(), rightNode->load(),
-                     ir_relation_greater_equal));
+    outNode = new_Cmp(leftNode->load(), rightNode->load(), ir_relation_greater_equal);
+    want_conversion = true;
     break;
   case ast::BinaryExpression::Op::Plus:
-    pushNode(new_Add(leftNode->load(), rightNode->load()));
+    outNode = new_Add(leftNode->load(), rightNode->load());
     break;
   case ast::BinaryExpression::Op::Minus:
-    pushNode(new_Sub(leftNode->load(), rightNode->load()));
+    outNode = new_Sub(leftNode->load(), rightNode->load());
     break;
   case ast::BinaryExpression::Op::Mul:
-    pushNode(new_Mul(leftNode->load(), rightNode->load()));
+    outNode = new_Mul(leftNode->load(), rightNode->load());
     break;
   case ast::BinaryExpression::Op::Div: {
     ir_node *memory = get_store();
     ir_node *pin = new_Pin(memory);
     set_store(pin);
     ir_node *divNode = new_DivRL(pin, leftNode->load(), rightNode->load(), op_pin_state_pinned);
-    pushNode(new_Proj(divNode, mode_Is, pn_Div_res));
+    outNode = new_Proj(divNode, mode_Is, pn_Div_res);
     break;
   }
   case ast::BinaryExpression::Op::Mod: {
@@ -390,12 +395,29 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
     ir_node *pin = new_Pin(memory);
     set_store(pin);
     ir_node *modNode = new_Mod(pin, leftNode->load(), rightNode->load(), op_pin_state_pinned);
-    pushNode(new_Proj(modNode, mode_Is, pn_Mod_res));
+    outNode = new_Proj(modNode, mode_Is, pn_Mod_res);
     break;
   }
   default:
     assert(false);
     break;
+  }
+
+  if(outNode) {
+    if(want_conversion && ! control_flow_from_binary) {
+      ir_node *condNode = new_Cond(outNode);
+      ir_node *projFalse = new_Proj(condNode, mode_X, pn_Cond_false);
+      ir_node *projTrue = new_Proj(condNode, mode_X, pn_Cond_true);
+
+      ir_node* const blockIn[] = { projFalse, projTrue };
+      ir_node *exitBlock = new_Block(2, blockIn);
+      set_cur_block(exitBlock);
+      ir_node *falseNode = new_Const_long(mode_Bu, 0);
+      ir_node *trueNode = new_Const_long(mode_Bu, 1);
+      ir_node* const PhiIn[] = { falseNode, trueNode }; 
+      outNode = new_Phi(2, PhiIn, mode_Bu);
+    }
+    pushNode(outNode);
   }
 }
 
