@@ -632,3 +632,39 @@ void FirmVisitor::visitIfStatement(ast::IfStatement &stmt) {
   //ir_node *end = get_irg_end_block(current_ir_graph);
   //add_immBlock_pred(end, blockAfter);
 }
+
+void FirmVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
+  ir_node *whileBlock = new_immBlock();
+  add_immBlock_pred(whileBlock, new_Jmp());
+  set_cur_block(whileBlock);
+
+  control_flow_from_expr = true;
+  stmt.getCondition()->accept(this);
+  ir_node *condNode = popNode()->load();
+
+  ir_node *trueProj = new_Proj(condNode, mode_X, pn_Cond_true);
+  ir_node *falseProj = new_Proj(condNode, mode_X, pn_Cond_false);
+
+  ir_node *afterBlock = new_immBlock();
+  add_immBlock_pred(afterBlock, falseProj);
+
+  ir_node *loopBlock = new_immBlock();
+  add_immBlock_pred(loopBlock, trueProj);
+  set_cur_block(loopBlock);
+  keep_alive(loopBlock);
+
+  // not sure if this can happen?
+  if (stmt.getStatement() != nullptr) {
+    stmt.getStatement()->accept(this);
+  }
+
+  get_store();
+
+  add_immBlock_pred(whileBlock, new_Jmp());
+  mature_immBlock(whileBlock);
+  mature_immBlock(loopBlock);
+
+
+  set_cur_block(afterBlock);
+}
+
