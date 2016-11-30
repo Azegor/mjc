@@ -303,7 +303,7 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     // get the result
     if (!invocation.targetType.isVoid()) {
       ir_node *tuple = new_Proj(callNode, mode_T, pn_Call_T_result);
-      ir_node *result = new_Proj(tuple, mode_Is, 0); // TODO: Correct type
+      ir_node *result = new_Proj(tuple, getIrMode(invocation.targetType), 0);
       pushNode(result);
     } else {
       pushNode(nullptr); // needs to return a node for consistency!

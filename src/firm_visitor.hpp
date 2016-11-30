@@ -183,7 +183,10 @@ private:
 
   ir_mode *getIrMode(ast::Type *type) {
     auto sType = type->getSemaType();
-    switch(sType.kind) {
+    return getIrMode(sType);
+  }
+  ir_mode *getIrMode(const sem::Type &type) {
+    switch(type.kind) {
     case sem::TypeKind::Int:
       return mode_Is;
     case sem::TypeKind::Bool:

@@ -8,8 +8,8 @@ class Test {
   public int[][] iaa;
 
   public static void main(String[] args) {
-    /*Test[] t;
-    t[0].arrayMadness(t, new int[48]);*/
+    Test[] t;
+    t[0].arrayMadness(t, new int[48]);
     /*new Test().arrayMadness(new Test[42], new int[48]);*/
   }
 
