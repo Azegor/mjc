@@ -11,7 +11,7 @@ edo() {
 }
 
 _check() {
-    edo make -j -C "${builddir}" JOBS=12 check "${@}"
+    edo make -j -C "${builddir}" CTEST_PARALLEL_LEVEL=12 check "${@}"
 }
 
 _main() {
