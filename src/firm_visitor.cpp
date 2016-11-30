@@ -355,7 +355,7 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
     ir_node *memory = get_store();
     ir_node *pin = new_Pin(memory);
     set_store(pin);
-    ir_node *divNode = new_DivRL(pin, leftNode->load(), rightNode->load(), 0);
+    ir_node *divNode = new_DivRL(pin, leftNode->load(), rightNode->load(), op_pin_state_pinned);
     pushNode(new_Proj(divNode, mode_Is, pn_Div_res));
     break;
   }
@@ -363,7 +363,7 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
     ir_node *memory = get_store();
     ir_node *pin = new_Pin(memory);
     set_store(pin);
-    ir_node *modNode = new_Mod(pin, leftNode->load(), rightNode->load(), 0);
+    ir_node *modNode = new_Mod(pin, leftNode->load(), rightNode->load(), op_pin_state_pinned);
     pushNode(new_Proj(modNode, mode_Is, pn_Mod_res));
     break;
   }
