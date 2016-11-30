@@ -455,7 +455,7 @@ public:
   }
 
   std::string getMangledName() const override {
-    return std::string('P', dimension) + elementType->getMangledName();
+    return std::string(dimension, 'P') + elementType->getMangledName();
   }
 };
 using ArrayTypePtr = std::unique_ptr<ArrayType>;
