@@ -9,6 +9,20 @@ static const char * get_node_mode(ir_node *node) {
   return get_mode_name(get_irn_mode(node));
 }
 
+// generates "boolean" (mode_Bu) 1/0 from a Cond node
+// creates a new Block and returns the Phi
+static ir_node* condToBoolean(ir_node* cond) {
+  ir_node *projFalse = new_Proj(cond, mode_X, pn_Cond_false);
+  ir_node *projTrue = new_Proj(cond, mode_X, pn_Cond_true);
+
+  ir_node* const blockIn[] = { projFalse, projTrue };
+  ir_node *exitBlock = new_Block(2, blockIn);
+  set_cur_block(exitBlock);
+  ir_node *falseNode = new_Const_long(mode_Bu, 0);
+  ir_node *trueNode = new_Const_long(mode_Bu, 1);
+  ir_node* const PhiIn[] = { falseNode, trueNode };
+  return new_Phi(2, PhiIn, mode_Bu);
+}
 
 FirmVisitor::FirmVisitor(bool print, bool verify, bool gen) {
   ir_init();
@@ -413,19 +427,9 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
 
   if(outNode) {
     if(want_conversion && ! control_flow_from_expr) {
-      ir_node *projFalse = new_Proj(outNode, mode_X, pn_Cond_false);
-      ir_node *projTrue = new_Proj(outNode, mode_X, pn_Cond_true);
-
-      ir_node* const blockIn[] = { projFalse, projTrue };
-      ir_node *exitBlock = new_Block(2, blockIn);
-      set_cur_block(exitBlock);
-      ir_node *falseNode = new_Const_long(mode_Bu, 0);
-      ir_node *trueNode = new_Const_long(mode_Bu, 1);
-      ir_node* const PhiIn[] = { falseNode, trueNode }; 
-      outNode = new_Phi(2, PhiIn, mode_Bu);
-
-      control_flow_from_expr = false;
+      outNode = condToBoolean(outNode);
     }
+    control_flow_from_expr = false;
     pushNode(outNode);
   }
 }
