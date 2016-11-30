@@ -33,7 +33,7 @@ public:
   VarValue(size_t index, ir_type *type)
   : VarValue(index, get_type_mode(type)) {}
   ir_node *load() override {
-    return get_r_value(current_ir_graph, varIndex, mode);
+    return get_value(varIndex, mode);
   }
   void store(ir_node *val) override {
     set_value(varIndex, val);

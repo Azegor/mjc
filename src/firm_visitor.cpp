@@ -186,6 +186,7 @@ void FirmVisitor::visitClass(ast::Class &klass) {
     int i = 1;
     for(auto &param : parameters) {
       paramNodes[i] = new_Proj(args, getIrMode(param->getType()), i);
+      set_value(i, paramNodes[i]); // TODO necessary?
       i++;
     }
 
@@ -521,7 +522,7 @@ void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
   arrayAccess.getIndex()->accept(this);
   ir_node *indexNode = popNode()->load();
   ir_type *arrayType = getIrType(arrayAccess.getArray()->targetType); // correctly handles multiple dimensions
-  ir_printf("array type: %t\n", arrayType);
+//   ir_printf("array type: %t\n", arrayType);
   ir_node *sel = new_Sel(arrayNode, indexNode, arrayType);
   assert(is_Sel(sel));
 
