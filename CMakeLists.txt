@@ -16,7 +16,12 @@ set(DEBUG_FLAGS "${DEBUG_FLAGS} -fsanitize=address,undefined -fno-omit-frame-poi
 # works only with clang
 #set(DEBUG_FLAGS "${DEBUG_FLAGS} -fsanitize=address,undefined -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fno-common")
 
-set(DEBUG_FLAGS "${DEBUG_FLAGS} -g -O0 -fprofile-arcs -ftest-coverage")
+set(ENABLE_PROFILING OFF CACHE BOOL "Build with profiling flags")
+
+if (${ENABLE_PROFILING})
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
+  message(STATUS "Profiling enabled")
+endif()
 
 enable_testing()
 add_subdirectory(test)
