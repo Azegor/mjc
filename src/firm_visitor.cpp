@@ -1,5 +1,9 @@
 #include "firm_visitor.hpp"
 
+#ifndef LIBSEARCHDIR
+#define LIBSEARCHDIR "."
+#endif
+
 __attribute__((unused))
 static const char * get_node_mode(ir_node *node) {
   return get_mode_name(get_irn_mode(node));
@@ -64,9 +68,9 @@ void FirmVisitor::visitProgram(ast::Program &program) {
     be_main(f, "test.java");
     fclose(f);
     int res = 0;
-    res |= system("gcc -c ../src/runtime.c -o runtime.o");
-    res |= system("ar rcs libruntime.a runtime.o");
-    res |= system("gcc -static test.s -o _test_ -L. -lruntime");
+//     res |= system("gcc -c ../src/runtime.c -o runtime.o");
+//     res |= system("ar rcs libruntime.a runtime.o");
+    res |= system("gcc -static test.s -o _test_ -L" LIBSEARCHDIR " -lruntime");
     if (res) {
       throw std::runtime_error("Error while linking binary");
     }

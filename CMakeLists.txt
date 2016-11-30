@@ -77,6 +77,7 @@ add_executable(mjc
   ${MJC_SOURCES}
   "${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp"
 )
+target_compile_definitions(mjc PRIVATE LIBSEARCHDIR="${CMAKE_BINARY_DIR}")
 
 add_library(runtime STATIC src/runtime.c)
 

@@ -172,6 +172,7 @@ private:
     }
     case sem::TypeKind::Class: {
       auto cls = this->currentProgram->findClassByName(type.name);
+      assert(cls);
       return new_type_pointer(this->classes.at(cls).type());
     }
     default:
