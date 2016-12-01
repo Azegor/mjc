@@ -606,8 +606,10 @@ void FirmVisitor::visitIfStatement(ast::IfStatement &stmt) {
     set_cur_block(thenBlock);
 
     stmt.getThenStatement()->accept(this);
-    add_immBlock_pred(afterBlock, new_Jmp());
     mature_immBlock(thenBlock);
+    if (stmt.getThenStatement()->cfb == sem::ControlFlowBehavior::MayContinue) {
+      add_immBlock_pred(afterBlock, new_Jmp());
+    }
   } else {
     add_immBlock_pred(afterBlock, trueProj);
   }
@@ -618,8 +620,10 @@ void FirmVisitor::visitIfStatement(ast::IfStatement &stmt) {
     set_cur_block(elseBlock);
 
     stmt.getElseStatement()->accept(this);
-    add_immBlock_pred(afterBlock, new_Jmp());
     mature_immBlock(elseBlock);
+    if (stmt.getElseStatement()->cfb == sem::ControlFlowBehavior::MayContinue) {
+      add_immBlock_pred(afterBlock, new_Jmp());
+    }
   } else {
     add_immBlock_pred(afterBlock, falseProj);
   }
