@@ -331,6 +331,11 @@ void FirmVisitor::visitIntLiteral(ast::IntLiteral &lit) {
 
 void FirmVisitor::visitBoolLiteral(ast::BoolLiteral &lit) {
   ir_node *node = new_Const_long(mode_Bu, lit.getValue() ? 1 : 0);
+  if (control_flow_from_expr) {
+    ir_node *one = new_Const_long(mode_Bu, 1);
+    node = new_Cond(new_Cmp(node, one, ir_relation_equal));
+    control_flow_from_expr = false;
+  }
   pushNode(node);
 }
 
