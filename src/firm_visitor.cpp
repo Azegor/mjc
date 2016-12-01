@@ -24,6 +24,18 @@ static ir_node* condToBoolean(ir_node* cond) {
   return new_Phi(2, PhiIn, mode_Bu);
 }
 
+static void booleanToControlFlow(ir_node *boolean, ir_node *trueBlock, ir_node *falseBlock) {
+  assert(trueBlock);
+  assert(falseBlock);
+  assert(get_irn_mode(boolean) == mode_Bu);
+  ir_node *cond = new_Cond(new_Cmp(new_Const_long(mode_Bu, 1), boolean, ir_relation_equal));
+  ir_node *projTrue = new_Proj(cond, mode_X, pn_Cond_true);
+  ir_node *projFalse = new_Proj(cond, mode_X, pn_Cond_false);
+  add_immBlock_pred(trueBlock, projTrue);
+  add_immBlock_pred(falseBlock, projFalse);
+}
+
+
 FirmVisitor::FirmVisitor(bool print, bool verify, bool gen) {
   ir_init();
 
@@ -316,7 +328,11 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     if (!invocation.targetType.isVoid()) {
       ir_node *tuple = new_Proj(callNode, mode_T, pn_Call_T_result);
       ir_node *result = new_Proj(tuple, getIrMode(invocation.targetType), 0);
-      pushNode(result);
+      if (trueTarget) {
+        booleanToControlFlow(result, trueTarget, falseTarget);
+      } else {
+        pushNode(result);
+      }
     } else {
       pushNode(nullptr); // needs to return a node for consistency!
     }
@@ -330,13 +346,22 @@ void FirmVisitor::visitIntLiteral(ast::IntLiteral &lit) {
 }
 
 void FirmVisitor::visitBoolLiteral(ast::BoolLiteral &lit) {
-  ir_node *node = new_Const_long(mode_Bu, lit.getValue() ? 1 : 0);
-  if (control_flow_from_expr) {
-    ir_node *one = new_Const_long(mode_Bu, 1);
-    node = new_Cond(new_Cmp(node, one, ir_relation_equal));
-    control_flow_from_expr = false;
+  if (trueTarget != nullptr) {
+    assert(falseTarget);
+    ir_node *bad = new_Bad(mode_X);
+    if (lit.getValue()) {
+      add_immBlock_pred(trueTarget, new_Jmp());
+      // mark other branch as bad. Can't null it, that causes ASAN errors later
+      // TODO: might not be needed, graph looks the same to me?
+      add_immBlock_pred(falseTarget, bad);
+    } else {
+      add_immBlock_pred(falseTarget, new_Jmp());
+      // see above
+      add_immBlock_pred(trueTarget, bad);
+    }
+  } else {
+    pushNode(new_Const_long(mode_Bu, lit.getValue() ? 1 : 0));
   }
-  pushNode(node);
 }
 
 void FirmVisitor::visitThisLiteral(ast::ThisLiteral &lit) {
@@ -358,7 +383,7 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   expr.getRight()->accept(this);
   auto rightNode = popNode();
   ir_node* outNode = nullptr;
-  bool want_conversion = false;
+  bool is_boolean = false;
 
   switch (expr.getOperation()) {
   case ast::BinaryExpression::Op::Assign: {
@@ -390,27 +415,27 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
     break;
   case ast::BinaryExpression::Op::Equals:
     outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_equal));
-    want_conversion = true;
+    is_boolean = true;
     break;
   case ast::BinaryExpression::Op::NotEquals:
     outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_greater));
-    want_conversion = true;
+    is_boolean = true;
     break;
   case ast::BinaryExpression::Op::Less:
     outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less));
-    want_conversion = true;
+    is_boolean = true;
     break;
   case ast::BinaryExpression::Op::LessEquals:
     outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_equal));
-    want_conversion = true;
+    is_boolean = true;
     break;
   case ast::BinaryExpression::Op::Greater:
     outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_greater));
-    want_conversion = true;
+    is_boolean = true;
     break;
   case ast::BinaryExpression::Op::GreaterEquals:
     outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_greater_equal));
-    want_conversion = true;
+    is_boolean = true;
     break;
   case ast::BinaryExpression::Op::Plus:
     outNode = new_Add(leftNode->load(), rightNode->load());
@@ -443,10 +468,18 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   }
 
   if(outNode) {
-    if(want_conversion && ! control_flow_from_expr) {
-      outNode = condToBoolean(outNode);
+    if(is_boolean) {
+      if(trueTarget != nullptr) {
+        assert(falseTarget);
+        ir_node *projTrue = new_Proj(outNode, mode_X, pn_Cond_true);
+        ir_node *projFalse = new_Proj(outNode, mode_X, pn_Cond_false);
+        add_immBlock_pred(trueTarget, projTrue);
+        add_immBlock_pred(falseTarget, projFalse);
+        return;
+      } else {
+        outNode = condToBoolean(outNode);
+      }
     }
-    control_flow_from_expr = false;
     pushNode(outNode);
   }
 }
@@ -479,29 +512,64 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
         ir_node *member = new_Member(thisPointer, fieldEnt.entity);
         assert(is_Member(member));
         pushNode(std::make_unique<FieldValue>(member));
-        return;
+        break;
       }
     }
-    assert(false);
   } else {
     assert(false);
+  }
+  // don't do control flow from arrays, do it in the ArrayAccess
+  ir_node *out = popNode()->load();
+  if (trueTarget && get_irn_mode(out) == mode_Bu) {
+    booleanToControlFlow(out, trueTarget, falseTarget);
+  } else {
+    pushNode(out);
   }
 }
 
 void FirmVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
-  expr.acceptChildren(this);
-
   switch(expr.getOperation()) {
   case ast::UnaryExpression::Op::Not: {
-    ir_node *zero = new_Const_long(mode_Bu, 0);
-    ir_node *outNode = new_Cond(new_Cmp(popNode()->load(), zero, ir_relation_equal));
-    if (! control_flow_from_expr) {
-      outNode = condToBoolean(outNode);
+    bool need_exitblock = false;
+    if(trueTarget == nullptr) {
+      assert(falseTarget == nullptr);
+      mature_immBlock(get_cur_block());
+
+      // are filled with jumps below (will be swapped inbetween)
+      trueTarget = new_immBlock();
+      falseTarget = new_immBlock();
+      
+      need_exitblock = true;
     }
-    control_flow_from_expr = false;
-    pushNode(outNode);
-    break; }
+    assert(falseTarget);
+    std::swap(trueTarget, falseTarget);
+    expr.acceptChildren(this);
+    // shouldn't have pushed stuff on stack
+    // popNode()->load();
+    if (need_exitblock) {
+      if (trueTarget) mature_immBlock(trueTarget);
+      set_cur_block(trueTarget);
+      ir_node *trueJmp = new_Jmp();
+
+      if (falseTarget) mature_immBlock(falseTarget);
+      set_cur_block(falseTarget);
+      ir_node *falseJmp = new_Jmp();
+
+      ir_node* const blockIn[] = {trueJmp, falseJmp};
+      ir_node *exitBlock = new_Block(2, blockIn);
+      set_cur_block(exitBlock);
+      
+      ir_node *trueNode = new_Const_long(mode_Bu, 1);
+      ir_node *falseNode = new_Const_long(mode_Bu, 0);
+
+      ir_node* const PhiIn[] = { trueNode, falseNode };
+      pushNode(new_Phi(2, PhiIn, mode_Bu));
+    }
+    std::swap(trueTarget, falseTarget);
+    break;
+  }
   case ast::UnaryExpression::Op::Neg:
+    expr.acceptChildren(this);
     pushNode(new_Minus(popNode()->load()));
     break;
   default:
@@ -511,6 +579,7 @@ void FirmVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
 
 void FirmVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
   if (decl.getInitializer() != nullptr) {
+    // TODO: fix for bools, generalize static helper -> see also UnaryExpr
     decl.getInitializer()->accept(this);
     auto firmMethod = &methods.at(this->currentMethod);
     size_t pos = firmMethod->nParams; // first parameters, then local vars
@@ -547,7 +616,11 @@ void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
 
   ir_node *member = new_Member(leftNode, rightEntity);
 
-  pushNode(std::make_unique<FieldValue>(member));
+  if (trueTarget) {
+    booleanToControlFlow(member, trueTarget, falseTarget);
+  } else {
+    pushNode(std::make_unique<FieldValue>(member));
+  }
 }
 
 void FirmVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
@@ -585,6 +658,10 @@ void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
   auto elementType =
       getIrType(arrayAccess.getArray()->targetType.getArrayInnerType());
   pushNode(std::make_unique<ArrayValue>(sel, elementType));
+
+  if (trueTarget) {
+    booleanToControlFlow(popNode()->load(), trueTarget, falseTarget);
+  }
 }
 
 void FirmVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
@@ -609,37 +686,37 @@ void FirmVisitor::visitExpressionStatement(ast::ExpressionStatement &exprStmt) {
 }
 
 void FirmVisitor::visitIfStatement(ast::IfStatement &stmt) {
-  control_flow_from_expr = true;
-  stmt.getCondition()->accept(this);
-  ir_node *condNode = popNode()->load();
-
-  ir_node *trueProj = new_Proj(condNode, mode_X, pn_Cond_true);
-  ir_node *falseProj = new_Proj(condNode, mode_X, pn_Cond_false);
-
   ir_node *afterBlock = new_immBlock();
 
+  trueTarget = (stmt.getThenStatement() != nullptr) ? new_immBlock() : afterBlock;
+  falseTarget = (stmt.getElseStatement() != nullptr) ? new_immBlock() : afterBlock;
+
+  stmt.getCondition()->accept(this);
+  // shouldn't generate a node on the stack
+  //popNode()->load();
+  
+  ir_node *thenBlock = trueTarget;
+  ir_node *elseBlock = falseTarget;
+  mature_immBlock(trueTarget);
+  mature_immBlock(falseTarget);
+  trueTarget = falseTarget = nullptr;
+
   if (stmt.getThenStatement() != nullptr) {
-    ir_node *thenBlock = new_Block(1, &trueProj);
     set_cur_block(thenBlock);
 
     stmt.getThenStatement()->accept(this);
     if (stmt.getThenStatement()->cfb == sem::ControlFlowBehavior::MayContinue) {
       add_immBlock_pred(afterBlock, new_Jmp());
     }
-  } else {
-    add_immBlock_pred(afterBlock, trueProj);
   }
 
   if (stmt.getElseStatement() != nullptr) {
-    ir_node *elseBlock = new_Block(1, &falseProj);
     set_cur_block(elseBlock);
 
     stmt.getElseStatement()->accept(this);
     if (stmt.getElseStatement()->cfb == sem::ControlFlowBehavior::MayContinue) {
       add_immBlock_pred(afterBlock, new_Jmp());
     }
-  } else {
-    add_immBlock_pred(afterBlock, falseProj);
   }
 
   mature_immBlock(afterBlock);
@@ -651,17 +728,19 @@ void FirmVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
   add_immBlock_pred(whileBlock, new_Jmp());
   set_cur_block(whileBlock);
 
-  control_flow_from_expr = true;
+  trueTarget = new_immBlock();
+  falseTarget = new_immBlock();
+
   stmt.getCondition()->accept(this);
-  ir_node *condNode = popNode()->load();
+  // shouldn't generate a node on the stack
+  //popNode()->load();
 
-  ir_node *trueProj = new_Proj(condNode, mode_X, pn_Cond_true);
-  ir_node *falseProj = new_Proj(condNode, mode_X, pn_Cond_false);
+  ir_node *loopBlock = trueTarget;
+  ir_node *afterBlock = falseTarget;
+  mature_immBlock(trueTarget);
+  mature_immBlock(falseTarget);
+  trueTarget = falseTarget = nullptr;
 
-  ir_node *afterBlock = new_immBlock();
-  add_immBlock_pred(afterBlock, falseProj);
-
-  ir_node *loopBlock = new_Block(1, &trueProj);
   set_cur_block(loopBlock);
   keep_alive(loopBlock);
 
@@ -679,7 +758,6 @@ void FirmVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
   }
   mature_immBlock(whileBlock);
 
-  mature_immBlock(afterBlock);
   set_cur_block(afterBlock);
 }
 

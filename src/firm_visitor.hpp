@@ -156,7 +156,10 @@ private:
   std::unordered_map<ast::Method *, FirmMethod> methods;
 
   std::stack<ValuePtr> nodeStack;
-  bool control_flow_from_expr = false;
+
+  // targets for fumps from boolean returning expressions
+  ir_node *trueTarget = nullptr;
+  ir_node *falseTarget = nullptr;
 
   ir_type *getIrType(ast::Type *type) {
     auto sType = type->getSemaType();
@@ -200,6 +203,32 @@ private:
       assert(false);
       return nullptr;
     }
+  }
+
+  ir_node* booleanFromExpression(ast::Expression* expr) {
+    ir_node* oldTT = trueTarget;
+    ir_node* oldFT = falseTarget;
+    trueTarget = new_immBlock();
+    set_cur_block(trueTarget);
+    ir_node *trueNode = new_Const_long(mode_Bu, 1);
+    falseTarget = new_immBlock();
+    set_cur_block(falseTarget);
+    ir_node *falseNode = new_Const_long(mode_Bu, 0);
+
+    ir_node *exitBlock = new_immBlock();
+    set_cur_block(exitBlock);
+
+    expr->accept(this);
+
+    mature_immBlock(trueTarget);
+    mature_immBlock(falseTarget);
+    trueTarget = oldTT;
+    falseTarget = oldFT;
+    mature_immBlock(exitBlock);
+
+    ir_node* const PhiIn[] = { trueNode, falseNode };
+    ir_node* phi = new_Phi(2, PhiIn, mode_Bu);
+    return phi;
   }
 
   void pushNode(ValuePtr node) {
