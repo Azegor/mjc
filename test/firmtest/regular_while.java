@@ -3,8 +3,8 @@ class Foo {
   }
   public boolean foo(boolean b) {
     while (b) {
-      return b;
+      b = false;
     }
-      return !b;
+    return false;
   }
 }
