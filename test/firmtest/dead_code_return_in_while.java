@@ -5,5 +5,6 @@ class Foo {
       while (b) {
         return b;
       }
+      return !b;
   }
 }
