@@ -628,6 +628,7 @@ void FirmVisitor::visitIfStatement(ast::IfStatement &stmt) {
     add_immBlock_pred(afterBlock, falseProj);
   }
 
+  mature_immBlock(afterBlock);
   set_cur_block(afterBlock);
 }
 
@@ -666,6 +667,7 @@ void FirmVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
   mature_immBlock(whileBlock);
   mature_immBlock(loopBlock);
 
+  mature_immBlock(afterBlock);
   set_cur_block(afterBlock);
 }
 
