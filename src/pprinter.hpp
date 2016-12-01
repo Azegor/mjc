@@ -85,7 +85,7 @@ public:
     stream << "public ";
     method.getReturnType()->accept(this);
     stream << " " << method.getName() << "(";
-    std::vector<ast::Parameter *> params = method.getParameters();
+    auto &params = method.getParameters();
     if (params.size() >= 1) {
       params[0]->accept(this);
     }
@@ -145,7 +145,7 @@ public:
       stream << " ";
     } else {
       indentLevel++;
-      std::vector<ast::BlockStatement *> statements = block.getStatements();
+      auto &statements = block.getStatements();
 
       for (std::vector<ast::BlockStatement *>::size_type i = 0;
            i < statements.size(); i++) {
@@ -295,12 +295,11 @@ public:
   void visitMethodInvocation(ast::MethodInvocation &methodInvocation) override {
     methodInvocation.getLeft()->accept(this);
     stream << "." << methodInvocation.getName() << "(";
-    std::vector<ast::Expression *> arguments = methodInvocation.getArguments();
+    auto &arguments = methodInvocation.getArguments();
     if (arguments.size() >= 1) {
       arguments[0]->accept(this);
     }
-    for (std::vector<ast::Expression *>::size_type i = 1; i < arguments.size();
-         i++) {
+    for (size_t i = 1; i < arguments.size(); ++i) {
       stream << ", ";
       arguments[i]->accept(this);
     }

@@ -329,13 +329,7 @@ public:
       : Statement(std::move(loc)), statements(std::move(statements)),
         containsNothingExceptOneSingleLonelyEmtpyExpression(flag) {}
 
-  std::vector<BlockStatement *> getStatements() {
-    std::vector<BlockStatement *> result;
-    for (BlockStmtList::size_type i = 0; i < statements.size(); i++) {
-      result.push_back(statements[i].get());
-    }
-    return result;
-  }
+  BlockStmtList &getStatements() { return statements; }
 
   bool getContainsNothingExceptOneSingleLonelyEmptyExpression() const {
     return containsNothingExceptOneSingleLonelyEmtpyExpression;
@@ -637,13 +631,7 @@ public:
   Type *getReturnType() const override { return returnType.get(); }
   Block *getBlock() const { return block.get(); }
 
-  std::vector<Parameter *> getParameters() {
-    std::vector<Parameter *> result;
-    for (ParameterList::size_type i = 0; i < parameters.size(); i++) {
-      result.push_back(parameters[i].get());
-    }
-    return result;
-  }
+  const ParameterList &getParameters() const { return parameters; }
 
   bool operator==(const RegularMethod &other) const {
     return name == other.name;
@@ -721,13 +709,7 @@ public:
     std::stable_sort(fields.begin(), fields.end(), ast::SortUniquePtrPred());
   }
 
-  std::vector<Field *> getFields() const {
-    std::vector<Field *> result;
-    for (size_t i = 0; i < fields.size(); i++) {
-      result.push_back(fields[i].get());
-    }
-    return result;
-  }
+  const std::vector<FieldPtr> &getFields() const { return fields; }
 };
 
 class MethodList : public Node {
@@ -748,13 +730,7 @@ public:
     std::stable_sort(methods.begin(), methods.end(), ast::SortUniquePtrPred());
   }
 
-  std::vector<RegularMethod *> getMethods() const {
-    std::vector<RegularMethod *> result;
-    for (size_t i = 0; i < methods.size(); i++) {
-      result.push_back(methods[i].get());
-    }
-    return result;
-  }
+  const std::vector<RegularMethodPtr> &getMethods() const { return methods; }
 };
 
 class MainMethodList : public Node {
@@ -1016,13 +992,7 @@ public:
     }
   }
 
-  std::vector<Expression *> getArguments() {
-    std::vector<Expression *> result;
-    for (std::vector<ExprPtr>::size_type i = 0; i < arguments.size(); i++) {
-      result.push_back(arguments[i].get());
-    }
-    return result;
-  }
+  const std::vector<ExprPtr> &getArguments() const { return arguments; }
 
   SourceLocation getArgumentsLoc() {
     SourceLocation loc;

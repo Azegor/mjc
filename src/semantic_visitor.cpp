@@ -94,8 +94,10 @@ void SemanticVisitor::visitBlock(ast::Block &block) {
   block.acceptChildren(this);
   symTbl.leaveScope();
 
-  for (auto stmt : block.getStatements()) {
-    if (stmt->cfb == sem::ControlFlowBehavior::Return) {
+  auto &statements = block.getStatements();
+  for (auto stmt = statements.begin(), end = statements.end();
+       stmt != end; ++stmt) {
+    if ((*stmt)->cfb == sem::ControlFlowBehavior::Return) {
       block.cfb = sem::ControlFlowBehavior::Return;
       return; // no more checking necessary, remaining code is dead
     }
@@ -377,7 +379,7 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     // MethodInvocation(println)
     if (left->getDef() == &ast::FieldAccess::dummySystemOut) {
       if (invocation.getName() == "println") {
-        auto args = invocation.getArguments();
+        auto &args = invocation.getArguments();
         if (args.size() != 1) {
           error(invocation,
                 "System.out.println takes exactly one int argument, " +

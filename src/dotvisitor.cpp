@@ -51,7 +51,7 @@ void DotVisitor::visitRegularMethod(ast::RegularMethod &method) {
     edgeLabel("Return Type");
     method.getReturnType()->accept(this);
 
-    auto params = method.getParameters();
+    auto &params = method.getParameters();
     int param_index = 0;
     for (auto &p : params) {
       edgeLabel("Param " + std::to_string(param_index));
@@ -74,11 +74,6 @@ void DotVisitor::visitMainMethod(ast::MainMethod &method) {
   pushNode(nodeName);
   method.acceptChildren(this);
   popNode();
-}
-
-void DotVisitor::visitBlock(ast::Block &block) {
-  auto stmts = block.getStatements();
-  block.acceptChildren(this);
 }
 
 void DotVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {

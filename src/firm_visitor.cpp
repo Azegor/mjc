@@ -126,7 +126,6 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
 
 void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   // Types in this->methods have already been created in visitClass!
-  auto parameters = method.getParameters();
   auto firmMethod = &this->methods.at(&method);
   auto methodGraph = firmMethod->graph;
   this->currentMethod = &method;
@@ -166,10 +165,10 @@ void FirmVisitor::visitClass(ast::Class &klass) {
 
   ir_type *classType = get_entity_type(classes.at(&klass).entity);
 
-  auto methods = klass.getMethods()->getMethods();
+  auto &methods = klass.getMethods()->getMethods();
   for (auto &method : methods) {
     int numReturnValues = method->getReturnType()->getSemaType().isVoid() ? 0 : 1;
-    auto parameters = method->getParameters();
+    auto &parameters = method->getParameters();
     ir_type *methodType = new_type_method(parameters.size() + 1, numReturnValues,
                                           false, cc_cdecl_set, mtp_no_property);
 
@@ -213,11 +212,11 @@ void FirmVisitor::visitClass(ast::Class &klass) {
     }
 
     set_r_cur_block(methodGraph, lastBlock);
-    this->methods.insert({method, FirmMethod(methodEntity, (size_t)numParams,
+    this->methods.insert({method.get(), FirmMethod(methodEntity, (size_t)numParams,
           paramNodes, localVars, methodGraph)});
   }
 
-  auto fields = klass.getFields()->getFields();
+  auto &fields = klass.getFields()->getFields();
   auto firmClass = &classes.at(&klass);
   int offset = 0;
   for(auto &field : fields) {
@@ -226,7 +225,7 @@ void FirmVisitor::visitClass(ast::Class &klass) {
                                 field->getName().c_str(),
                                 fieldType);
     set_entity_offset(ent, offset);
-    firmClass->fieldEntities.push_back(FirmField{field, ent});
+    firmClass->fieldEntities.push_back(FirmField{field.get(), ent});
     offset += get_type_size(fieldType);
   }
 
@@ -286,7 +285,7 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     left->accept(this);
     args[0] = popNode()->load();
     int i = 1;
-    for (auto arg : invocation.getArguments()) {
+    for (auto &arg : invocation.getArguments()) {
       arg->accept(this);
       args[i] = popNode()->load();
       ++i;
