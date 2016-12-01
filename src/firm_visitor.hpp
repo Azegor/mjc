@@ -67,17 +67,17 @@ public:
   }
 };
 class ArrayValue : public Value {
-  ir_node *addrNode;
+  ir_node *selNode;
   ir_type *elemType;
 public:
-  ArrayValue(ir_node *addr, ir_type *elemType) : addrNode(addr), elemType(elemType) {
-    assert(addrNode);
+  ArrayValue(ir_node *sel, ir_type *elemType) : selNode(sel), elemType(elemType) {
+    assert(selNode);
     assert(elemType);
   }
   ir_node *load() override {
     ir_mode *mode = getModeForType(elemType);
 //     ir_printf("load array; element type: %t, mode: %m\n", elemType, mode);
-    ir_node *loadNode = new_Load(get_store(), addrNode, mode, elemType, cons_none);
+    ir_node *loadNode = new_Load(get_store(), selNode, mode, elemType, cons_none);
     ir_node *projM = new_Proj(loadNode, mode_M, pn_Load_M);
     ir_node *projRes = new_Proj(loadNode, mode, pn_Load_res);
     set_store(projM);
@@ -85,7 +85,7 @@ public:
   }
   void store(ir_node *val) override {
 //     ir_printf("store array; element type: %t\n", elemType);
-    ir_node *storeNode = new_Store(get_store(), addrNode, val, elemType, cons_none);
+    ir_node *storeNode = new_Store(get_store(), selNode, val, elemType, cons_none);
     ir_node *projM = new_Proj(storeNode, mode_M, pn_Load_M);
     set_store(projM);
   }
@@ -168,7 +168,7 @@ private:
       return this->boolType;
     case sem::TypeKind::Array: {
       sem::Type innerType = type.getArrayInnerType();
-      return new_type_pointer(getIrType(innerType));
+      return new_type_pointer(new_type_array(getIrType(innerType), 0));
     }
     case sem::TypeKind::Class: {
       auto cls = this->currentProgram->findClassByName(type.name);

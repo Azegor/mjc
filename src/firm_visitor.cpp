@@ -555,19 +555,26 @@ void FirmVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
 void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
 {
   arrayAccess.getArray()->accept(this);
-  ir_node *arrayNode = popNode()->load();
+  ir_node *arrayAddrNode = popNode()->load();
+  assert(get_irn_mode(arrayAddrNode) == mode_P);
   arrayAccess.getIndex()->accept(this);
   ir_node *indexNode = popNode()->load();
-  size_t elemSize = arrayAccess.getArray()->targetType.getArrayInnerType().calculateSize();
-  ir_node *addr = new_Add(arrayNode, new_Mul(new_Conv(indexNode, mode_Ls), new_Const_long(mode_Ls, elemSize)));
+  ir_type *arrayType = get_pointer_points_to_type(getIrType(arrayAccess.getArray()->targetType));
+//   ir_printf("array type: %t\n", arrayType);
+  ir_node *loadNode = new_Load(get_store(), arrayAddrNode, mode_P, arrayType, cons_none);
+  ir_node *projM = new_Proj(loadNode, mode_M, pn_Load_M);
+  ir_node *projRes = new_Proj(loadNode, mode_P, pn_Load_res);
+  set_store(projM);
+  ir_node *sel = new_Sel(projRes, indexNode, arrayType);
+  assert(is_Sel(sel));
 
   auto elementType =
       getIrType(arrayAccess.getArray()->targetType.getArrayInnerType());
-  pushNode(std::make_unique<ArrayValue>(addr, elementType));
+  pushNode(std::make_unique<ArrayValue>(sel, elementType));
 }
 
 void FirmVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
-  ir_type *arrayType = getIrType(expr.getArrayType()); // correctly handles multiple dimensions
+  ir_type *arrayType = getIrType(expr.getArrayType());
   ir_entity *callocEntity = makeCalloc(arrayType);
 
   expr.getSize()->accept(this);
