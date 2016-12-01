@@ -53,6 +53,16 @@ FirmVisitor::FirmVisitor(bool print, bool verify, bool gen) {
 //                                    ir_visibility_external, IR_LINKAGE_DEFAULT);
   sysoutEntity = new_global_entity(get_glob_type(), "print_int_fast", sysoutType,
                                    ir_visibility_external, IR_LINKAGE_DEFAULT);
+
+  // create only one instance for calloc (logical), which returns pointer to unsigned char
+  // which ist the best representation for void*.
+  ir_type *callocType = new_type_method(2, 1, false, cc_cdecl_set, mtp_no_property);
+  set_method_param_type(callocType, 0, sizeType);
+  set_method_param_type(callocType, 1, sizeType);
+  // use pointer to mode_Bu as pointer to arbitrary data:
+  set_method_res_type(callocType, 0, new_type_pointer(new_type_primitive(mode_Bu)));
+  callocEntity = new_global_entity(get_glob_type(), "calloc", callocType,
+                                   ir_visibility_external, IR_LINKAGE_DEFAULT);
 }
 
 void FirmVisitor::visitProgram(ast::Program &program) {
@@ -537,12 +547,8 @@ void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
 
 void FirmVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
   auto thisClass = &classes.at(expr.getDef());
-  ir_type *classType = thisClass->type();
-  ir_type *classPointerType = new_type_pointer(classType);
-  ir_entity *callocEntity = makeCalloc(classPointerType);
-
-  ir_node *args[2] = {new_Const_long(mode_Is, 1),
-                      new_Size(mode_Is, thisClass->type())};
+  ir_node *args[2] = {new_Const_long(mode_Ls, 1),
+                      new_Size(mode_Ls, thisClass->type())};
   ir_node *store = get_store();
   ir_node *callee = new_Address(callocEntity);
   ir_node *callNode = new_Call(store, callee, 2, args, get_entity_type(callocEntity));
@@ -577,9 +583,6 @@ void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
 }
 
 void FirmVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
-  ir_type *arrayType = getIrType(expr.getArrayType());
-  ir_entity *callocEntity = makeCalloc(arrayType);
-
   expr.getSize()->accept(this);
   auto elementType = getIrType(expr.getArrayType()->getSemaType().getArrayInnerType());
   ir_node *args[2] = {new_Conv(popNode()->load(), mode_Ls), new_Size(mode_Ls, elementType)};
