@@ -601,12 +601,10 @@ void FirmVisitor::visitIfStatement(ast::IfStatement &stmt) {
   ir_node *afterBlock = new_immBlock();
 
   if (stmt.getThenStatement() != nullptr) {
-    ir_node *thenBlock = new_immBlock();
-    add_immBlock_pred(thenBlock, trueProj);
+    ir_node *thenBlock = new_Block(1, &trueProj);
     set_cur_block(thenBlock);
 
     stmt.getThenStatement()->accept(this);
-    mature_immBlock(thenBlock);
     if (stmt.getThenStatement()->cfb == sem::ControlFlowBehavior::MayContinue) {
       add_immBlock_pred(afterBlock, new_Jmp());
     }
@@ -615,12 +613,10 @@ void FirmVisitor::visitIfStatement(ast::IfStatement &stmt) {
   }
 
   if (stmt.getElseStatement() != nullptr) {
-    ir_node *elseBlock = new_immBlock();
-    add_immBlock_pred(elseBlock, falseProj);
+    ir_node *elseBlock = new_Block(1, &falseProj);
     set_cur_block(elseBlock);
 
     stmt.getElseStatement()->accept(this);
-    mature_immBlock(elseBlock);
     if (stmt.getElseStatement()->cfb == sem::ControlFlowBehavior::MayContinue) {
       add_immBlock_pred(afterBlock, new_Jmp());
     }
@@ -647,8 +643,7 @@ void FirmVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
   ir_node *afterBlock = new_immBlock();
   add_immBlock_pred(afterBlock, falseProj);
 
-  ir_node *loopBlock = new_immBlock();
-  add_immBlock_pred(loopBlock, trueProj);
+  ir_node *loopBlock = new_Block(1, &trueProj);
   set_cur_block(loopBlock);
   keep_alive(loopBlock);
 
@@ -665,7 +660,6 @@ void FirmVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
     add_immBlock_pred(whileBlock, new_Jmp());
   }
   mature_immBlock(whileBlock);
-  mature_immBlock(loopBlock);
 
   mature_immBlock(afterBlock);
   set_cur_block(afterBlock);
