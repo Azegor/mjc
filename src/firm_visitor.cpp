@@ -43,6 +43,7 @@ FirmVisitor::FirmVisitor(bool print, bool verify, bool gen) {
   this->generateCode = gen;
 
   intType = new_type_primitive(mode_Is);
+  sizeType = new_type_primitive(mode_Ls);
   boolType = new_type_primitive(mode_Bu);
 
   // System.out.println takes just 1 param and returns void
@@ -579,7 +580,7 @@ void FirmVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
 
   expr.getSize()->accept(this);
   auto elementType = getIrType(expr.getArrayType()->getSemaType().getArrayInnerType());
-  ir_node *args[2] = {popNode()->load(), new_Size(mode_Is, elementType)};
+  ir_node *args[2] = {new_Conv(popNode()->load(), mode_Ls), new_Size(mode_Ls, elementType)};
   ir_node *store = get_store();
   ir_node *callee = new_Address(callocEntity);
   ir_node *callNode = new_Call(store, callee, 2, args, get_entity_type(callocEntity));

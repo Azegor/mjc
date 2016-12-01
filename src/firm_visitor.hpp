@@ -137,6 +137,7 @@ private:
   int graphErrors = 0;
 
   ir_type *intType;
+  ir_type *sizeType;
   ir_type *boolType;
 //   std::unordered_map<ir_type *> arrayTypes; // TODO cache?
 
@@ -218,8 +219,8 @@ private:
   
   ir_entity *makeCalloc(ir_type *returnType) {
     ir_type *callocType = new_type_method(2, 1, false, cc_cdecl_set, mtp_no_property);
-    set_method_param_type(callocType, 0, intType);
-    set_method_param_type(callocType, 1, intType);
+    set_method_param_type(callocType, 0, sizeType);
+    set_method_param_type(callocType, 1, sizeType);
     set_method_res_type(callocType, 0, returnType);
     ir_entity *callocEntity = new_global_entity(get_glob_type(), "calloc", callocType,
                                                 ir_visibility_external, IR_LINKAGE_DEFAULT);
@@ -264,6 +265,7 @@ public:
       delete[] e.second.params;
     }
     free_type(boolType);
+    free_type(sizeType);
     free_type(intType);
 
     ir_finish();
