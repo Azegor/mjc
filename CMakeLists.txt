@@ -16,6 +16,8 @@ set(DEBUG_FLAGS "${DEBUG_FLAGS} -fsanitize=address,undefined -fno-omit-frame-poi
 # works only with clang
 #set(DEBUG_FLAGS "${DEBUG_FLAGS} -fsanitize=address,undefined -fsanitize-address-use-after-scope -fno-omit-frame-pointer -fno-common")
 
+set(RELEASE_FLAGS "${RELEASE_FLAGS} -flto -march=native")
+
 set(ENABLE_PROFILING OFF CACHE BOOL "Build with profiling flags")
 
 if (${ENABLE_PROFILING})
@@ -101,6 +103,7 @@ if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   setup_target_for_coverage(coverage "make -C ${PROJECT_SOURCE_DIR}/builddir test" coverage)
   add_dependencies(coverage mjc)
 else()
-  set_property(TARGET mjc APPEND_STRING PROPERTY LINK_FLAGS -flto)
-  set_property(TARGET mjc APPEND PROPERTY COMPILE_OPTIONS -flto)
+  set_property(TARGET mjc APPEND_STRING PROPERTY LINK_FLAGS "${RELEASE_FLAGS}")
+  separate_arguments(RELEASE_FLAGS)
+  set_property(TARGET mjc APPEND PROPERTY COMPILE_OPTIONS "${RELEASE_FLAGS}")
 endif()
