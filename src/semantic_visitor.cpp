@@ -99,6 +99,7 @@ void SemanticVisitor::visitBlock(ast::Block &block) {
        stmt != end; ++stmt) {
     if ((*stmt)->cfb == sem::ControlFlowBehavior::Return) {
       block.cfb = sem::ControlFlowBehavior::Return;
+      statements.erase(++stmt, end); // delete all following (dead) nodes
       return; // no more checking necessary, remaining code is dead
     }
   }
