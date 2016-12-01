@@ -624,12 +624,7 @@ void FirmVisitor::visitIfStatement(ast::IfStatement &stmt) {
     add_immBlock_pred(afterBlock, falseProj);
   }
 
-
   set_cur_block(afterBlock);
-
-
-  //ir_node *end = get_irg_end_block(current_ir_graph);
-  //add_immBlock_pred(end, blockAfter);
 }
 
 void FirmVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
