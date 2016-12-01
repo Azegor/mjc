@@ -653,17 +653,20 @@ void FirmVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
   set_cur_block(loopBlock);
   keep_alive(loopBlock);
 
+  get_store();
+
   // not sure if this can happen?
   if (stmt.getStatement() != nullptr) {
     stmt.getStatement()->accept(this);
   }
 
-  get_store();
-
-  add_immBlock_pred(whileBlock, new_Jmp());
+  // don't add jump if the Statement returns
+  if ((stmt.getStatement() == nullptr) ||
+      (stmt.getStatement()->cfb == sem::ControlFlowBehavior::MayContinue)) {
+    add_immBlock_pred(whileBlock, new_Jmp());
+  }
   mature_immBlock(whileBlock);
   mature_immBlock(loopBlock);
-
 
   set_cur_block(afterBlock);
 }
