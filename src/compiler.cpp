@@ -174,7 +174,7 @@ int Compiler::printFirmGraph() {
     analyzeAstSemantic(ast.get(), parser.getLexer());
     FirmVisitor firmVisitor{true, !options.noVerify, options.genCode};
     ast->accept(&firmVisitor);
-    if (firmVisitor.errorFound())
+    if (!options.noVerify && firmVisitor.errorFound())
       return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
