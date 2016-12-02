@@ -271,7 +271,9 @@ void FirmVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
   ir_node *ret;
 
   if (stmt.getExpression() != nullptr) {
+    pushRequiresNonBool();
     stmt.acceptChildren(this);
+    popRequiresBoolInfo();
 
     ir_node *results[] = {popNode()->load()};
     ret = new_Return(get_store(), 1, results);
@@ -366,6 +368,7 @@ void FirmVisitor::visitBoolLiteral(ast::BoolLiteral &lit) {
       // mark other branch as bad. Can't null it, that causes ASAN errors later
       // TODO: might not be needed, graph looks the same to me?
       add_immBlock_pred(currentFalseTarget(), bad);
+      pushNode(nullptr);
     } else {
       add_immBlock_pred(currentFalseTarget(), new_Jmp());
       // see above
@@ -523,6 +526,7 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
   auto out = popNode();
   if (requiresBool() && out->getMode() == mode_Bu) {
     booleanToControlFlow(out->load(), currentTrueTarget(), currentFalseTarget());
+    pushNode(nullptr);
   } else {
     pushNode(std::move(out));
   }
@@ -531,9 +535,9 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
 void FirmVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
   switch(expr.getOperation()) {
   case ast::UnaryExpression::Op::Not: {
-    bool need_phi = false;
-    auto trueTarget = currentTrueTarget();
-    auto falseTarget = currentFalseTarget();
+    bool need_phi = false; // need to convert to bool
+    ir_node *trueTarget = nullptr;
+    ir_node *falseTarget = nullptr;
     if(!requiresBool()) {
       mature_immBlock(get_cur_block());
 
@@ -541,10 +545,15 @@ void FirmVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
       trueTarget = falseTarget = new_immBlock();
       
       need_phi = true;
+    } else {
+      trueTarget = currentTrueTarget();
+      falseTarget = currentFalseTarget();
     }
 
     pushRequiresBool(trueTarget, falseTarget); // swapped
     expr.acceptChildren(this);
+    auto node = popNode();
+    assert(node->load() == nullptr);
     popRequiresBoolInfo();
 
     if (trueTarget == falseTarget && get_Block_n_cfgpreds(trueTarget) == 2) {
@@ -564,8 +573,9 @@ void FirmVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
       pushNode(new_Phi(2, PhiIn, mode_Bu));
       trueTarget = falseTarget = nullptr;
       mature_immBlock(get_cur_block());
+    } else {
+      pushNode(nullptr);
     }
-    pushNode(nullptr);
     break;
   }
   case ast::UnaryExpression::Op::Neg:
@@ -618,6 +628,7 @@ void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
 
   if (requiresBool()) {
     booleanToControlFlow(member, currentTrueTarget(), currentFalseTarget());
+    pushNode(nullptr);
   } else {
     pushNode(std::make_unique<FieldValue>(member));
   }
@@ -641,6 +652,7 @@ void FirmVisitor::visitNewObjectExpression(ast::NewObjectExpression &expr) {
 
 void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
 {
+  pushRequiresNonBool();
   arrayAccess.getArray()->accept(this);
   ir_node *arrayAddrNode = popNode()->load();
   assert(get_irn_mode(arrayAddrNode) == mode_P);
@@ -655,17 +667,23 @@ void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
   ir_node *sel = new_Sel(projRes, indexNode, arrayType);
   assert(is_Sel(sel));
 
+  popRequiresBoolInfo();
+
   auto elementType =
       getIrType(arrayAccess.getArray()->targetType.getArrayInnerType());
   pushNode(std::make_unique<ArrayValue>(sel, elementType));
 
   if (requiresBool()) {
     booleanToControlFlow(popNode()->load(), currentTrueTarget(), currentFalseTarget());
+    pushNode(nullptr);
   }
 }
 
 void FirmVisitor::visitNewArrayExpression(ast::NewArrayExpression &expr) {
+  pushRequiresNonBool();
   expr.getSize()->accept(this);
+  popRequiresBoolInfo();
+
   auto elementType = getIrType(expr.getArrayType()->getSemaType().getArrayInnerType());
   ir_node *args[2] = {new_Conv(popNode()->load(), mode_Ls), new_Size(mode_Ls, elementType)};
   ir_node *store = get_store();
@@ -693,8 +711,9 @@ void FirmVisitor::visitIfStatement(ast::IfStatement &stmt) {
 
   pushRequiresBool(thenBlock, elseBlock);
   stmt.getCondition()->accept(this);
+  auto node = popNode(); // discard nullptr
+  assert(node->load() == nullptr);
   popRequiresBoolInfo();
-  popNode(); // discard
 
   mature_immBlock(thenBlock);
   mature_immBlock(elseBlock);
@@ -731,9 +750,9 @@ void FirmVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
 
   pushRequiresBool(loopBlock, afterBlock);
   stmt.getCondition()->accept(this);
+  auto node = popNode(); // discard
+  assert(node->load() == nullptr);
   popRequiresBoolInfo();
-  // shouldn't generate a node on the stack
-  popNode(); // discard
 
   mature_immBlock(loopBlock);
   mature_immBlock(afterBlock);
