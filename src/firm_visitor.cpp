@@ -77,6 +77,8 @@ FirmVisitor::FirmVisitor(bool print, bool verify, bool gen,
   set_method_res_type(callocType, 0, new_type_pointer(new_type_primitive(mode_Bu)));
   callocEntity = new_global_entity(get_glob_type(), "calloc", callocType,
                                    ir_visibility_external, IR_LINKAGE_DEFAULT);
+
+  pushRequiresNonBool();
 }
 
 void FirmVisitor::visitProgram(ast::Program &program) {
@@ -301,6 +303,7 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     set_store(newStore);
     pushNode(nullptr); // needs to return a node for consistency!
   } else {
+
     auto left = invocation.getLeft();
     // This should be true now after semantic analysis
     assert(left->targetType.isClass());
@@ -312,6 +315,8 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     size_t nArgs = 1 + invocation.getArguments().size();
     std::vector<ir_node *> args;
     args.resize(nArgs);
+
+    pushRequiresNonBool();
     left->accept(this);
     args[0] = popNode()->load();
     int i = 1;
@@ -320,6 +325,8 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
       args[i] = popNode()->load();
       ++i;
     }
+    popRequiresBoolInfo();
+
     ir_node *store = get_store();
     ir_node *callee = new_Address(firmMethod->entity);
     ir_node *callNode =
@@ -333,8 +340,9 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     if (!invocation.targetType.isVoid()) {
       ir_node *tuple = new_Proj(callNode, mode_T, pn_Call_T_result);
       ir_node *result = new_Proj(tuple, getIrMode(invocation.targetType), 0);
-      if (trueTarget) {
-        booleanToControlFlow(result, trueTarget, falseTarget);
+      if (requiresBool()) {
+        booleanToControlFlow(result, currentTrueTarget(), currentFalseTarget());
+        pushNode(nullptr);
       } else {
         pushNode(result);
       }
@@ -351,18 +359,18 @@ void FirmVisitor::visitIntLiteral(ast::IntLiteral &lit) {
 }
 
 void FirmVisitor::visitBoolLiteral(ast::BoolLiteral &lit) {
-  if (trueTarget != nullptr) {
-    assert(falseTarget);
+  if (requiresBool()) {
     ir_node *bad = new_Bad(mode_X);
     if (lit.getValue()) {
-      add_immBlock_pred(trueTarget, new_Jmp());
+      add_immBlock_pred(currentTrueTarget(), new_Jmp());
       // mark other branch as bad. Can't null it, that causes ASAN errors later
       // TODO: might not be needed, graph looks the same to me?
-      add_immBlock_pred(falseTarget, bad);
+      add_immBlock_pred(currentFalseTarget(), bad);
     } else {
-      add_immBlock_pred(falseTarget, new_Jmp());
+      add_immBlock_pred(currentFalseTarget(), new_Jmp());
       // see above
-      add_immBlock_pred(trueTarget, bad);
+      add_immBlock_pred(currentTrueTarget(), bad);
+      pushNode(nullptr);
     }
   } else {
     pushNode(new_Const_long(mode_Bu, lit.getValue() ? 1 : 0));
@@ -383,94 +391,97 @@ void FirmVisitor::visitNullLiteral(ast::NullLiteral &lit) {
 }
 
 void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
-  expr.getLeft()->accept(this);
-  auto leftNode = popNode();
-  expr.getRight()->accept(this);
-  auto rightNode = popNode();
-  ir_node* outNode = nullptr;
-  bool is_boolean = false;
 
   switch (expr.getOperation()) {
-  case ast::BinaryExpression::Op::Assign: {
-    auto rightVal = rightNode->load();
-    leftNode->store(rightVal);
-    pushNode(rightVal);
-    break;
-  }
-  case ast::BinaryExpression::Op::Or:
-    assert(false);
-    break;
-  case ast::BinaryExpression::Op::And:
-    assert(false);
-    break;
-  case ast::BinaryExpression::Op::Equals:
-    outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_equal));
-    is_boolean = true;
-    break;
-  case ast::BinaryExpression::Op::NotEquals:
-    outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_greater));
-    is_boolean = true;
-    break;
-  case ast::BinaryExpression::Op::Less:
-    outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less));
-    is_boolean = true;
-    break;
-  case ast::BinaryExpression::Op::LessEquals:
-    outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_equal));
-    is_boolean = true;
-    break;
-  case ast::BinaryExpression::Op::Greater:
-    outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_greater));
-    is_boolean = true;
-    break;
-  case ast::BinaryExpression::Op::GreaterEquals:
-    outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_greater_equal));
-    is_boolean = true;
-    break;
-  case ast::BinaryExpression::Op::Plus:
-    outNode = new_Add(leftNode->load(), rightNode->load());
-    break;
-  case ast::BinaryExpression::Op::Minus:
-    outNode = new_Sub(leftNode->load(), rightNode->load());
-    break;
-  case ast::BinaryExpression::Op::Mul:
-    outNode = new_Mul(leftNode->load(), rightNode->load());
-    break;
-  case ast::BinaryExpression::Op::Div: {
-    ir_node *memory = get_store();
-    ir_node *pin = new_Pin(memory);
-    set_store(pin);
-    ir_node *divNode = new_DivRL(pin, leftNode->load(), rightNode->load(), op_pin_state_pinned);
-    outNode = new_Proj(divNode, mode_Is, pn_Div_res);
-    break;
-  }
-  case ast::BinaryExpression::Op::Mod: {
-    ir_node *memory = get_store();
-    ir_node *pin = new_Pin(memory);
-    set_store(pin);
-    ir_node *modNode = new_Mod(pin, leftNode->load(), rightNode->load(), op_pin_state_pinned);
-    outNode = new_Proj(modNode, mode_Is, pn_Mod_res);
-    break;
-  }
-  default:
-    assert(false);
-    break;
-  }
+    case ast::BinaryExpression::Op::Or:
+      assert(false);
+      break;
+    case ast::BinaryExpression::Op::And:
+      assert(false);
+      break;
+    default: {
+      pushRequiresNonBool();
+      expr.getLeft()->accept(this);
+      auto leftNode = popNode();
+      expr.getRight()->accept(this);
+      auto rightNode = popNode();
+      ir_node* outNode = nullptr;
+      bool is_boolean = false;
+      popRequiresBoolInfo();
 
-  if(outNode) {
-    if(is_boolean) {
-      if(trueTarget != nullptr) {
-        assert(falseTarget);
+      switch (expr.getOperation()) {
+        case ast::BinaryExpression::Op::Assign: {
+          auto rightVal = rightNode->load();
+          leftNode->store(rightVal);
+          outNode = rightVal;
+          break;
+        }
+        case ast::BinaryExpression::Op::Equals:
+          outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_equal));
+          is_boolean = true;
+          break;
+        case ast::BinaryExpression::Op::NotEquals:
+          outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_greater));
+          is_boolean = true;
+          break;
+        case ast::BinaryExpression::Op::Less:
+          outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less));
+          is_boolean = true;
+          break;
+        case ast::BinaryExpression::Op::LessEquals:
+          outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_equal));
+          is_boolean = true;
+          break;
+        case ast::BinaryExpression::Op::Greater:
+          outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_greater));
+          is_boolean = true;
+          break;
+        case ast::BinaryExpression::Op::GreaterEquals:
+          outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_greater_equal));
+          is_boolean = true;
+          break;
+        case ast::BinaryExpression::Op::Plus:
+          outNode = new_Add(leftNode->load(), rightNode->load());
+          break;
+        case ast::BinaryExpression::Op::Minus:
+          outNode = new_Sub(leftNode->load(), rightNode->load());
+          break;
+        case ast::BinaryExpression::Op::Mul:
+          outNode = new_Mul(leftNode->load(), rightNode->load());
+          break;
+        case ast::BinaryExpression::Op::Div: {
+          ir_node *memory = get_store();
+          ir_node *pin = new_Pin(memory);
+          set_store(pin);
+          ir_node *divNode = new_DivRL(pin, leftNode->load(), rightNode->load(), op_pin_state_pinned);
+          outNode = new_Proj(divNode, mode_Is, pn_Div_res);
+          break;
+        }
+        case ast::BinaryExpression::Op::Mod: {
+          ir_node *memory = get_store();
+          ir_node *pin = new_Pin(memory);
+          set_store(pin);
+          ir_node *modNode = new_Mod(pin, leftNode->load(), rightNode->load(), op_pin_state_pinned);
+          outNode = new_Proj(modNode, mode_Is, pn_Mod_res);
+          break;
+        }
+        default:
+          __builtin_trap();
+          break;
+      }
+      assert(outNode);
+      if(requiresBool()) {
+        assert(is_boolean);
         ir_node *projTrue = new_Proj(outNode, mode_X, pn_Cond_true);
         ir_node *projFalse = new_Proj(outNode, mode_X, pn_Cond_false);
-        add_immBlock_pred(trueTarget, projTrue);
-        add_immBlock_pred(falseTarget, projFalse);
-        return;
-      } else {
+        add_immBlock_pred(currentTrueTarget(), projTrue);
+        add_immBlock_pred(currentFalseTarget(), projFalse);
+        outNode = nullptr; // dummy
+      } else if (is_boolean) {
         outNode = condToBoolean(outNode);
       }
+      pushNode(outNode);
     }
-    pushNode(outNode);
   }
 }
 
@@ -510,8 +521,8 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
   }
   // don't do control flow from arrays, do it in the ArrayAccess
   auto out = popNode();
-  if (trueTarget && out->getMode() == mode_Bu) {
-    booleanToControlFlow(out->load(), trueTarget, falseTarget);
+  if (requiresBool() && out->getMode() == mode_Bu) {
+    booleanToControlFlow(out->load(), currentTrueTarget(), currentFalseTarget());
   } else {
     pushNode(std::move(out));
   }
@@ -521,8 +532,9 @@ void FirmVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
   switch(expr.getOperation()) {
   case ast::UnaryExpression::Op::Not: {
     bool need_phi = false;
-    if(trueTarget == nullptr) {
-      assert(falseTarget == nullptr);
+    auto trueTarget = currentTrueTarget();
+    auto falseTarget = currentFalseTarget();
+    if(!requiresBool()) {
       mature_immBlock(get_cur_block());
 
       // same Block, 'Not' is implemented by switching Projection order below
@@ -530,10 +542,11 @@ void FirmVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
       
       need_phi = true;
     }
-    assert(falseTarget);
-    std::swap(trueTarget, falseTarget);
+
+    pushRequiresBool(trueTarget, falseTarget); // swapped
     expr.acceptChildren(this);
-    std::swap(trueTarget, falseTarget);
+    popRequiresBoolInfo();
+
     if (trueTarget == falseTarget && get_Block_n_cfgpreds(trueTarget) == 2) {
       ir_node *trueProj = get_Block_cfgpred(trueTarget, 0);
       ir_node *falseProj = get_Block_cfgpred(trueTarget, 1);
@@ -552,6 +565,7 @@ void FirmVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
       trueTarget = falseTarget = nullptr;
       mature_immBlock(get_cur_block());
     }
+    pushNode(nullptr);
     break;
   }
   case ast::UnaryExpression::Op::Neg:
@@ -602,8 +616,8 @@ void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
 
   ir_node *member = new_Member(leftNode, rightEntity);
 
-  if (trueTarget) {
-    booleanToControlFlow(member, trueTarget, falseTarget);
+  if (requiresBool()) {
+    booleanToControlFlow(member, currentTrueTarget(), currentFalseTarget());
   } else {
     pushNode(std::make_unique<FieldValue>(member));
   }
@@ -645,8 +659,8 @@ void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
       getIrType(arrayAccess.getArray()->targetType.getArrayInnerType());
   pushNode(std::make_unique<ArrayValue>(sel, elementType));
 
-  if (trueTarget) {
-    booleanToControlFlow(popNode()->load(), trueTarget, falseTarget);
+  if (requiresBool()) {
+    booleanToControlFlow(popNode()->load(), currentTrueTarget(), currentFalseTarget());
   }
 }
 
@@ -674,18 +688,16 @@ void FirmVisitor::visitExpressionStatement(ast::ExpressionStatement &exprStmt) {
 void FirmVisitor::visitIfStatement(ast::IfStatement &stmt) {
   ir_node *afterBlock = new_immBlock();
 
-  trueTarget = (stmt.getThenStatement() != nullptr) ? new_immBlock() : afterBlock;
-  falseTarget = (stmt.getElseStatement() != nullptr) ? new_immBlock() : afterBlock;
+  auto thenBlock = (stmt.getThenStatement() != nullptr) ? new_immBlock() : afterBlock;
+  auto elseBlock = (stmt.getElseStatement() != nullptr) ? new_immBlock() : afterBlock;
 
+  pushRequiresBool(thenBlock, elseBlock);
   stmt.getCondition()->accept(this);
-  // shouldn't generate a node on the stack
-  //popNode()->load();
-  
-  ir_node *thenBlock = trueTarget;
-  ir_node *elseBlock = falseTarget;
-  mature_immBlock(trueTarget);
-  mature_immBlock(falseTarget);
-  trueTarget = falseTarget = nullptr;
+  popRequiresBoolInfo();
+  popNode(); // discard
+
+  mature_immBlock(thenBlock);
+  mature_immBlock(elseBlock);
 
   if (stmt.getThenStatement() != nullptr) {
     set_cur_block(thenBlock);
@@ -714,18 +726,17 @@ void FirmVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
   add_immBlock_pred(whileBlock, new_Jmp());
   set_cur_block(whileBlock);
 
-  trueTarget = new_immBlock();
-  falseTarget = new_immBlock();
+  auto loopBlock = new_immBlock();
+  auto afterBlock = new_immBlock();
 
+  pushRequiresBool(loopBlock, afterBlock);
   stmt.getCondition()->accept(this);
+  popRequiresBoolInfo();
   // shouldn't generate a node on the stack
-  //popNode()->load();
+  popNode(); // discard
 
-  ir_node *loopBlock = trueTarget;
-  ir_node *afterBlock = falseTarget;
-  mature_immBlock(trueTarget);
-  mature_immBlock(falseTarget);
-  trueTarget = falseTarget = nullptr;
+  mature_immBlock(loopBlock);
+  mature_immBlock(afterBlock);
 
   set_cur_block(loopBlock);
   keep_alive(loopBlock);

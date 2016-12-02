@@ -138,6 +138,17 @@ struct FirmClass {
   ir_type * type() { return get_entity_type(entity); }
 };
 
+
+struct BoolReqInfo {
+  BoolReqInfo() : requiresBool(false) {}
+  BoolReqInfo(ir_node *t, ir_node *f)
+      : trueTarget(t), falseTarget(f), requiresBool(true) {}
+
+  ir_node *trueTarget;
+  ir_node *falseTarget;
+  bool requiresBool;
+};
+
 class FirmVisitor : public ast::Visitor {
 private:
   std::string outFileName;
@@ -166,10 +177,10 @@ private:
   std::unordered_map<ast::Method *, FirmMethod> methods;
 
   std::stack<ValuePtr> nodeStack;
-
+  std::stack<BoolReqInfo> reqBoolInfo;
   // targets for fumps from boolean returning expressions
-  ir_node *trueTarget = nullptr;
-  ir_node *falseTarget = nullptr;
+//   ir_node *trueTarget = nullptr;
+//   ir_node *falseTarget = nullptr;
 
   ir_type *getIrType(ast::Type *type) {
     auto sType = type->getSemaType();
@@ -215,31 +226,29 @@ private:
     }
   }
 
-  ir_node* booleanFromExpression(ast::Expression* expr) {
-    ir_node* oldTT = trueTarget;
-    ir_node* oldFT = falseTarget;
-    trueTarget = new_immBlock();
-    set_cur_block(trueTarget);
-    ir_node *trueNode = new_Const_long(mode_Bu, 1);
-    falseTarget = new_immBlock();
-    set_cur_block(falseTarget);
-    ir_node *falseNode = new_Const_long(mode_Bu, 0);
-
-    ir_node *exitBlock = new_immBlock();
-    set_cur_block(exitBlock);
-
-    expr->accept(this);
-
-    mature_immBlock(trueTarget);
-    mature_immBlock(falseTarget);
-    trueTarget = oldTT;
-    falseTarget = oldFT;
-    mature_immBlock(exitBlock);
-
-    ir_node* const PhiIn[] = { trueNode, falseNode };
-    ir_node* phi = new_Phi(2, PhiIn, mode_Bu);
-    return phi;
-  }
+//   ir_node* booleanFromExpression(ast::Expression* expr) {
+//     auto trueTarget = new_immBlock();
+//     set_cur_block(trueTarget);
+//     ir_node *trueNode = new_Const_long(mode_Bu, 1);
+//     auto falseTarget = new_immBlock();
+//     set_cur_block(falseTarget);
+//     ir_node *falseNode = new_Const_long(mode_Bu, 0);
+//
+//     ir_node *exitBlock = new_immBlock();
+//     set_cur_block(exitBlock);
+//
+//     pushRequiresBool(trueTarget, falseTarget);
+//     expr->accept(this);
+//     popRequiresBoolInfo();
+//
+//     mature_immBlock(trueTarget);
+//     mature_immBlock(falseTarget);
+//     mature_immBlock(exitBlock);
+//
+//     ir_node* const PhiIn[] = { trueNode, falseNode };
+//     ir_node* phi = new_Phi(2, PhiIn, mode_Bu);
+//     return phi;
+//   }
 
   void pushNode(ValuePtr node) {
     nodeStack.push(std::move(node));
@@ -255,6 +264,31 @@ private:
     nodeStack.pop();
 
     return n;
+  }
+
+  void pushRequiresNonBool() {
+    reqBoolInfo.emplace();
+  }
+  void pushRequiresBool(ir_node *t, ir_node *f) {
+    assert(t);
+    assert(f);
+    reqBoolInfo.emplace(t, f);
+  }
+  void popRequiresBoolInfo() {
+    assert(!reqBoolInfo.empty());
+    reqBoolInfo.pop();
+  }
+  bool requiresBool() const {
+    assert(!reqBoolInfo.empty());
+    return reqBoolInfo.top().requiresBool;
+  }
+  ir_node *currentTrueTarget() const {
+    assert(requiresBool());
+    return reqBoolInfo.top().trueTarget;
+  }
+  ir_node * currentFalseTarget() const {
+    assert(requiresBool());
+    return reqBoolInfo.top().falseTarget;
   }
 
   ir_node *getLoad(ir_node* src) {
