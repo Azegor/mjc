@@ -720,8 +720,10 @@ void FirmVisitor::visitIfStatement(ast::IfStatement &stmt) {
   assert(node->load() == nullptr);
   popRequiresBoolInfo();
 
-  mature_immBlock(thenBlock);
-  mature_immBlock(elseBlock);
+  if (thenBlock != afterBlock)
+    mature_immBlock(thenBlock);
+  if (elseBlock != afterBlock)
+    mature_immBlock(elseBlock);
 
   if (stmt.getThenStatement() != nullptr) {
     set_cur_block(thenBlock);
