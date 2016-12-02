@@ -310,7 +310,6 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
     auto firmMethod = &this->methods.at(invocation.getDef());
 
     size_t nArgs = 1 + invocation.getArguments().size();
-    // TODO: Handle arguments
     std::vector<ir_node *> args;
     args.resize(nArgs);
     left->accept(this);
@@ -395,23 +394,8 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
   case ast::BinaryExpression::Op::Assign: {
     auto rightVal = rightNode->load();
     leftNode->store(rightVal);
-    pushNode(rightVal); // might be used further TODO: is this correct so?
+    pushNode(rightVal);
     break;
-//     auto firmMethod = &methods.at(this->currentMethod);
-//     if (auto varRef = dynamic_cast<ast::VarRef *>(expr.getLeft())) {
-//       auto def = varRef->getDef();
-//       if (auto locVar = dynamic_cast<ast::VariableDeclaration *>(def)) {
-//         auto pos = firmMethod->nParams + locVar->getIndex();
-//         set_value(pos, rightNode);
-//       } else if (auto fieldDef = dynamic_cast<ast::Field *>(def)) {
-//         (void)fieldDef;
-//         assert(false);
-//       } else {
-//         assert(false);
-//       }
-//     } else {
-//       assert(false);
-//     }
   }
   case ast::BinaryExpression::Op::Or:
     assert(false);
