@@ -137,9 +137,11 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   this->currentMethod = &method;
   method.acceptChildren(this);
 
-  ir_node *results[] = {new_Const_long(mode_Is, 0)};
-  ir_node *returnNode  = new_Return(get_store(), 1, results);
-  add_immBlock_pred(get_irg_end_block(mainMethodGraph), returnNode);
+  if (method.getBlock()->cfb == sem::ControlFlowBehavior::MayContinue) {
+    ir_node *results[] = {new_Const_long(mode_Is, 0)};
+    ir_node *returnNode  = new_Return(get_store(), 1, results);
+    add_immBlock_pred(get_irg_end_block(mainMethodGraph), returnNode);
+  }
 
   // seals current block (-> all predecessors known)
   mature_immBlock(get_r_cur_block(mainMethodGraph));
@@ -166,8 +168,10 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
 
   // If the return value is void, insert an empty return node
   if (method.getReturnType()->getSemaType().isVoid()) {
-    ir_node *returnNode = new_Return(get_store(), 0, nullptr);
-    add_immBlock_pred(get_irg_end_block(methodGraph), returnNode);
+    if (method.getBlock()->cfb == sem::ControlFlowBehavior::MayContinue) {
+      ir_node *returnNode = new_Return(get_store(), 0, nullptr);
+      add_immBlock_pred(get_irg_end_block(methodGraph), returnNode);
+    }
   }
 
   // "... mature the current block, which means fixing the number of their predecessors"
@@ -281,8 +285,9 @@ void FirmVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
     if (dynamic_cast<ast::MainMethod *>(currentMethod)) {
       ir_node *results[] = {new_Const_long(mode_Is, 0)};
       ret = new_Return(get_store(), 1, results);
+    } else {
+      ret = new_Return(get_store(), 0, nullptr);
     }
-    ret = new_Return(get_store(), 0, nullptr);
   }
 
   add_immBlock_pred(end, ret);
