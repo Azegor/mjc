@@ -530,42 +530,38 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
 void FirmVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
   switch(expr.getOperation()) {
   case ast::UnaryExpression::Op::Not: {
-    bool need_exitblock = false;
+    bool need_phi = false;
     if(trueTarget == nullptr) {
       assert(falseTarget == nullptr);
       mature_immBlock(get_cur_block());
 
-      // are filled with jumps below (will be swapped inbetween)
-      trueTarget = new_immBlock();
-      falseTarget = new_immBlock();
+      // same Block, 'Not' is implemented by switching Projection order below
+      trueTarget = falseTarget = new_immBlock();
       
-      need_exitblock = true;
+      need_phi = true;
     }
     assert(falseTarget);
     std::swap(trueTarget, falseTarget);
     expr.acceptChildren(this);
-    // shouldn't have pushed stuff on stack
-    // popNode()->load();
-    if (need_exitblock) {
-      if (trueTarget) mature_immBlock(trueTarget);
+    std::swap(trueTarget, falseTarget);
+    if (trueTarget == falseTarget && get_Block_n_cfgpreds(trueTarget) == 2) {
+      ir_node *trueProj = get_Block_cfgpred(trueTarget, 0);
+      ir_node *falseProj = get_Block_cfgpred(trueTarget, 1);
+      set_Block_cfgpred(trueTarget, 0, falseProj);
+      set_Block_cfgpred(trueTarget, 1, trueProj);
+    }
+    if (need_phi) {
+      mature_immBlock(get_cur_block());
       set_cur_block(trueTarget);
-      ir_node *trueJmp = new_Jmp();
-
-      if (falseTarget) mature_immBlock(falseTarget);
-      set_cur_block(falseTarget);
-      ir_node *falseJmp = new_Jmp();
-
-      ir_node* const blockIn[] = {trueJmp, falseJmp};
-      ir_node *exitBlock = new_Block(2, blockIn);
-      set_cur_block(exitBlock);
       
       ir_node *trueNode = new_Const_long(mode_Bu, 1);
       ir_node *falseNode = new_Const_long(mode_Bu, 0);
 
       ir_node* const PhiIn[] = { trueNode, falseNode };
       pushNode(new_Phi(2, PhiIn, mode_Bu));
+      trueTarget = falseTarget = nullptr;
+      mature_immBlock(get_cur_block());
     }
-    std::swap(trueTarget, falseTarget);
     break;
   }
   case ast::UnaryExpression::Op::Neg:
