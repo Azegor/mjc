@@ -13,6 +13,7 @@ protected:
 public:
   virtual ir_node *load() { __builtin_trap(); }
   virtual void store(ir_node *) { __builtin_trap(); }
+  virtual ir_mode *getMode() { __builtin_trap(); }
   operator ir_node *() { return load(); }
   virtual ~Value() {}
 
@@ -38,6 +39,7 @@ public:
   void store(ir_node *val) override {
     set_value(varIndex, val);
   }
+  ir_mode *getMode() override { return mode; }
 };
 class FieldValue : public Value {
   ir_node * member;
@@ -48,7 +50,7 @@ public:
   ir_node *load() override {
     ir_type *type = get_entity_type(get_Member_entity(member));
     assert(type);
-    ir_mode *mode = getModeForType(type);
+    ir_mode *mode = getMode();
     assert(mode);
 //     ir_printf("load field; type: %t, mode: %m\n", type, mode);
     ir_node *loadNode = new_Load(get_store(), member, mode, type, cons_none);
@@ -65,6 +67,11 @@ public:
     ir_node *projM    = new_Proj(storeNode, mode_M, pn_Load_M);
     set_store(projM);
   }
+  ir_mode *getMode() override {
+    ir_type *type = get_entity_type(get_Member_entity(member));
+    assert(type);
+    return getModeForType(type);
+  }
 };
 class ArrayValue : public Value {
   ir_node *selNode;
@@ -75,7 +82,7 @@ public:
     assert(elemType);
   }
   ir_node *load() override {
-    ir_mode *mode = getModeForType(elemType);
+    ir_mode *mode = getMode();
 //     ir_printf("load array; element type: %t, mode: %m\n", elemType, mode);
     ir_node *loadNode = new_Load(get_store(), selNode, mode, elemType, cons_none);
     ir_node *projM = new_Proj(loadNode, mode_M, pn_Load_M);
@@ -89,12 +96,14 @@ public:
     ir_node *projM = new_Proj(storeNode, mode_M, pn_Load_M);
     set_store(projM);
   }
+  ir_mode *getMode() override { return getModeForType(elemType); }
 };
 class RValue : public Value {
   ir_node *value;
 public:
   RValue(ir_node *val) : value(val) {}
   ir_node * load() override { return value; }
+  ir_mode *getMode() override { return get_irn_mode(value); }
 };
 
 using ValuePtr = std::unique_ptr<Value>;
