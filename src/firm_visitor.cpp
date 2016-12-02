@@ -519,11 +519,11 @@ void FirmVisitor::visitVarRef(ast::VarRef &ref) {
     assert(false);
   }
   // don't do control flow from arrays, do it in the ArrayAccess
-  ir_node *out = popNode()->load();
-  if (trueTarget && get_irn_mode(out) == mode_Bu) {
-    booleanToControlFlow(out, trueTarget, falseTarget);
+  auto out = popNode();
+  if (trueTarget && out->getMode() == mode_Bu) {
+    booleanToControlFlow(out->load(), trueTarget, falseTarget);
   } else {
-    pushNode(out);
+    pushNode(std::move(out));
   }
 }
 
