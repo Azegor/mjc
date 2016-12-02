@@ -172,7 +172,36 @@ int Compiler::printFirmGraph() {
   try {
     auto ast = parser.parseProgram();
     analyzeAstSemantic(ast.get(), parser.getLexer());
-    FirmVisitor firmVisitor{true, true, options.genCode};
+    FirmVisitor firmVisitor{true, !options.noVerify, options.genCode};
+    ast->accept(&firmVisitor);
+    if (firmVisitor.errorFound())
+      return EXIT_FAILURE;
+
+    return EXIT_SUCCESS;
+  } catch (CompilerError &e) {
+    e.writeErrorMessage(std::cerr);
+    return EXIT_FAILURE;
+  }
+}
+
+int Compiler::compileWithFirmBackend() {
+  SymbolTable::StringTable strTbl;
+  Parser parser{inputFile, strTbl};
+  try {
+    auto ast = parser.parseProgram();
+    analyzeAstSemantic(ast.get(), parser.getLexer());
+    std::string outputName;
+    if (options.outputFileName.length()) {
+      outputName = options.outputFileName;
+    } else {
+      size_t lastindex = options.inputFileName.find_last_of(".");
+      if (lastindex != std::string::npos) {
+        outputName = options.inputFileName.substr(0, lastindex);
+      } else {
+        outputName = options.inputFileName + ".run";
+      }
+    }
+    FirmVisitor firmVisitor{false, !options.noVerify, true, outputName};
     ast->accept(&firmVisitor);
     if (firmVisitor.errorFound())
       return EXIT_FAILURE;
@@ -231,6 +260,8 @@ int Compiler::run() {
     return attrAstDot();
   } else if (options.printFirmGraph) {
     return printFirmGraph();
+  } else if (options.compileFirm) {
+    return compileWithFirmBackend();
   }
   return EXIT_FAILURE;
 }

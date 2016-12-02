@@ -140,6 +140,8 @@ struct FirmClass {
 
 class FirmVisitor : public ast::Visitor {
 private:
+  std::string outFileName;
+
   bool printGraphs = false;
   bool verifyGraphs = false;
   bool generateCode = false;
@@ -148,7 +150,6 @@ private:
   ir_type *intType;
   ir_type *sizeType;
   ir_type *boolType;
-//   std::unordered_map<ir_type *> arrayTypes; // TODO cache?
 
   // System.out.println special case
   ir_type *sysoutType;
@@ -284,7 +285,7 @@ private:
   void makeStore(ir_node* dest, ir_node* value);
 
 public:
-  FirmVisitor(bool print, bool verify, bool gen);
+  FirmVisitor(bool print, bool verify, bool gen, const std::string &outFileName = "_test_");
   virtual ~FirmVisitor() {
     for (auto& e : classes) {
       free_type(e.second.type());

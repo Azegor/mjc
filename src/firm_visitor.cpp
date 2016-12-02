@@ -36,7 +36,9 @@ static void booleanToControlFlow(ir_node *boolean, ir_node *trueBlock, ir_node *
 }
 
 
-FirmVisitor::FirmVisitor(bool print, bool verify, bool gen) {
+FirmVisitor::FirmVisitor(bool print, bool verify, bool gen,
+                         const std::string &outFileName)
+    : outFileName(outFileName) {
   ir_init();
 
   // disable libfirm optimizations
@@ -109,7 +111,7 @@ void FirmVisitor::visitProgram(ast::Program &program) {
     int res = 0;
 //     res |= system("gcc -c ../src/runtime.c -o runtime.o");
 //     res |= system("ar rcs libruntime.a runtime.o");
-    res |= system("gcc -static test.s -o _test_ -L" LIBSEARCHDIR " -lruntime");
+    res |= system(("gcc -static test.s -o " + outFileName + " -L" LIBSEARCHDIR " -lruntime").c_str());
     if (res) {
       throw std::runtime_error("Error while linking binary");
     }
@@ -140,7 +142,9 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   // seals current block (-> all predecessors known)
   mature_immBlock(get_r_cur_block(mainMethodGraph));
   irg_finalize_cons(mainMethodGraph);
-  dump_ir_graph(current_ir_graph, "");
+  if (printGraphs) {
+    dump_ir_graph(current_ir_graph, "");
+  }
   lower_highlevel_graph(mainMethodGraph);
 
   if (verifyGraphs) {
@@ -168,7 +172,9 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   mature_immBlock(get_r_cur_block(methodGraph));
 
   irg_finalize_cons(methodGraph);
-  dump_ir_graph(current_ir_graph, "");
+  if (printGraphs) {
+    dump_ir_graph(current_ir_graph, "");
+  }
   lower_highlevel_graph(methodGraph);
 
   if (verifyGraphs) {

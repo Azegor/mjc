@@ -36,7 +36,7 @@
 
 struct CompilerOptions {
   std::string inputFileName;
-  std::string outputDirName;
+  std::string outputFileName;
   bool help = false;
   bool echoFile = false;
   bool testLexer = false;
@@ -50,6 +50,8 @@ struct CompilerOptions {
   bool dotAttrAst = false;
   bool printFirmGraph = false;
   bool genCode = false;
+  bool compileFirm = false;
+  bool noVerify = false;
   // ...
 };
 
@@ -71,6 +73,7 @@ class Compiler {
   int fuzzSemantic();
   int attrAstDot();
   int printFirmGraph();
+  int compileWithFirmBackend();
 
   void checkOptions();
   bool sanityChecks();
