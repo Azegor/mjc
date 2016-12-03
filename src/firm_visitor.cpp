@@ -31,8 +31,11 @@ static void booleanToControlFlow(ir_node *boolean, ir_node *trueBlock, ir_node *
   assert(trueBlock);
   assert(falseBlock);
   assert(get_irn_mode(boolean) == mode_Bu);
-  ir_node *cond = new_Cond(new_Cmp(new_Const_long(mode_Bu, 1), boolean, ir_relation_equal));
+  // NOTE: comparing boolean against '0' not '1', since that is faster in hardware
+  ir_node *cond = new_Cond(new_Cmp(new_Const_long(mode_Bu, 0), boolean, ir_relation_less_greater));
+  // -> true branch if boolean <> 0
   ir_node *projTrue = new_Proj(cond, mode_X, pn_Cond_true);
+  // -> false branch if boolean == 0
   ir_node *projFalse = new_Proj(cond, mode_X, pn_Cond_false);
   add_immBlock_pred(trueBlock, projTrue);
   add_immBlock_pred(falseBlock, projFalse);
