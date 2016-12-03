@@ -319,7 +319,7 @@ private:
   void makeStore(ir_node* dest, ir_node* value);
 
 public:
-  FirmVisitor(bool print, bool verify, bool gen, const std::string &outFileName = "_test_");
+  FirmVisitor(bool print, bool verify, bool gen, const std::string &outFileName = "a.out");
   virtual ~FirmVisitor() {
     for (auto& e : classes) {
       free_type(e.second.type());

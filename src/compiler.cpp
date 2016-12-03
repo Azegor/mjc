@@ -190,18 +190,19 @@ int Compiler::compileWithFirmBackend() {
   try {
     auto ast = parser.parseProgram();
     analyzeAstSemantic(ast.get(), parser.getLexer());
-    std::string outputName;
-    if (options.outputFileName.length()) {
-      outputName = options.outputFileName;
-    } else {
-      size_t lastindex = options.inputFileName.find_last_of(".");
-      if (lastindex != std::string::npos) {
-        outputName = options.inputFileName.substr(0, lastindex);
-      } else {
-        outputName = options.inputFileName + ".run";
-      }
-    }
-    FirmVisitor firmVisitor{false, !options.noVerify, true, outputName};
+//     std::string outputName;
+//     if (options.outputFileName.length()) {
+//       outputName = options.outputFileName;
+//     } else {
+//       size_t lastindex = options.inputFileName.find_last_of(".");
+//       if (lastindex != std::string::npos) {
+//         outputName = options.inputFileName.substr(0, lastindex);
+//       } else {
+//         outputName = options.inputFileName + ".run";
+//       }
+//     }
+//     FirmVisitor firmVisitor{false, !options.noVerify, true, outputName};
+    FirmVisitor firmVisitor{false, !options.noVerify, true};
     ast->accept(&firmVisitor);
     if (firmVisitor.errorFound())
       return EXIT_FAILURE;

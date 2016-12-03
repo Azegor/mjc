@@ -19,7 +19,7 @@ pushd "${out_dir}" >/dev/null
 compiler_out=$("${compiler}" --firm-graph --gen-code "${in_file}" 2>&1)
 compiler_retval=$?
 
-gcc -static test.s -o _test_ -L"${binary_dir}/../" -lruntime
+# gcc -static test.s -o a.out -L"${binary_dir}/../" -lruntime
 
 popd >/dev/null
 
@@ -32,7 +32,7 @@ if [[ ${compiler_retval} -ne 0 ]]; then
 fi
 
 wanted_output=$(cat "${in_file}.output")
-actual_output=$("${out_dir}/_test_")
+actual_output=$("${out_dir}/a.out")
 
 echo "wanted output: ${wanted_output}"
 echo "actual output: ${actual_output}"
