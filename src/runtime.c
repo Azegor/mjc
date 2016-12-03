@@ -1,6 +1,7 @@
 #include "runtime.h"
 
 #include <stdio.h>
+#include <assert.h>
 
 void print_int(int val) {
   printf("%d\n", val);
@@ -19,4 +20,11 @@ void print_int_fast(int val) {
   while (rev != 0) { pc(rev % 10 + '0'); rev /= 10;}
   while (count--) pc('0');
   pc('\n');
+}
+
+
+void *allocate(size_t num, size_t size) {
+  void* res = calloc(num, size);
+  assert(res);
+  return res;
 }

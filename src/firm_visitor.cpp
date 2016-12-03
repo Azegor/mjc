@@ -81,8 +81,10 @@ FirmVisitor::FirmVisitor(bool print, bool verify, bool gen,
   set_method_param_type(callocType, 1, sizeType);
   // use pointer to mode_Bu as pointer to arbitrary data:
   set_method_res_type(callocType, 0, new_type_pointer(new_type_primitive(mode_Bu)));
-  callocEntity = new_global_entity(get_glob_type(), "calloc", callocType,
-                                   ir_visibility_external, IR_LINKAGE_DEFAULT);
+//   callocEntity = new_global_entity(get_glob_type(), "calloc", callocType,
+//                                    ir_visibility_external, IR_LINKAGE_DEFAULT);
+  callocEntity = new_global_entity(get_glob_type(), "allocate", callocType,
+                                      ir_visibility_external, IR_LINKAGE_DEFAULT);
 
   pushRequiresNonBool();
 }
