@@ -9,19 +9,22 @@ static const char * get_node_mode(ir_node *node) {
   return get_mode_name(get_irn_mode(node));
 }
 
-// generates "boolean" (mode_Bu) 1/0 from a Cond node
-// creates a new Block and returns the Phi
-static ir_node* condToBoolean(ir_node* cond) {
-  ir_node *projFalse = new_Proj(cond, mode_X, pn_Cond_false);
-  ir_node *projTrue = new_Proj(cond, mode_X, pn_Cond_true);
-
-  ir_node* const blockIn[] = { projFalse, projTrue };
+static ir_node *controlFlowToBoolean(ir_node *falseTarget, ir_node *trueTarget) {
+  ir_node* const blockIn[] = { falseTarget, trueTarget };
   ir_node *exitBlock = new_Block(2, blockIn);
   set_cur_block(exitBlock);
   ir_node *falseNode = new_Const_long(mode_Bu, 0);
   ir_node *trueNode = new_Const_long(mode_Bu, 1);
   ir_node* const PhiIn[] = { falseNode, trueNode };
   return new_Phi(2, PhiIn, mode_Bu);
+}
+
+// generates "boolean" (mode_Bu) 1/0 from a Cond node
+// creates a new Block and returns the Phi
+static ir_node* condToBoolean(ir_node* cond) {
+  ir_node *projFalse = new_Proj(cond, mode_X, pn_Cond_false);
+  ir_node *projTrue = new_Proj(cond, mode_X, pn_Cond_true);
+  return controlFlowToBoolean(projFalse, projTrue);
 }
 
 static void booleanToControlFlow(ir_node *boolean, ir_node *trueBlock, ir_node *falseBlock) {
@@ -404,10 +407,19 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
     case ast::BinaryExpression::Op::Or:
     case ast::BinaryExpression::Op::And: {
       ir_node *rightBlock = new_immBlock();
-      if (op == ast::BinaryExpression::Op::And) {
-        pushRequiresBool(rightBlock, currentFalseTarget());
+      ir_node *trueTarget;
+      ir_node *falseTarget;
+      if (requiresBool()) {
+        trueTarget = currentTrueTarget();
+        falseTarget = currentFalseTarget();
       } else {
-        pushRequiresBool(currentTrueTarget(), rightBlock);
+        trueTarget = new_immBlock();
+        falseTarget = new_immBlock();
+      }
+      if (op == ast::BinaryExpression::Op::And) {
+        pushRequiresBool(rightBlock, falseTarget);
+      } else {
+        pushRequiresBool(trueTarget, rightBlock);
       }
       expr.getLeft()->accept(this);
       auto node = popNode();
@@ -417,14 +429,26 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
       mature_immBlock(get_cur_block());
       set_cur_block(rightBlock);
 
-//       pushRequiresBool(currentTrueTarget(), currentFalseTarget());
+      pushRequiresBool(trueTarget, falseTarget);
       expr.getRight()->accept(this);
       auto node2 = popNode();
       assert(node2->load() == nullptr);
-//       popRequiresBoolInfo();
+      popRequiresBoolInfo();
       mature_immBlock(rightBlock);
 
-      pushNode(nullptr);
+      if (requiresBool()) {
+        pushNode(nullptr);
+      } else {
+        set_cur_block(falseTarget);
+        auto falseJmp = new_Jmp();
+        mature_immBlock(falseTarget);
+
+        set_cur_block(trueTarget);
+        auto trueJmp = new_Jmp();
+        mature_immBlock(trueTarget);
+
+        pushNode(controlFlowToBoolean(falseJmp, trueJmp));
+      }
       break;
     }
     default: {
