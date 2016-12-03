@@ -399,14 +399,34 @@ void FirmVisitor::visitNullLiteral(ast::NullLiteral &lit) {
 }
 
 void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
-
-  switch (expr.getOperation()) {
+  auto op = expr.getOperation();
+  switch (op) {
     case ast::BinaryExpression::Op::Or:
-      assert(false);
+    case ast::BinaryExpression::Op::And: {
+      ir_node *rightBlock = new_immBlock();
+      if (op == ast::BinaryExpression::Op::And) {
+        pushRequiresBool(rightBlock, currentFalseTarget());
+      } else {
+        pushRequiresBool(currentTrueTarget(), rightBlock);
+      }
+      expr.getLeft()->accept(this);
+      auto node = popNode();
+      assert(node->load() == nullptr);
+      popRequiresBoolInfo();
+
+      mature_immBlock(get_cur_block());
+      set_cur_block(rightBlock);
+
+//       pushRequiresBool(currentTrueTarget(), currentFalseTarget());
+      expr.getRight()->accept(this);
+      auto node2 = popNode();
+      assert(node2->load() == nullptr);
+//       popRequiresBoolInfo();
+      mature_immBlock(rightBlock);
+
+      pushNode(nullptr);
       break;
-    case ast::BinaryExpression::Op::And:
-      assert(false);
-      break;
+    }
     default: {
       pushRequiresNonBool();
       expr.getLeft()->accept(this);
@@ -489,6 +509,7 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
         outNode = condToBoolean(outNode);
       }
       pushNode(outNode);
+      break;
     }
   }
 }
