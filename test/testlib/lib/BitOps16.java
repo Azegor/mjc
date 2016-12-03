@@ -8,7 +8,7 @@ package lib;
 
 public class BitOps16 {
 
-  public static void main(String[] args) {
+  /*pu blic static void main(String[] args) {
     /* test for regular java */
     /*
     BitOps16 bo = new BitOps16().init();
@@ -55,8 +55,8 @@ public class BitOps16 {
       }
     }
     System.out.println("All shifts ok for 0 <= x < 65536 (is -32768 <= x < 32768 for int16)!");
-    */
-  }
+
+  }*/
 
   public int[] powtab;
   public int[] andlookup;
@@ -67,6 +67,16 @@ public class BitOps16 {
         return 0; /* if shifting more than 15 bits to the left, value is always zero */
     } else {
         return i * powtab[shift] % 65536;
+    }
+  }
+
+  public int ui16shl(int i, int shift) {
+    if (shift > 15) {
+      return 0; /* if shifting more than 15 bits to the left, value is always zero */
+    } else if (shift > 0){
+      return i * powtab[shift] % 65536;
+    } else {
+      return i;
     }
   }
 
