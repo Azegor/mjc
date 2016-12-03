@@ -69,10 +69,10 @@ FirmVisitor::FirmVisitor(bool print, bool verify, bool gen,
   // System.out.println takes just 1 param and returns void
   sysoutType = new_type_method(1, 0, false, cc_cdecl_set, mtp_no_property);
   set_method_param_type(sysoutType, 0, intType);
-//   sysoutEntity = new_global_entity(get_glob_type(), "print_int", sysoutType,
-//                                    ir_visibility_external, IR_LINKAGE_DEFAULT);
-  sysoutEntity = new_global_entity(get_glob_type(), "print_int_fast", sysoutType,
+  sysoutEntity = new_global_entity(get_glob_type(), "print_int", sysoutType,
                                    ir_visibility_external, IR_LINKAGE_DEFAULT);
+//   sysoutEntity = new_global_entity(get_glob_type(), "print_int_fast", sysoutType,
+//                                    ir_visibility_external, IR_LINKAGE_DEFAULT);
 
   // create only one instance for calloc (logical), which returns pointer to unsigned char
   // which ist the best representation for void*.
