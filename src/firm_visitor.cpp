@@ -794,9 +794,14 @@ void FirmVisitor::visitIfStatement(ast::IfStatement &stmt) {
 }
 
 void FirmVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
-  ir_node *whileBlock = new_immBlock();
-  add_immBlock_pred(whileBlock, new_Jmp());
-  set_cur_block(whileBlock);
+  ir_node *whilePreHeader = new_immBlock(); // don't mature this one until the end
+  add_immBlock_pred(whilePreHeader, new_Jmp());
+  set_cur_block(whilePreHeader);
+
+  ir_node *whileLoopHeader = new_immBlock();
+  add_immBlock_pred(whileLoopHeader, new_Jmp());
+  set_cur_block(whileLoopHeader);
+  mature_immBlock(whileLoopHeader);
 
   auto loopBlock = new_immBlock();
   auto afterBlock = new_immBlock();
@@ -823,9 +828,9 @@ void FirmVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
   // don't add jump if the Statement returns
   if ((stmt.getStatement() == nullptr) ||
       (stmt.getStatement()->cfb == sem::ControlFlowBehavior::MayContinue)) {
-    add_immBlock_pred(whileBlock, new_Jmp());
+    add_immBlock_pred(whilePreHeader, new_Jmp());
   }
-  mature_immBlock(whileBlock);
+  mature_immBlock(whilePreHeader);
 
   set_cur_block(afterBlock);
 }
