@@ -714,12 +714,8 @@ void FirmVisitor::visitArrayAccess(ast::ArrayAccess& arrayAccess)
   arrayAccess.getIndex()->accept(this);
   ir_node *indexNode = popNode()->load();
   ir_type *arrayType = get_pointer_points_to_type(getIrType(arrayAccess.getArray()->targetType));
-//   ir_printf("array type: %t\n", arrayType);
-  ir_node *loadNode = new_Load(get_store(), arrayAddrNode, mode_P, arrayType, cons_none);
-  ir_node *projM = new_Proj(loadNode, mode_M, pn_Load_M);
-  ir_node *projRes = new_Proj(loadNode, mode_P, pn_Load_res);
-  set_store(projM);
-  ir_node *sel = new_Sel(projRes, indexNode, arrayType);
+  // do a select directly on the pointer-to-array type
+  ir_node *sel = new_Sel(arrayAddrNode, indexNode, arrayType);
   assert(is_Sel(sel));
 
   popRequiresBoolInfo();
