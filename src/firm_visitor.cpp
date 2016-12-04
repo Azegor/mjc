@@ -606,7 +606,7 @@ void FirmVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
       falseTarget = currentFalseTarget();
     }
 
-    pushRequiresBool(trueTarget, falseTarget); // swapped
+    pushRequiresBool(falseTarget, trueTarget); // swapped
     expr.acceptChildren(this);
     auto node = popNode();
     assert(node->load() == nullptr);
