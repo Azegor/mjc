@@ -266,8 +266,8 @@ void SemanticVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
 
   case ast::BinaryExpression::Op::Equals:
   case ast::BinaryExpression::Op::NotEquals:
-    if (left->targetType >= right->targetType ||
-        right->targetType >= left->targetType) {
+    if (! left->targetType.isVoid() && ! right->targetType.isVoid()
+        && (left->targetType >= right->targetType || right->targetType >= left->targetType)) {
       expr.targetType.setBool();
     } else {
       std::stringstream ss;
