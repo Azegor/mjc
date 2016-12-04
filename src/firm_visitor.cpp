@@ -113,15 +113,16 @@ void FirmVisitor::visitProgram(ast::Program &program) {
   }
 
   if (generateCode) {
-    FILE *f = fopen("test.s", "w");
+    FILE *f = tmpfile();
     // XXX This only "works" on 64bit cpus
     be_parse_arg("isa=amd64");
     be_main(f, "test.java");
-    fclose(f);
+    fflush(f);
     int res = 0;
 //     res |= system("gcc -c ../src/runtime.c -o runtime.o");
 //     res |= system("ar rcs libruntime.a runtime.o");
-    res |= system(("gcc -static test.s -o " + outFileName + " -L" LIBSEARCHDIR " -lruntime").c_str());
+    res |= system(("gcc -static -x assembler /proc/self/fd/" + std::to_string(fileno(f)) + " -o " + outFileName + " -L" LIBSEARCHDIR " -lruntime").c_str());
+    fclose(f);
     if (res) {
       throw std::runtime_error("Error while linking binary");
     }
