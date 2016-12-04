@@ -1,2 +1,14 @@
 #!/bin/bash
-clang-format -style=file -i src/{*.cpp,*.hpp}
+
+edo() {
+  echo "${@}"
+  "${@}" || exit 100
+}
+
+if [[ ${#} -ge 1 ]]; then
+    files=( "${@}" )
+else
+    files=( src/{*.cpp,*.hpp} )
+fi
+
+edo clang-format -style=file -i "${files[@]}"
