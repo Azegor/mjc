@@ -40,6 +40,9 @@ include(ExternalProject) # load module
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   set(ENV{CFLAGS} ${DEBUG_FLAGS}) # for firm
+  set(firmVariant "debug")
+else()
+  set(firmVariant "optimize")
 endif()
 
 ExternalProject_Add(libfirm
@@ -49,11 +52,11 @@ ExternalProject_Add(libfirm
   CONFIGURE_COMMAND ""
   BUILD_COMMAND make -j
     -C "${CMAKE_CURRENT_SOURCE_DIR}/libfirm"
-    "variant=debug"
+    "variant=${firmVariant}"
     "top_builddir=${CMAKE_CURRENT_BINARY_DIR}/libfirm/build"
   INSTALL_COMMAND make -j
     -C "${CMAKE_CURRENT_SOURCE_DIR}/libfirm"
-    "variant=debug"
+    "variant=${firmVariant}"
     "top_builddir=${CMAKE_CURRENT_BINARY_DIR}/libfirm/build"
     "PREFIX=/"
     "DESTDIR=${CMAKE_PREFIX_PATH}"
