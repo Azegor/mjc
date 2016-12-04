@@ -675,7 +675,9 @@ void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
   auto firmClass = &classes.at(
       currentProgram->findClassByName(access.getLeft()->targetType.name));
   // Left is never null!
+  pushRequiresNonBool();
   access.getLeft()->accept(this);
+  popRequiresBoolInfo();
   ir_node *leftNode = popNode()->load();
   assert(get_irn_mode(leftNode) == mode_P);
 
@@ -689,12 +691,13 @@ void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
 
 
   ir_node *member = new_Member(leftNode, rightEntity);
+  auto memberAccess = std::make_unique<FieldValue>(member);
 
   if (requiresBool()) {
-    booleanToControlFlow(member, currentTrueTarget(), currentFalseTarget());
+    booleanToControlFlow(memberAccess->load(), currentTrueTarget(), currentFalseTarget());
     pushNode(nullptr);
   } else {
-    pushNode(std::make_unique<FieldValue>(member));
+    pushNode(std::move(memberAccess));
   }
 }
 
