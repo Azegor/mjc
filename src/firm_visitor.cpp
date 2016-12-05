@@ -512,6 +512,7 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
                   new_Conv(leftNode->load(), mode_Ls),
                   new_Conv(rightNode->load(), mode_Ls),
                   op_pin_state_pinned);
+          set_store(new_Proj(divNode, mode_M, pn_Div_M));
           ir_node *resNode = new_Proj(divNode, mode_Ls, pn_Div_res);
           outNode = new_Conv(resNode, mode_Is);
           break;
@@ -521,6 +522,7 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
                   new_Conv(leftNode->load(), mode_Ls),
                   new_Conv(rightNode->load(), mode_Ls),
                   op_pin_state_pinned);
+          set_store(new_Proj(modNode, mode_M, pn_Mod_M));
           ir_node *resNode = new_Proj(modNode, mode_Ls, pn_Mod_res);
           outNode = new_Conv(resNode, mode_Is);
           break;
