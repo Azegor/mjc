@@ -108,10 +108,6 @@ void FirmVisitor::visitProgram(ast::Program &program) {
 
   assert(nodeStack.size() == 0);
 
-  if (printGraphs) {
-    dump_all_ir_graphs("");
-  }
-
   if (generateCode) {
     FILE *f = tmpfile();
     // XXX This only "works" on 64bit cpus
@@ -159,6 +155,9 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
     dump_ir_graph(current_ir_graph, "");
   }
   lower_highlevel_graph(mainMethodGraph);
+  if (printGraphs) {
+    dump_ir_graph(current_ir_graph, "");
+  }
 
   if (verifyGraphs) {
     if (irg_verify(mainMethodGraph) == 0)
@@ -191,6 +190,9 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
     dump_ir_graph(current_ir_graph, "");
   }
   lower_highlevel_graph(methodGraph);
+  if (printGraphs) {
+    dump_ir_graph(current_ir_graph, "");
+  }
 
   if (verifyGraphs) {
     if (irg_verify(methodGraph) == 0)
