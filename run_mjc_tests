@@ -1,9 +1,13 @@
 #!/bin/sh
 if [ $# -eq 0 ]; then
-    echo "Please pass mjtest directory as first parameter"
+    echo "usage: ${0} <path-to-mjtest> [path to mjc]"
     exit 1
 fi
-mjc_path=$(realpath builddir/mjc)
+if [ $# -eq 2 ]; then
+  mjc_path=$(realpath ${2})
+else
+  mjc_path=$(realpath builddir/mjc)
+fi
 cd ${1}
 mjc_rel_path=$(realpath --relative-to=$(pwd) ${mjc_path}) # mjc.py requires relative path
-./mjt.py --output_no_incorrect_reports compile-firm ${mjc_rel_path}
+./mjt.py --output_no_incorrect_reports --all_exec_tests compile-firm ${mjc_rel_path}
