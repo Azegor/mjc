@@ -380,17 +380,15 @@ void FirmVisitor::visitIntLiteral(ast::IntLiteral &lit) {
 
 void FirmVisitor::visitBoolLiteral(ast::BoolLiteral &lit) {
   if (requiresBool()) {
-    ir_node *bad = new_Bad(mode_X);
     if (lit.getValue()) {
       add_immBlock_pred(currentTrueTarget(), new_Jmp());
       // mark other branch as bad. Can't null it, that causes ASAN errors later
-      // TODO: might not be needed, graph looks the same to me?
-      add_immBlock_pred(currentFalseTarget(), bad);
+      add_immBlock_pred(currentFalseTarget(), new_Bad(mode_X));
       pushNode(nullptr);
     } else {
+      // ! order of predecessors is important -> first set true target!
+      add_immBlock_pred(currentTrueTarget(), new_Bad(mode_X)); // see above
       add_immBlock_pred(currentFalseTarget(), new_Jmp());
-      // see above
-      add_immBlock_pred(currentTrueTarget(), bad);
       pushNode(nullptr);
     }
   } else {
