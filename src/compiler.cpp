@@ -37,6 +37,7 @@
 #include "lexer.hpp"
 #include "parser.hpp"
 #include "semantic_visitor.hpp"
+#include "optimizer.hpp"
 
 co::color_ostream<std::ostream> Compiler::cl_cout{std::cout};
 co::color_ostream<std::ostream> Compiler::cl_cerr{std::cerr};
@@ -176,6 +177,10 @@ int Compiler::printFirmGraph() {
     ast->accept(&firmVisitor);
     if (!options.noVerify && firmVisitor.errorFound())
       return EXIT_FAILURE;
+    if (options.optimize) {
+      Optimizer opt(firmVisitor.getFirmGraphs());
+      opt.run();
+    }
 
     return EXIT_SUCCESS;
   } catch (CompilerError &e) {

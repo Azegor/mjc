@@ -163,6 +163,7 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
     if (irg_verify(mainMethodGraph) == 0)
       this->graphErrors++;
   }
+  firmGraphs.push_back(mainMethodGraph);
 }
 
 void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
@@ -198,6 +199,7 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
     if (irg_verify(methodGraph) == 0)
       this->graphErrors++;
   }
+  firmGraphs.push_back(methodGraph);
 }
 
 void FirmVisitor::createClassEntity(ast::Class &klass) {

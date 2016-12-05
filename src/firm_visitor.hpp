@@ -182,6 +182,8 @@ private:
 //   ir_node *trueTarget = nullptr;
 //   ir_node *falseTarget = nullptr;
 
+  std::vector<ir_graph*> firmGraphs;
+
   ir_type *getIrType(ast::Type *type) {
     auto sType = type->getSemaType();
     return getIrType(sType);
@@ -338,6 +340,8 @@ public:
     assert(this->verifyGraphs);
     return this->graphErrors > 0;
   }
+
+  std::vector<ir_graph*> &getFirmGraphs() { return firmGraphs; }
 
   void visitProgram(ast::Program &program) override;
   void visitMainMethod(ast::MainMethod &method) override;

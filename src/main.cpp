@@ -54,6 +54,8 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
       ("compile-firm", "compile input program with default x86 firm backend")
       // disable verification
       ("no-verify", "disable verification when building firm graph")
+      // optimize
+      ("optimize,O", "optimize program")
       // output file
       ("output,o", bpo::value<std::string>(&compilerOptions.outputFileName),
        "output file name");
@@ -122,6 +124,9 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
     }
     if (var_map.count("no-verify")) {
       compilerOptions.noVerify = true;
+    }
+    if (var_map.count("optimize") || var_map.count("O")) {
+      compilerOptions.optimize = true;
     }
   } catch (bpo::required_option &e) {
     cl_cerr << co::mode(co::bold) << co::color(co::red)

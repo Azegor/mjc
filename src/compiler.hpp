@@ -52,6 +52,7 @@ struct CompilerOptions {
   bool genCode = false;
   bool compileFirm = false;
   bool noVerify = false;
+  bool optimize = false;
   // ...
 };
 
