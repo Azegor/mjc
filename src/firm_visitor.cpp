@@ -508,10 +508,7 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
           outNode = new_Mul(leftNode->load(), rightNode->load());
           break;
         case ast::BinaryExpression::Op::Div: {
-          ir_node *memory = get_store();
-          ir_node *pin = new_Pin(memory);
-          set_store(pin);
-          ir_node *divNode = new_DivRL(pin,
+          ir_node *divNode = new_DivRL(get_store(),
                   new_Conv(leftNode->load(), mode_Ls),
                   new_Conv(rightNode->load(), mode_Ls),
                   op_pin_state_pinned);
@@ -520,10 +517,7 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
           break;
         }
         case ast::BinaryExpression::Op::Mod: {
-          ir_node *memory = get_store();
-          ir_node *pin = new_Pin(memory);
-          set_store(pin);
-          ir_node *modNode = new_Mod(pin,
+          ir_node *modNode = new_Mod(get_store(),
                   new_Conv(leftNode->load(), mode_Ls),
                   new_Conv(rightNode->load(), mode_Ls),
                   op_pin_state_pinned);
