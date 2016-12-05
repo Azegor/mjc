@@ -32,6 +32,7 @@
 
 #include "dotvisitor.hpp"
 #include "error.hpp"
+#include "firm_visitor.hpp"
 #include "input_file.hpp"
 #include "lexer.hpp"
 #include "parser.hpp"
@@ -165,7 +166,55 @@ int Compiler::attrAstDot() {
   }
 }
 
-void Compiler::analyzeAstSemantic(ast::Program *astRoot, Lexer& lexer) {
+int Compiler::printFirmGraph() {
+  SymbolTable::StringTable strTbl;
+  Parser parser{inputFile, strTbl};
+  try {
+    auto ast = parser.parseProgram();
+    analyzeAstSemantic(ast.get(), parser.getLexer());
+    FirmVisitor firmVisitor{true, !options.noVerify, options.genCode};
+    ast->accept(&firmVisitor);
+    if (!options.noVerify && firmVisitor.errorFound())
+      return EXIT_FAILURE;
+
+    return EXIT_SUCCESS;
+  } catch (CompilerError &e) {
+    e.writeErrorMessage(std::cerr);
+    return EXIT_FAILURE;
+  }
+}
+
+int Compiler::compileWithFirmBackend() {
+  SymbolTable::StringTable strTbl;
+  Parser parser{inputFile, strTbl};
+  try {
+    auto ast = parser.parseProgram();
+    analyzeAstSemantic(ast.get(), parser.getLexer());
+//     std::string outputName;
+//     if (options.outputFileName.length()) {
+//       outputName = options.outputFileName;
+//     } else {
+//       size_t lastindex = options.inputFileName.find_last_of(".");
+//       if (lastindex != std::string::npos) {
+//         outputName = options.inputFileName.substr(0, lastindex);
+//       } else {
+//         outputName = options.inputFileName + ".run";
+//       }
+//     }
+//     FirmVisitor firmVisitor{false, !options.noVerify, true, outputName};
+    FirmVisitor firmVisitor{false, !options.noVerify, true};
+    ast->accept(&firmVisitor);
+    if (firmVisitor.errorFound())
+      return EXIT_FAILURE;
+
+    return EXIT_SUCCESS;
+  } catch (CompilerError &e) {
+    e.writeErrorMessage(std::cerr);
+    return EXIT_FAILURE;
+  }
+}
+
+void Compiler::analyzeAstSemantic(ast::Program *astRoot, Lexer &lexer) {
   SemanticVisitor semantic_visitor(lexer);
   astRoot->accept(&semantic_visitor);
 }
@@ -210,6 +259,10 @@ int Compiler::run() {
     return fuzzSemantic();
   } else if (options.dotAttrAst) {
     return attrAstDot();
+  } else if (options.printFirmGraph) {
+    return printFirmGraph();
+  } else if (options.compileFirm) {
+    return compileWithFirmBackend();
   }
   return EXIT_FAILURE;
 }

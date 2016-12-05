@@ -1,7 +1,5 @@
 #include "semantic_visitor.hpp"
 
-ast::DummyDefinition SemanticVisitor::dummySystem;
-ast::DummySystemOut SemanticVisitor::dummySystemOut;
 ast::DummyDefinition SemanticVisitor::dummyMainArgDef;
 
 void SemanticVisitor::visitProgram(ast::Program &program) {
@@ -59,6 +57,7 @@ void SemanticVisitor::visitMainMethodList(ast::MainMethodList &mainMethodList) {
 
 void SemanticVisitor::visitMainMethod(ast::MainMethod &mm) {
   currentMethod = &mm;
+  currentLocalVarDeclNr = 0;
   symTbl.insert(mm.getArgSymbol(), &dummyMainArgDef);
   mm.acceptChildren(this);
   currentMethod = nullptr;
@@ -72,6 +71,7 @@ void SemanticVisitor::visitMainMethod(ast::MainMethod &mm) {
 void SemanticVisitor::visitRegularMethod(ast::RegularMethod &method) {
   symTbl.enterScope(); // for parameters
   currentMethod = &method;
+  currentLocalVarDeclNr = 0;
   method.acceptChildren(this);
   symTbl.leaveScope();
   currentMethod = nullptr;
@@ -83,6 +83,7 @@ void SemanticVisitor::visitRegularMethod(ast::RegularMethod &method) {
       method.getBlock()->cfb != sem::ControlFlowBehavior::Return) {
     error(method, "Non-Void method must return a value on every path", true);
   }
+  method.createMangledName(currentClass->getName());
 }
 
 void SemanticVisitor::visitBlock(ast::Block &block) {
@@ -93,9 +94,12 @@ void SemanticVisitor::visitBlock(ast::Block &block) {
   block.acceptChildren(this);
   symTbl.leaveScope();
 
-  for (auto stmt : block.getStatements()) {
-    if (stmt->cfb == sem::ControlFlowBehavior::Return) {
+  auto &statements = block.getStatements();
+  for (auto stmt = statements.begin(), end = statements.end();
+       stmt != end; ++stmt) {
+    if ((*stmt)->cfb == sem::ControlFlowBehavior::Return) {
       block.cfb = sem::ControlFlowBehavior::Return;
+      statements.erase(++stmt, end); // delete all following (dead) nodes
       return; // no more checking necessary, remaining code is dead
     }
   }
@@ -112,6 +116,9 @@ void SemanticVisitor::visitVariableDeclaration(ast::VariableDeclaration &decl) {
     error(decl, "Variable '" + decl.getSymbol().name + "' already defined");
   }
   symTbl.insert(sym, &decl);
+
+  decl.setIndex(currentLocalVarDeclNr++);
+  currentMethod->addVarDecl(&decl);
 
   decl.acceptChildren(this);
 
@@ -137,7 +144,7 @@ void SemanticVisitor::visitVarRef(ast::VarRef &varRef) {
   auto *def = symTbl.lookup(varRef.getSymbol());
   if (!def) {
     if (varRef.getName() == "System") {
-      def = &dummySystem;
+      def = &ast::VarRef::dummySystem;
     } else {
       error(varRef, "Unknown variable '" + varRef.getSymbol().name + "'");
     }
@@ -303,9 +310,9 @@ void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
 
   // special handling for System.out.println()
   if (auto ref = dynamic_cast<ast::VarRef *>(access.getLeft())) {
-    if (ref->getDef() == &dummySystem) {
+    if (ref->getDef() == &ast::VarRef::dummySystem) {
       if (access.getName() == "out") {
-        access.setDef(&dummySystemOut);
+        access.setDef(&ast::FieldAccess::dummySystemOut);
         return;
       } else {
         error(access,
@@ -314,7 +321,7 @@ void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
     }
   }
   if (auto left = dynamic_cast<ast::FieldAccess *>(access.getLeft())) {
-    if (left->getDef() == &dummySystemOut) {
+    if (left->getDef() == &ast::FieldAccess::dummySystemOut) {
       error(access, "invalid access '" + access.getName() + "' on System.out");
     }
   }
@@ -345,7 +352,7 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
   // special handling for System.out.println()
   if (auto left = dynamic_cast<ast::VarRef *>(invocation.getLeft())) {
     auto *def = left->getDef();
-    if (def == &dummySystem) {
+    if (def == &ast::VarRef::dummySystem) {
       error(invocation,
             "invalid method call '" + invocation.getName() + "' on 'System'");
     }
@@ -371,9 +378,9 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
                  dynamic_cast<ast::FieldAccess *>(invocation.getLeft())) {
     // System.out.println special case: VarRef(System) - FieldAccess(out) -
     // MethodInvocation(println)
-    if (left->getDef() == &dummySystemOut) {
+    if (left->getDef() == &ast::FieldAccess::dummySystemOut) {
       if (invocation.getName() == "println") {
-        auto args = invocation.getArguments();
+        auto &args = invocation.getArguments();
         if (args.size() != 1) {
           error(invocation,
                 "System.out.println takes exactly one int argument, " +
@@ -386,6 +393,7 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
           error(invocation, ss.str());
         }
         // Yep, System.out.println call
+        invocation.setIsSysoutCall(true);
         invocation.targetType.setVoid();
         return;
       } else {
@@ -526,11 +534,17 @@ void SemanticVisitor::visitArrayAccess(ast::ArrayAccess &access) {
   access.acceptChildren(this);
 
   if (!access.getIndex()->targetType.isInt()) {
-    error(*access.getIndex(), "Array indices must be integer expressions");
+    std::stringstream msg;
+    msg << "Array indices must be integer expressions, but have "
+        << access.getIndex()->targetType;
+    error(*access.getIndex(), msg.str());
   }
 
   if (!access.getArray()->targetType.isArray()) {
-    error(*access.getArray(), "Array access on non-array expression");
+    std::stringstream msg;
+    msg << "Array access on non-array expression, but have "
+        << access.getIndex()->targetType;
+    error(*access.getArray(), msg.str());
   }
 
   // access.targetType is array type -> decrease dimension by one

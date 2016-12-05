@@ -33,7 +33,6 @@ set(Count 0)
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/coverage/valid_arguments.txt" invalid_arguments)
 foreach(arg ${invalid_arguments})
   math(EXPR Count "${Count} + 1")
-#   MESSAGE(STATUS "Coverage valid test command: mjc ${arg}")
   add_test(NAME "Coverage_valid_command_${Count}"
            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/coverage_valid.sh" $<TARGET_FILE:mjc> "${arg}"
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
@@ -45,7 +44,6 @@ set(Count 0)
 file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/coverage/invalid_arguments.txt" invalid_arguments)
 foreach(arg ${invalid_arguments})
   math(EXPR Count "${Count}+1")
-#   MESSAGE(STATUS "Coverage invalid test command: mjc ${arg}")
   add_test(NAME "Coverage_invalid_command_${Count}"
            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/coverage_invalid.sh" $<TARGET_FILE:mjc> "${arg}"
            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
@@ -69,10 +67,9 @@ ADD_CUSTOM_COMMAND(
   OUTPUT minijava.c)
 
 set(Count 0)
-file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/lextest/*.java")
-foreach(file ${lexer_input_files})
+file(GLOB input_files "${CMAKE_CURRENT_SOURCE_DIR}/lextest/*.java")
+foreach(file ${input_files})
   math(EXPR Count "${Count} + 1")
-#   MESSAGE(STATUS "Lexer test file: ${file}")
   get_filename_component(filename "${file}" NAME)
   add_test(NAME "Lex_${filename}"
            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/lexer_diff.sh" $<TARGET_FILE:mjc> $<TARGET_FILE:mj_lexer> "${file}"
@@ -82,10 +79,9 @@ MESSAGE(STATUS "  Added ${Count} lexer tests")
 
 # parse valid programs
 set(Count 0)
-file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/parsetest/valid/*.java")
-foreach(file ${lexer_input_files})
+file(GLOB input_files "${CMAKE_CURRENT_SOURCE_DIR}/parsetest/valid/*.java")
+foreach(file ${input_files})
   math(EXPR Count "${Count} + 1")
-#   MESSAGE(STATUS "Parser test file: ${file}")
   get_filename_component(filename "${file}" NAME)
   add_test(NAME "Parse_valid_${filename}"
            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/parser_valid.sh" $<TARGET_FILE:mjc> "${file}")
@@ -94,10 +90,9 @@ MESSAGE(STATUS "  Added ${Count} valid parser tests")
 
 #generated programs
 set(Count 0)
-file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/parsetest/generated/*.java")
-foreach(file ${lexer_input_files})
+file(GLOB input_files "${CMAKE_CURRENT_SOURCE_DIR}/parsetest/generated/*.java")
+foreach(file ${input_files})
   math(EXPR Count "${Count} + 1")
-#   MESSAGE(STATUS "Parser test file: ${file}")
   get_filename_component(filename "${file}" NAME)
   add_test(NAME "Parse_valid_generated_${filename}"
            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/parser_valid.sh" $<TARGET_FILE:mjc> "${file}")
@@ -106,10 +101,9 @@ MESSAGE(STATUS "  Added ${Count} generated valid parser tests")
 
 # parse invalid programs
 set(Count 0)
-file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/parsetest/invalid/*.java")
-foreach(file ${lexer_input_files})
+file(GLOB input_files "${CMAKE_CURRENT_SOURCE_DIR}/parsetest/invalid/*.java")
+foreach(file ${input_files})
   math(EXPR Count "${Count} + 1")
-#   MESSAGE(STATUS "Parser test file: ${file}")
   get_filename_component(filename "${file}" NAME)
   add_test(NAME "Parse_invalid_${filename}"
            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/parser_invalid.sh" $<TARGET_FILE:mjc> "${file}")
@@ -118,10 +112,9 @@ MESSAGE(STATUS "  Added ${Count} invalid parser tests")
 
 # ast idempotency test
 set(Count 0)
-file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/parsetest/valid/*.java")
-foreach(file ${lexer_input_files})
+file(GLOB input_files "${CMAKE_CURRENT_SOURCE_DIR}/parsetest/valid/*.java")
+foreach(file ${input_files})
   math(EXPR Count "${Count} + 1")
-#   MESSAGE(STATUS "Parser test file: ${file}")
   get_filename_component(filename "${file}" NAME)
   add_test(NAME "AST_idempotent_${filename}"
            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/ast_idempotency.sh" $<TARGET_FILE:mjc> "${file}")
@@ -130,10 +123,9 @@ MESSAGE(STATUS "  Added ${Count} ast idempotency tests")
 
 # check valid programs semantically
 set(Count 0)
-file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/sematest/valid/*.java")
-foreach(file ${lexer_input_files})
+file(GLOB input_files "${CMAKE_CURRENT_SOURCE_DIR}/sematest/valid/*.java")
+foreach(file ${input_files})
   math(EXPR Count "${Count} + 1")
-#   MESSAGE(STATUS "Parser test file: ${file}")
   get_filename_component(filename "${file}" NAME)
   add_test(NAME "Semantics_valid_${filename}"
            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/semantic_valid.sh" $<TARGET_FILE:mjc> "${file}")
@@ -142,23 +134,66 @@ MESSAGE(STATUS "  Added ${Count} valid semantic tests")
 
 # check invalid programs semantically
 set(Count 0)
-file(GLOB lexer_input_files "${CMAKE_CURRENT_SOURCE_DIR}/sematest/invalid/*.java")
-foreach(file ${lexer_input_files})
+file(GLOB input_files "${CMAKE_CURRENT_SOURCE_DIR}/sematest/invalid/*.java")
+foreach(file ${input_files})
   math(EXPR Count "${Count} + 1")
-#   MESSAGE(STATUS "Parser test file: ${file}")
   get_filename_component(filename "${file}" NAME)
   add_test(NAME "Semantics_invalid_${filename}"
            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/semantic_invalid.sh" $<TARGET_FILE:mjc> "${file}")
 endforeach()
 MESSAGE(STATUS "  Added ${Count} invalid semantic tests")
 
+# check valid firm programs
 set(Count 0)
-file(GLOB lexer_input_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/exec/*.java")
-file(GLOB_RECURSE stdlib_files "${CMAKE_CURRENT_SOURCE_DIR}/testlib/*.java")
-foreach(file ${lexer_input_files})
+file(GLOB input_files "${CMAKE_CURRENT_SOURCE_DIR}/firmtest/*.java")
+foreach(file ${input_files})
   math(EXPR Count "${Count} + 1")
-#   MESSAGE(STATUS "Parser test file: ${file}")
-get_filename_component(dirname "${file}" PATH)
+  get_filename_component(filename "${file}" NAME)
+  add_test(NAME "Firm_${filename}"
+           COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/firm_valid.sh" $<TARGET_FILE:mjc> "${file}")
+endforeach()
+MESSAGE(STATUS "  Added ${Count} libfirm tests")
+
+# check firm generation for all semantically correct programs
+set(Count 0)
+file(GLOB input_files "${CMAKE_CURRENT_SOURCE_DIR}/sematest/valid/*.java")
+foreach(file ${input_files})
+  math(EXPR Count "${Count} + 1")
+  get_filename_component(filename "${file}" NAME)
+  add_test(NAME "Firm_semvalid_${filename}"
+           COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/firm_valid.sh" $<TARGET_FILE:mjc> "${file}")
+endforeach()
+MESSAGE(STATUS "  Added ${Count} semantic libfirm tests from valid semantic tests")
+
+# libfirm codegen + output tests
+set(Count 0)
+file(GLOB input_files "${CMAKE_CURRENT_SOURCE_DIR}/firmtest/output/*.java")
+foreach(file ${input_files})
+  math(EXPR Count "${Count} + 1")
+  get_filename_component(filename "${file}" NAME)
+  add_test(NAME "Firm_Output_${filename}"
+    COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/firm_output.sh" $<TARGET_FILE:mjc> "${CMAKE_CURRENT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/src/" "${file}")
+endforeach()
+MESSAGE(STATUS "  Added ${Count} libfirm output tests")
+
+# libfirm codegen + compare to javac
+# set(Count 0)
+# file(GLOB input_files "${CMAKE_CURRENT_SOURCE_DIR}/firmtest/compare_javac/*.java")
+# foreach(file ${input_files})
+#   math(EXPR Count "${Count} + 1")
+#   get_filename_component(filename "${file}" NAME)
+#   add_test(NAME "Firm_Compare_${filename}"
+#     COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/firm_compare_java.sh" $<TARGET_FILE:mjc> "${CMAKE_CURRENT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/src/" "${file}")
+# endforeach()
+# MESSAGE(STATUS "  Added ${Count} libfirm comparison tests")
+MESSAGE(STATUS "  TODO: finish implement comparison against java")
+
+set(Count 0)
+file(GLOB input_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/exec/*.java")
+file(GLOB_RECURSE stdlib_files "${CMAKE_CURRENT_SOURCE_DIR}/testlib/*.java")
+foreach(file ${input_files})
+  math(EXPR Count "${Count} + 1")
+  get_filename_component(dirname "${file}" PATH)
   add_custom_command(
     PRE_BUILD
     COMMAND "mkdir"

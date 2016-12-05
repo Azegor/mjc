@@ -124,7 +124,7 @@ public:
   void visitClass(ast::Class &klass) override;
   void visitField(ast::Field &field) override;
   void visitRegularMethod(ast::RegularMethod &method) override;
-  void visitBlock(ast::Block &block) override;
+//   void visitBlock(ast::Block &block) override;
   void visitVariableDeclaration(ast::VariableDeclaration &decl) override;
   void visitReturnStatement(ast::ReturnStatement &stmt) override;
   void visitVarRef(ast::VarRef &ident) override;

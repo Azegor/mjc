@@ -10,7 +10,7 @@ public class BitOps32 {
 
   /* test for regular java */
   /*
-  public static void main(String[] args) {
+  pu blic static void main(String[] args) {
     BitOps32 bo = new BitOps32().init();
 
     for (int a = -2147483648; a < 2147483647 - 1010101; a += 1010101) {

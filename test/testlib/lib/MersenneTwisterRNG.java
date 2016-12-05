@@ -1,5 +1,8 @@
 package lib;
 
+import lib.BitOps16;
+import lib.BitOps32;
+
 /**
  * Mersenne Twister generator for pseudo random numbers.
  * adapted from http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/VERSIONS/JAVA/MTRandom.java

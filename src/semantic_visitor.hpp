@@ -11,25 +11,14 @@ class SemanticVisitor : public ast::Visitor {
   ast::Program *currentProgram = nullptr;
   ast::Class *currentClass = nullptr;
   ast::Method *currentMethod = nullptr;
+  int currentLocalVarDeclNr = 0;
   int mainMethodCount = 0;
   SymbolTable::SymbolTable symTbl;
 
-  static ast::DummyDefinition dummySystem;
-  static ast::DummySystemOut dummySystemOut;
   static ast::DummyDefinition dummyMainArgDef;
 
   ast::Class *findClassByName(const std::string &className) {
-    // implemented with binary search. TODO: maybe consider a set instead
-    auto &classes = currentProgram->getClasses();
-    auto pos =
-        std::lower_bound(classes.begin(), classes.end(), className,
-                         [](const ast::ClassPtr &cls, const std::string &str) {
-                           return cls->getName() < str;
-                         });
-    if ((pos == classes.end()) || (className < (*pos)->getName())) {
-      return nullptr;
-    }
-    return pos->get();
+    return currentProgram->findClassByName(className);
   }
 
   ast::RegularMethod *findMethodInClass(ast::Class *klass,
@@ -95,7 +84,8 @@ public:
   virtual ~SemanticVisitor() {}
 
 private:
-  template <typename T> void checkForDuplicates(T &list, const std::string& name) {
+  template <typename T>
+  void checkForDuplicates(T &list, const std::string &name) {
     std::stable_sort(list.begin(), list.end(), ast::SortUniquePtrPred());
     auto firstDuplicate =
         std::adjacent_find(list.begin(), list.end(), ast::UniquePtrEqPred());
@@ -110,15 +100,15 @@ private:
     auto &loc = node.getLoc();
     auto &errorToken = reportAtScopeEnd ? loc.endToken : loc.startToken;
     throw ast::SemanticError(loc, lexer.getFilename(), std::move(msg),
-                        lexer.getCurrentLineFromInput(errorToken.line),
-                        reportAtScopeEnd);
+                             lexer.getCurrentLineFromInput(errorToken.line),
+                             reportAtScopeEnd);
   }
   [[noreturn]] void error(SourceLocation loc, std::string msg,
                           bool reportAtScopeEnd = false) {
     auto &errorToken = reportAtScopeEnd ? loc.endToken : loc.startToken;
     throw ast::SemanticError(loc, lexer.getFilename(), std::move(msg),
-                        lexer.getCurrentLineFromInput(errorToken.line),
-                        reportAtScopeEnd);
+                             lexer.getCurrentLineFromInput(errorToken.line),
+                             reportAtScopeEnd);
   }
 };
 

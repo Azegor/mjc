@@ -1,19 +1,13 @@
+class method_calls {
+    public static void main(String[] args){
+        System.out.println(new method_calls().run2(1, 435));
+    }
 
-class Foo {
-  public int a() {
-   int k = 10;
-   return k;
-  }
+    public int run(){
+        return 1;
+    }
 
-  public int b () {
-    return a();
-  }
-
-  public int c () {
-    return b();
-  }
-
-  public static void main (String[] args) {
-
-  }
+    public int run2(int a, int b){
+        return a / b * this.run();
+    }
 }

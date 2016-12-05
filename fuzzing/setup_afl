@@ -4,6 +4,26 @@ if [[ $UID -ne 0 ]]; then
   exit 1
 fi
 
+# save old core pattern and set new one
+old_core=$(cat /proc/sys/kernel/core_pattern)
 echo core >/proc/sys/kernel/core_pattern
-cd /sys/devices/system/cpu
-echo performance | tee cpu*/cpufreq/scaling_governor
+
+declare -A old_governors
+shopt -s extglob
+
+# get old cpu governors and set new ones
+pushd /sys/devices/system/cpu >/dev/null
+for cpu in cpu+([0-9]); do
+    old_governors["${cpu}"]=$(cat "${cpu}/cpufreq/scaling_governor")
+    echo performance | tee "${cpu}/cpufreq/scaling_governor"
+done
+
+echo "run afl now, hit return in this terminal to restore your settings."
+echo "waiting..."
+read
+
+for cpu in "${!old_governors[@]}"; do
+    echo "${old_governors[${cpu}]}" | tee "${cpu}/cpufreq/scaling_governor"
+done
+
+echo "${old_core}" >/proc/sys/kernel/core_pattern

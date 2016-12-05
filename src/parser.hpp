@@ -81,7 +81,7 @@ public:
 
   ast::ProgramPtr parseProgram();
 
-  Lexer& getLexer() { return lexer; }
+  Lexer &getLexer() { return lexer; }
 
 private:
   void readExpect(Token::Type ttype) {
@@ -149,7 +149,7 @@ private:
   inline void parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
                                  std::vector<ast::RegularMethodPtr> &methods);
   inline ast::ParameterList parseParameterList();
-  inline ast::ParameterPtr parseParameter();
+  inline ast::ParameterPtr parseParameter(int idx);
   inline ast::TypePtr parseType();
   inline ast::BasicTypePtr parseBasicType();
   inline ast::BlockPtr parseBlock();

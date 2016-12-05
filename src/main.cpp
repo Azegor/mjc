@@ -45,7 +45,18 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
       // fuzz semantic check
       ("fuzz-check", "fuzz semantic checker, no output")
       // check semantic of program
-      ("dot-attr-ast", "print attributed AST as dot output");
+      ("dot-attr-ast", "print attributed AST as dot output")
+      // check semantic of program
+      ("firm-graph", "generate firm graph and dump to file (per function)")
+      // libfirm codegen
+      ("gen-code", "Let libfirm generate code")
+      // compile input file with firm backend
+      ("compile-firm", "compile input program with default x86 firm backend")
+      // disable verification
+      ("no-verify", "disable verification when building firm graph")
+      // output file
+      ("output,o", bpo::value<std::string>(&compilerOptions.outputFileName),
+       "output file name");
 
   bpo::variables_map var_map;
   try {
@@ -99,6 +110,18 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
     }
     if (var_map.count("dot-attr-ast")) {
       compilerOptions.dotAttrAst = true;
+    }
+    if (var_map.count("firm-graph")) {
+      compilerOptions.printFirmGraph = true;
+    }
+    if (var_map.count("gen-code")) {
+      compilerOptions.genCode = true;
+    }
+    if (var_map.count("compile-firm")) {
+      compilerOptions.compileFirm = true;
+    }
+    if (var_map.count("no-verify")) {
+      compilerOptions.noVerify = true;
     }
   } catch (bpo::required_option &e) {
     cl_cerr << co::mode(co::bold) << co::color(co::red)

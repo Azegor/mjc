@@ -9,10 +9,13 @@ addons:
   apt:
     sources: 
     - ubuntu-toolchain-r-test
+    - kalakris-cmake
     packages:
     - libboost-program-options-dev 
     - gcc-6
     - g++-6
+    - libjemalloc-dev
+    - cmake
 
 install: if [ "$CXX" = "g++" ]; then export CXX="g++-6" CC="gcc-6"; fi ; ./build
 script: (cd builddir && ctest)
