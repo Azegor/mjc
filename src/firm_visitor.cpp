@@ -537,12 +537,16 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
       }
       assert(outNode);
       if(requiresBool()) {
-        assert(is_boolean);
-        ir_node *projTrue = new_Proj(outNode, mode_X, pn_Cond_true);
-        ir_node *projFalse = new_Proj(outNode, mode_X, pn_Cond_false);
-        add_immBlock_pred(currentTrueTarget(), projTrue);
-        add_immBlock_pred(currentFalseTarget(), projFalse);
-        outNode = nullptr; // dummy
+        if (is_boolean) {
+          ir_node *projTrue = new_Proj(outNode, mode_X, pn_Cond_true);
+          ir_node *projFalse = new_Proj(outNode, mode_X, pn_Cond_false);
+          add_immBlock_pred(currentTrueTarget(), projTrue);
+          add_immBlock_pred(currentFalseTarget(), projFalse);
+          outNode = nullptr; // dummy
+        } else { // regular mode_Bu value (only from assigment to boolean)
+          booleanToControlFlow(outNode, currentTrueTarget(), currentFalseTarget());
+          outNode = nullptr;
+        }
       } else if (is_boolean) {
         outNode = condToBoolean(outNode);
       }
