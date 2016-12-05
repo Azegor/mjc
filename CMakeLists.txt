@@ -50,11 +50,11 @@ ExternalProject_Add(libfirm
   BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}/libfirm/build"
   INSTALL_DIR "${CMAKE_PREFIX_PATH}"
   CONFIGURE_COMMAND ""
-  BUILD_COMMAND make -j
+  BUILD_COMMAND make -j8
     -C "${CMAKE_CURRENT_SOURCE_DIR}/libfirm"
     "variant=${firmVariant}"
     "top_builddir=${CMAKE_CURRENT_BINARY_DIR}/libfirm/build"
-  INSTALL_COMMAND make -j
+  INSTALL_COMMAND make -j8
     -C "${CMAKE_CURRENT_SOURCE_DIR}/libfirm"
     "variant=${firmVariant}"
     "top_builddir=${CMAKE_CURRENT_BINARY_DIR}/libfirm/build"
