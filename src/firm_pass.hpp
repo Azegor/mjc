@@ -43,9 +43,6 @@ public:
 
 private:
   /// typedef void irg_walk_func(ir_node *, void *)
-  static void walk_wrapper(ir_node *node, void *env) {
-    static_cast<T*>(env)->walk(node);
-  }
   static void init_wrapper(ir_node *node, void *env) {
     set_irn_link(node, tarval_unknown);
     if (is_Const(node))
@@ -62,7 +59,7 @@ private:
   void enqueue(ir_node *node) {
     worklist.push(node);
   }
-  void walk(ir_node * node) {
+  void visitNode(ir_node * node) {
     switch(get_irn_opcode(node)) {
       case iro_ASM: return sub()->visitASM(node);
       case iro_Add: return sub()->visitAdd(node);
@@ -126,15 +123,15 @@ private:
 
 public:
   void run() {
+    sub()->before();
+
     irg_walk_topological(graph, init_wrapper, this);
     std::cout << "worklist size: " << worklist.size() << std::endl;
-
-    sub()->before();
 
     while(!worklist.empty()) {
       ir_node *node = worklist.front();
       worklist.pop();
-      walk(node);
+      visitNode(node);
     }
 
     sub()->after();

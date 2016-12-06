@@ -81,8 +81,8 @@ public:
     edges_activate(graph);
   }
   void after() {
-    ir_free_resources(graph, IR_RESOURCE_IRN_LINK);
     edges_deactivate(graph);
+    ir_free_resources(graph, IR_RESOURCE_IRN_LINK);
   }
 
   void visitConst(ir_node *konst) {
