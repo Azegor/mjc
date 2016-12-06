@@ -197,7 +197,7 @@ public:
   }
 
   void visitConv(ir_node *conv) {
-    setNodeLink(conv, getTV(get_Conv_op(conv)));
+    setNodeLink(conv, tarval_convert_to(getTV(get_Conv_op(conv)), get_irn_mode(conv)));
   }
 
   void visitProj(ir_node *proj) {
