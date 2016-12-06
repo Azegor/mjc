@@ -1,3 +1,6 @@
+# Assembly output
+*.s
+
 # Compiled Object files
 *.slo
 *.lo
