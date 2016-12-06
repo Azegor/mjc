@@ -51,7 +51,6 @@ struct CompilerOptions {
   bool fuzzSemantic = false;
   bool dotAttrAst = false;
   bool printFirmGraph = false;
-  bool genCode = false;
   bool compileFirm = false;
   bool noVerify = false;
   bool optimize = false;

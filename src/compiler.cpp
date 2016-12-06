@@ -183,7 +183,7 @@ int Compiler::printFirmGraph() {
       Optimizer opt(firmVisitor.getFirmGraphs());
       opt.run();
     }
-    if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), true, !options.noVerify, options.genCode))
+    if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), true, !options.noVerify, options.compileFirm))
       return EXIT_FAILURE;
 
 
@@ -214,7 +214,7 @@ int Compiler::compileWithFirmBackend() {
 //     FirmVisitor firmVisitor{false, !options.noVerify, true, outputName};
     FirmVisitor firmVisitor{false};
     ast->accept(&firmVisitor);
-    if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), false, !options.noVerify, options.genCode))
+    if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), false, !options.noVerify, options.compileFirm))
       return EXIT_FAILURE;
 
     return EXIT_SUCCESS;

@@ -48,8 +48,6 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
       ("dot-attr-ast", "print attributed AST as dot output")
       // check semantic of program
       ("firm-graph", "generate firm graph and dump to file (per function)")
-      // libfirm codegen
-      ("gen-code", "Let libfirm generate code")
       // compile input file with firm backend
       ("compile-firm", "compile input program with default x86 firm backend")
       // disable verification
@@ -115,9 +113,6 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
     }
     if (var_map.count("firm-graph")) {
       compilerOptions.printFirmGraph = true;
-    }
-    if (var_map.count("gen-code")) {
-      compilerOptions.genCode = true;
     }
     if (var_map.count("compile-firm")) {
       compilerOptions.compileFirm = true;
