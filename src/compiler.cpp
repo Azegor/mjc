@@ -39,6 +39,10 @@
 #include "semantic_visitor.hpp"
 #include "optimizer.hpp"
 
+#ifndef LIBSEARCHDIR
+#define LIBSEARCHDIR "."
+#endif
+
 co::color_ostream<std::ostream> Compiler::cl_cout{std::cout};
 co::color_ostream<std::ostream> Compiler::cl_cerr{std::cerr};
 
