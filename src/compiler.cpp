@@ -183,7 +183,8 @@ int Compiler::printFirmGraph() {
       Optimizer opt(firmVisitor.getFirmGraphs());
       opt.run();
     }
-    if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), true, !options.noVerify, options.compileFirm, options.outputAssembly))
+    std::string outputName = options.outputFileName.empty() ? "a.out" : options.outputFileName;
+    if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), true, !options.noVerify, options.compileFirm, options.outputAssembly, outputName))
       return EXIT_FAILURE;
 
 
@@ -218,7 +219,8 @@ int Compiler::compileWithFirmBackend() {
       Optimizer opt(firmVisitor.getFirmGraphs());
       opt.run();
     }
-    if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), false, !options.noVerify, options.compileFirm, options.outputAssembly))
+    std::string outputName = options.outputFileName.empty() ? "a.out" : options.outputFileName;
+    if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), false, !options.noVerify, options.compileFirm, options.outputAssembly, outputName))
       return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
