@@ -118,6 +118,7 @@ public:
     }
 
     if (!is_Block(irn)) {
+        // get_nodes_block might return wrong block, see docs
         ir_node *const block = get_nodes_block(irn);
         substNodesWalkBackwards(block);
     }
@@ -130,7 +131,7 @@ public:
     ir_printf("# # %n\n", node);
     ir_tarval *val = (ir_tarval *)get_irn_link(node);
     if (val && val != tarval_unknown && val != tarval_bad) {
-      exchange(node, new_Const(val));
+      exchange(node, new_r_Const(graph, val));
       return true;
     }
     return false;
