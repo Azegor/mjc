@@ -16,7 +16,7 @@ mkdir -p "${out_dir}"
 pushd "${out_dir}" >/dev/null
 
 # This will just dump a file called "test.s"
-compiler_out=$("${compiler}" --firm-graph --gen-code "${in_file}" 2>&1)
+compiler_out=$("${compiler}" --compile-firm "${in_file}" 2>&1)
 compiler_retval=$?
 
 # gcc -static test.s -o a.out -L"${binary_dir}/../" -lruntime
