@@ -183,7 +183,7 @@ int Compiler::printFirmGraph() {
       Optimizer opt(firmVisitor.getFirmGraphs());
       opt.run();
     }
-    if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), true, !options.noVerify, options.compileFirm))
+    if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), true, !options.noVerify, options.compileFirm, options.outputAssembly))
       return EXIT_FAILURE;
 
 
@@ -214,7 +214,7 @@ int Compiler::compileWithFirmBackend() {
 //     FirmVisitor firmVisitor{false, !options.noVerify, true, outputName};
     FirmVisitor firmVisitor{false};
     ast->accept(&firmVisitor);
-    if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), false, !options.noVerify, options.compileFirm))
+    if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), false, !options.noVerify, options.compileFirm, options.outputAssembly))
       return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
@@ -224,7 +224,7 @@ int Compiler::compileWithFirmBackend() {
   }
 }
 
-bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool generateCode, const std::string &outFileName) {
+bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool generateCode, bool outputAssembly, const std::string &outFileName) {
   int graphErrors = 0;
   for (auto g : graphs) {
     lower_highlevel_graph(g);
@@ -241,7 +241,15 @@ bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs,
     return false;
 
   if (generateCode) {
-    FILE *f = tmpfile();
+    FILE *f = nullptr;
+    std::string assemblyName;
+    if (outputAssembly) {
+      assemblyName = outFileName + ".s";
+      f = fopen(assemblyName.c_str(), "w");
+    } else {
+      f = tmpfile();
+      assemblyName = "/proc/self/fd/" + std::to_string(fileno(f));
+    }
     // XXX This only "works" on 64bit cpus
     be_parse_arg("isa=amd64");
     be_main(f, "test.java");
@@ -249,7 +257,7 @@ bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs,
     int res = 0;
 //     res |= system("gcc -c ../src/runtime.c -o runtime.o");
 //     res |= system("ar rcs libruntime.a runtime.o");
-    res |= system(("gcc -static -x assembler /proc/self/fd/" + std::to_string(fileno(f)) + " -o " + outFileName + " -L" LIBSEARCHDIR " -lruntime").c_str());
+    res |= system(("gcc -static -x assembler " + assemblyName + " -o " + outFileName + " -L" LIBSEARCHDIR " -lruntime").c_str());
     fclose(f);
     if (res) {
       throw std::runtime_error("Error while linking binary");

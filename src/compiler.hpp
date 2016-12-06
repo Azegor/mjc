@@ -51,6 +51,7 @@ struct CompilerOptions {
   bool fuzzSemantic = false;
   bool dotAttrAst = false;
   bool printFirmGraph = false;
+  bool outputAssembly = false;
   bool compileFirm = false;
   bool noVerify = false;
   bool optimize = false;
@@ -76,7 +77,7 @@ class Compiler {
   int attrAstDot();
   int printFirmGraph();
   int compileWithFirmBackend();
-  bool lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool generateCode, const std::string &outFileName = "a.out");
+  bool lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool generateCode, bool outputAssembly, const std::string &outFileName = "a.out");
 
   void checkOptions();
   bool sanityChecks();
