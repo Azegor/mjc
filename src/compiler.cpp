@@ -214,6 +214,10 @@ int Compiler::compileWithFirmBackend() {
 //     FirmVisitor firmVisitor{false, !options.noVerify, true, outputName};
     FirmVisitor firmVisitor{false};
     ast->accept(&firmVisitor);
+    if (options.optimize) {
+      Optimizer opt(firmVisitor.getFirmGraphs());
+      opt.run();
+    }
     if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), false, !options.noVerify, options.compileFirm, options.outputAssembly))
       return EXIT_FAILURE;
 

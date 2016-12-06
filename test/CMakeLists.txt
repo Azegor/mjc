@@ -176,6 +176,17 @@ foreach(file ${input_files})
 endforeach()
 MESSAGE(STATUS "  Added ${Count} libfirm output tests")
 
+# constprop tests
+set(Count 0)
+file(GLOB input_files "${CMAKE_CURRENT_SOURCE_DIR}/opttest/constprop/*.java")
+foreach(file ${input_files})
+  math(EXPR Count "${Count} + 1")
+  get_filename_component(filename "${file}" NAME)
+  add_test(NAME "Opt_Constprop_${filename}"
+    COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/optimize_test.sh" $<TARGET_FILE:mjc> "${file}")
+endforeach()
+MESSAGE(STATUS "  Added ${Count} constprop tests")
+
 # libfirm codegen + compare to javac
 # set(Count 0)
 # file(GLOB input_files "${CMAKE_CURRENT_SOURCE_DIR}/firmtest/compare_javac/*.java")
