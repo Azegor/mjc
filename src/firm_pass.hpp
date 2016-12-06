@@ -43,11 +43,11 @@ public:
 
 private:
   /// typedef void irg_walk_func(ir_node *, void *)
-  static void init_wrapper(ir_node *node, void *env) {
-    set_irn_link(node, tarval_unknown);
-    if (is_Const(node))
-      static_cast<T*>(env)->enqueue(node);
+  // TODO: copy irg_walk_topological and adjust for c++
+  static void walk_wrapper(ir_node *node, void *env) {
+    static_cast<T*>(env)->walk(node);
   }
+
   void todoImplement(ir_node *node) {
     ir_printf("TODO: implement node type %O\n", node);
   }
@@ -56,6 +56,9 @@ private:
     ir_finish();
     std::exit(1);
   }
+
+protected:
+  void walk(ir_node *) {}
   void enqueue(ir_node *node) {
     worklist.push(node);
   }
@@ -123,11 +126,14 @@ private:
 
 public:
   void run() {
+    ir_reserve_resources(graph, IR_RESOURCE_IRN_LINK);
+
     sub()->before();
 
-    irg_walk_topological(graph, init_wrapper, this);
+    irg_walk_topological(graph, walk_wrapper, this); // fills work queue
     std::cout << "worklist size: " << worklist.size() << std::endl;
 
+    // calls visit method on work queue items (add more items if necessary in visit* Methods)
     while(!worklist.empty()) {
       ir_node *node = worklist.front();
       worklist.pop();
@@ -135,6 +141,8 @@ public:
     }
 
     sub()->after();
+
+    ir_free_resources(graph, IR_RESOURCE_IRN_LINK);
   }
 
   // -----
@@ -202,14 +210,25 @@ public:
 class ExampleFunctionPass : public FunctionPass<ExampleFunctionPass> {
 public:
   ExampleFunctionPass(ir_graph *firmgraph) : FunctionPass(firmgraph) {}
-  void visitPhi(ir_node *) {
-    std::cout << "### visiting phi node" << std::endl;
+
+  void walk(ir_node *node)
+  {
+    enqueue(node);
   }
-  void visitMod(ir_node *) {
-    std::cout << "### visiting mod node" << std::endl;
+//   void visitPhi(ir_node *) {
+//     std::cout << "### visiting phi node" << std::endl;
+//   }
+//   void visitMod(ir_node *) {
+//     std::cout << "### visiting mod node" << std::endl;
+//   }
+//   void visitAdd(ir_node *) {
+//     std::cout << "### visiting add node" << std::endl;
+//   }
+  void visitEnd(ir_node *) {
+    std::cout << "### visiting end node" << std::endl;
   }
-  void visitAdd(ir_node *) {
-    std::cout << "### visiting add node" << std::endl;
+  void visitStart(ir_node *) {
+    std::cout << "### visiting start node" << std::endl;
   }
 
 };

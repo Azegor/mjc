@@ -77,13 +77,66 @@ public:
   }
 
   void before() {
-    ir_reserve_resources(graph, IR_RESOURCE_IRN_LINK);
     edges_activate(graph);
   }
   void after() {
+    substituteNodes();
+
     edges_deactivate(graph);
-    ir_free_resources(graph, IR_RESOURCE_IRN_LINK);
   }
+
+  void walk(ir_node * node)
+  {
+    set_irn_link(node, tarval_unknown);
+    if (is_Const(node))
+      enqueue(node);
+  }
+
+  void substituteNodes() {
+    inc_irg_visited(graph); // "clear" visited flags
+    ir_node *endNode = get_irg_end(graph);
+    substNodesWalkBackwards(endNode);
+  }
+  void substNodesWalkBackwards(ir_node *irn) {
+    if (irn_visited(irn))
+        return;
+
+    /* only break loops at phi/block nodes */
+    const bool is_loop_breaker = is_Phi(irn) || is_Block(irn);
+
+    if (is_loop_breaker || !irn_visited(irn)) {
+        if (substituteNode(irn))
+          return;
+    }
+
+    if (is_loop_breaker)
+        mark_irn_visited(irn);
+
+    for (int i = 0; i < get_irn_arity(irn); ++i) {
+        ir_node *const pred = get_irn_n(irn, i);
+        substNodesWalkBackwards(pred);
+    }
+
+    if (!is_Block(irn)) {
+        ir_node *const block = get_nodes_block(irn);
+        substNodesWalkBackwards(block);
+    }
+
+
+    mark_irn_visited(irn);
+  }
+
+  bool substituteNode(ir_node *node) {
+    ir_printf("# # %n\n", node);
+    ir_tarval *val = (ir_tarval *)get_irn_link(node);
+    if (val && val != tarval_unknown && val != tarval_bad) {
+      exchange(node, new_Const(val));
+      return true;
+    }
+    return false;
+  }
+
+  // ---- visit methods: ----
 
   void visitConst(ir_node *konst) {
     setNodeLink(konst, get_Const_tarval(konst));
