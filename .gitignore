@@ -29,8 +29,9 @@
 *.app
 
 # Others
-build/
-builddir/
+/build/
+/builddir/
+/builddir_*/
 
 *.kdev4
 *.swp
