@@ -133,10 +133,21 @@ public:
   }
 
   bool substituteNode(ir_node *node) {
-    ir_printf("# # %n\n", node);
     ir_tarval *val = getTV(node);
     if (val && val != tarval_unknown && val != tarval_bad) {
-      exchange(node, new_r_Const(graph, val)); // TODO: check for memory edges!
+      // for memops set memory pojection correctly
+      if (is_memop(node)) {
+        ir_node *mem_target = get_memop_mem(node); // memory "above"
+        foreach_out_edge_safe(node, edge) { // find succ proj
+          ir_node *succNode = get_edge_src_irn(edge);
+          if (is_Proj(succNode)){
+            exchange(succNode, mem_target); // set to precceding proj
+            break;
+          }
+        }
+        // if succ Proj not existant, do nothing
+      }
+      exchange(node, new_r_Const(graph, val));
       return true;
     }
     return false;
@@ -157,7 +168,6 @@ public:
   }
 
   void visitMod(ir_node *mod) {
-    // TODO: handle memory output (or in substituteNode)!
     setNodeLink(mod, supremum(get_Mod_left(mod), get_Mod_right(mod), tarval_mod));
   }
 
@@ -166,7 +176,6 @@ public:
   }
 
   void visitDiv(ir_node *div) {
-    // TODO: handle memory output (or in substituteNode)!
     setNodeLink(div, supremum(get_Div_left(div), get_Div_right(div), tarval_div));
   }
 
