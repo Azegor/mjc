@@ -44,11 +44,14 @@ std::string tarvalToStr(ir_tarval *t) {
 class ConstPropPass : public FunctionPass<ConstPropPass>
 {
 private:
+  static void setTV(ir_node *n, ir_tarval *tv) { set_irn_link(n, tv); }
+  static ir_tarval *getTV(ir_node *n) { return static_cast<ir_tarval* >(get_irn_link(n)); }
+
   void setNodeLink(ir_node *node, ir_tarval *val) {
-    ir_tarval *oldVal = (ir_tarval*) get_irn_link (node);
+    ir_tarval *oldVal = getTV(node);
     if (oldVal != val) {
       std::cout << get_irn_opname(node) << ": " << tarvalToStr(val) << std::endl;
-      set_irn_link (node, val);
+      setTV(node, val);
       //std::cout << get_irn_opname(node) << std::endl;
       //std::cout << "Edges: " << std::endl;
       foreach_out_edge_safe(node, edge) {
@@ -64,8 +67,8 @@ public:
   ir_tarval *supremum(ir_node *left, ir_node *right,
                       tarval_combine fn)
   {
-    ir_tarval *leftVal = (ir_tarval *)get_irn_link(left);
-    ir_tarval *rightVal = (ir_tarval *)get_irn_link(right);
+    ir_tarval *leftVal = getTV(left);
+    ir_tarval *rightVal = getTV(right);
     if (leftVal == tarval_bad || rightVal == tarval_bad)
       return tarval_bad;
     if (leftVal == tarval_unknown)
@@ -131,7 +134,7 @@ public:
 
   bool substituteNode(ir_node *node) {
     ir_printf("# # %n\n", node);
-    ir_tarval *val = (ir_tarval *)get_irn_link(node);
+    ir_tarval *val = getTV(node);
     if (val && val != tarval_unknown && val != tarval_bad) {
       exchange(node, new_r_Const(graph, val)); // TODO: check for memory edges!
       return true;
@@ -168,7 +171,7 @@ public:
   }
 
   void visitMinus(ir_node *minus) {
-    ir_tarval *opVal = (ir_tarval *)get_irn_link(get_Minus_op(minus));
+    ir_tarval *opVal = getTV(get_Minus_op(minus));
 
     if (tarval_is_constant(opVal))
       setNodeLink(minus, tarval_neg(opVal));
@@ -178,7 +181,7 @@ public:
 
   void visitNot(ir_node *_not) {
     // TODO: are not nodes even generated in FirmVisitor?
-    ir_tarval *opVal = (ir_tarval *)get_irn_link(get_Not_op(_not));
+    ir_tarval *opVal = getTV(get_Not_op(_not));
 
     if (tarval_is_constant(opVal))
       setNodeLink(_not, tarval_not(opVal));
@@ -194,13 +197,13 @@ public:
   }
 
   void visitConv(ir_node *conv) {
-    setNodeLink(conv, (ir_tarval *)get_irn_link(get_Conv_op(conv)));
+    setNodeLink(conv, getTV(get_Conv_op(conv)));
   }
 
   void visitProj(ir_node *proj) {
     if (get_irn_mode(proj) != mode_M) {
       ir_node *pred = get_Proj_pred(proj);
-      setNodeLink(proj, (ir_tarval *)get_irn_link(pred));
+      setNodeLink(proj, getTV(pred));
     }
   }
 
@@ -210,7 +213,7 @@ public:
 
     for (int i = 0; i < nPreds; i ++) {
       ir_node *pred = get_Phi_pred(phi, i);
-      ir_tarval *predVal = (ir_tarval *)get_irn_link(pred);
+      ir_tarval *predVal = getTV(pred);
 
       if (predVal == tarval_bad) {
         val = tarval_bad;
@@ -238,8 +241,8 @@ public:
   }
 
   void visitCmp(ir_node *cmp) {
-    ir_tarval *leftVal = (ir_tarval *)get_irn_link(get_Cmp_left(cmp));
-    ir_tarval *rightVal = (ir_tarval *)get_irn_link(get_Cmp_right(cmp));
+    ir_tarval *leftVal = getTV(get_Cmp_left(cmp));
+    ir_tarval *rightVal = getTV(get_Cmp_right(cmp));
     ir_tarval *val;
 
     if (leftVal == tarval_bad || rightVal == tarval_bad) {
