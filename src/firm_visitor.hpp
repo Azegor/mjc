@@ -154,8 +154,6 @@ private:
   std::string outFileName;
 
   bool printGraphs = false;
-  bool verifyGraphs = false;
-  bool generateCode = false;
   int graphErrors = 0;
 
   ir_type *intType;
@@ -321,7 +319,7 @@ private:
   void makeStore(ir_node* dest, ir_node* value);
 
 public:
-  FirmVisitor(bool print, bool verify, bool gen, const std::string &outFileName = "a.out");
+  FirmVisitor(bool print);
   virtual ~FirmVisitor() {
     for (auto& e : classes) {
       free_type(e.second.type());
@@ -335,11 +333,6 @@ public:
 
     ir_finish();
   };
-
-  bool errorFound() {
-    assert(this->verifyGraphs);
-    return this->graphErrors > 0;
-  }
 
   std::vector<ir_graph*> &getFirmGraphs() { return firmGraphs; }
 

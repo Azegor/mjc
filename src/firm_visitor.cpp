@@ -42,9 +42,7 @@ static void booleanToControlFlow(ir_node *boolean, ir_node *trueBlock, ir_node *
 }
 
 
-FirmVisitor::FirmVisitor(bool print, bool verify, bool gen,
-                         const std::string &outFileName)
-    : outFileName(outFileName) {
+FirmVisitor::FirmVisitor(bool print){
   ir_init();
 
   // disable libfirm optimizations
@@ -59,8 +57,6 @@ FirmVisitor::FirmVisitor(bool print, bool verify, bool gen,
   set_modeP(_mode_P);
 
   this->printGraphs = print;
-  this->verifyGraphs = verify;
-  this->generateCode = gen;
 
   intType = new_type_primitive(mode_Is);
   sizeType = new_type_primitive(mode_Ls);
@@ -107,22 +103,6 @@ void FirmVisitor::visitProgram(ast::Program &program) {
   }
 
   assert(nodeStack.size() == 0);
-
-  if (generateCode) {
-    FILE *f = tmpfile();
-    // XXX This only "works" on 64bit cpus
-    be_parse_arg("isa=amd64");
-    be_main(f, "test.java");
-    fflush(f);
-    int res = 0;
-//     res |= system("gcc -c ../src/runtime.c -o runtime.o");
-//     res |= system("ar rcs libruntime.a runtime.o");
-    res |= system(("gcc -static -x assembler /proc/self/fd/" + std::to_string(fileno(f)) + " -o " + outFileName + " -L" LIBSEARCHDIR " -lruntime").c_str());
-    fclose(f);
-    if (res) {
-      throw std::runtime_error("Error while linking binary");
-    }
-  }
 }
 
 void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
@@ -154,15 +134,6 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   if (printGraphs) {
     dump_ir_graph(current_ir_graph, "");
   }
-  lower_highlevel_graph(mainMethodGraph);
-  if (printGraphs) {
-    dump_ir_graph(current_ir_graph, "");
-  }
-
-  if (verifyGraphs) {
-    if (irg_verify(mainMethodGraph) == 0)
-      this->graphErrors++;
-  }
   firmGraphs.push_back(mainMethodGraph);
 }
 
@@ -189,15 +160,6 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   irg_finalize_cons(methodGraph);
   if (printGraphs) {
     dump_ir_graph(current_ir_graph, "");
-  }
-  lower_highlevel_graph(methodGraph);
-  if (printGraphs) {
-    dump_ir_graph(current_ir_graph, "");
-  }
-
-  if (verifyGraphs) {
-    if (irg_verify(methodGraph) == 0)
-      this->graphErrors++;
   }
   firmGraphs.push_back(methodGraph);
 }
@@ -609,7 +571,7 @@ void FirmVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
 
       // same Block, 'Not' is implemented by switching Projection order below
       trueTarget = falseTarget = new_immBlock();
-      
+
       need_phi = true;
     } else {
       trueTarget = currentTrueTarget();
@@ -631,7 +593,7 @@ void FirmVisitor::visitUnaryExpression(ast::UnaryExpression &expr) {
     if (need_phi) {
       mature_immBlock(get_cur_block());
       set_cur_block(trueTarget);
-      
+
       ir_node *trueNode = new_Const_long(mode_Bu, 1);
       ir_node *falseNode = new_Const_long(mode_Bu, 0);
 

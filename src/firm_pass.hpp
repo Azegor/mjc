@@ -108,7 +108,7 @@ private:
       case iro_Tuple: return sub()->visitTuple(node);
       case iro_Unknown: return sub()->visitUnknown(node);
       default:
-        return errorInvalid(node);
+        return todoImplement(node);
     }
   }
 

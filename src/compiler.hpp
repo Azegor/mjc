@@ -34,6 +34,8 @@
 #include "color_ostream.hpp"
 #include "input_file.hpp"
 
+struct ir_graph;
+
 struct CompilerOptions {
   std::string inputFileName;
   std::string outputFileName;
@@ -75,6 +77,7 @@ class Compiler {
   int attrAstDot();
   int printFirmGraph();
   int compileWithFirmBackend();
+  bool lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool generateCode, const std::string &outFileName = "a.out");
 
   void checkOptions();
   bool sanityChecks();
