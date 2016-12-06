@@ -229,7 +229,7 @@ bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs,
   for (auto g : graphs) {
     lower_highlevel_graph(g);
     if (printGraphs) {
-      dump_ir_graph(current_ir_graph, "");
+      dump_ir_graph(g, "");
     }
 
     if (verifyGraphs) {

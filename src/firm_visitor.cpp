@@ -130,6 +130,7 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   if (printGraphs) {
     dump_ir_graph(current_ir_graph, "");
   }
+  irg_finalize_cons(mainMethodGraph);
   firmGraphs.push_back(mainMethodGraph);
 }
 
@@ -157,6 +158,7 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   if (printGraphs) {
     dump_ir_graph(current_ir_graph, "");
   }
+  irg_finalize_cons(methodGraph);
   firmGraphs.push_back(methodGraph);
 }
 

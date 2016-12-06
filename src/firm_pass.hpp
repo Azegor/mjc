@@ -32,6 +32,7 @@
 
 template <typename T>
 class FunctionPass {
+protected:
   ir_graph *graph;
   T *sub() { return static_cast<T*>(this); }
 public:
@@ -49,6 +50,9 @@ private:
     ir_printf("ERROR: unexpected node %n\n", node);
     ir_finish();
     std::exit(1);
+  }
+  void enqueue(ir_node *node) {
+    // TODO: insert node in queue
   }
   void walk(ir_node * node) {
     switch(get_irn_opcode(node)) {
@@ -114,10 +118,17 @@ private:
 
 public:
   void run() {
+    sub()->before();
+    // TODO: fill queue with irg_walk_topological
+    // TODO: call walk() on queue elemeent
     irg_walk_topological(graph, walk_wrapper, this);
+    sub()->after();
   }
 
   // -----
+
+  void before() {};
+  void after() {};
 
   void visitASM(ir_node *) {}
   void visitAdd(ir_node *) {}
@@ -184,6 +195,9 @@ public:
   }
   void visitMod(ir_node *) {
     std::cout << "### visiting mod node" << std::endl;
+  }
+  void visitAdd(ir_node *) {
+    std::cout << "### visiting add node" << std::endl;
   }
 
 };
