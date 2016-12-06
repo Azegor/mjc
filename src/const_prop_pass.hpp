@@ -46,15 +46,14 @@ class ConstPropPass : public FunctionPass<ConstPropPass>
 private:
   void setNodeLink(ir_node *node, ir_tarval *val) {
     ir_tarval *oldVal = (ir_tarval*) get_irn_link (node);
-
-    std::cout << get_irn_opname(node) << ": " << tarvalToStr(val) << std::endl;
-    set_irn_link (node, val);
-    //std::cout << get_irn_opname(node) << std::endl;
-    //std::cout << "Edges: " << std::endl;
     if (oldVal != val) {
+      std::cout << get_irn_opname(node) << ": " << tarvalToStr(val) << std::endl;
+      set_irn_link (node, val);
+      //std::cout << get_irn_opname(node) << std::endl;
+      //std::cout << "Edges: " << std::endl;
       foreach_out_edge_safe(node, edge) {
         std::cout << "   " << get_irn_opname(get_edge_src_irn(edge)) << std::endl;
-        worklist.push(get_edge_src_irn(edge));
+        enqueue(get_edge_src_irn(edge));
       }
     }
   }
@@ -96,6 +95,9 @@ public:
     inc_irg_visited(graph); // "clear" visited flags
     ir_node *endNode = get_irg_end(graph);
     substNodesWalkBackwards(endNode);
+
+    remove_unreachable_code(graph);
+    remove_bads(graph);
   }
   void substNodesWalkBackwards(ir_node *irn) {
     if (irn_visited(irn))
@@ -131,7 +133,7 @@ public:
     ir_printf("# # %n\n", node);
     ir_tarval *val = (ir_tarval *)get_irn_link(node);
     if (val && val != tarval_unknown && val != tarval_bad) {
-      exchange(node, new_r_Const(graph, val));
+      exchange(node, new_r_Const(graph, val)); // TODO: check for memory edges!
       return true;
     }
     return false;
@@ -152,6 +154,7 @@ public:
   }
 
   void visitMod(ir_node *mod) {
+    // TODO: handle memory output (or in substituteNode)!
     setNodeLink(mod, supremum(get_Mod_left(mod), get_Mod_right(mod), tarval_mod));
   }
 
@@ -160,6 +163,7 @@ public:
   }
 
   void visitDiv(ir_node *div) {
+    // TODO: handle memory output (or in substituteNode)!
     setNodeLink(div, supremum(get_Div_left(div), get_Div_right(div), tarval_div));
   }
 
@@ -173,12 +177,13 @@ public:
   }
 
   void visitNot(ir_node *_not) {
+    // TODO: are not nodes even generated in FirmVisitor?
     ir_tarval *opVal = (ir_tarval *)get_irn_link(get_Not_op(_not));
 
     if (tarval_is_constant(opVal))
       setNodeLink(_not, tarval_not(opVal));
     else
-      setNodeLink(_not, opVal);
+      setNodeLink(_not, opVal); // TODO: not 'tarval_unknown'?
   }
 
   // TODO
@@ -193,8 +198,10 @@ public:
   }
 
   void visitProj(ir_node *proj) {
-    ir_node *pred = get_Proj_pred(proj);
-    setNodeLink(proj, (ir_tarval *)get_irn_link(pred));
+    if (get_irn_mode(proj) != mode_M) {
+      ir_node *pred = get_Proj_pred(proj);
+      setNodeLink(proj, (ir_tarval *)get_irn_link(pred));
+    }
   }
 
   void visitPhi(ir_node *phi) {
