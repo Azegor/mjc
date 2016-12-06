@@ -39,8 +39,8 @@ public:
   Optimizer(std::vector<ir_graph*> &firmGraphs) : firmGraphs(firmGraphs) {}
   void run() {
     for (auto g : firmGraphs) {
-      //ExampleFunctionPass efp(g);
-      //efp.run();
+//       ExampleFunctionPass efp(g);
+//       efp.run();
       ConstPropPass cpp(g);
       cpp.run();
     }

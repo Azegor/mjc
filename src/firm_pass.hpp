@@ -239,3 +239,4 @@ class ProgramPass {
 };
 
 #endif // FIRM_PASS_H
+

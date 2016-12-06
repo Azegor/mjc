@@ -180,6 +180,13 @@ public:
       setNodeLink(_not, opVal);
   }
 
+  // TODO
+  void visitCond(ir_node *cond) {
+    (void)cond;
+    // TODO: if const -> replace with jump (will be fun(n|k)y)
+    // watch out when replacing node regarding the work list (successor node)!
+  }
+
   void visitConv(ir_node *conv) {
     setNodeLink(conv, (ir_tarval *)get_irn_link(get_Conv_op(conv)));
   }
@@ -239,31 +246,31 @@ public:
 
     switch (get_Cmp_relation(cmp)) {
     case ir_relation_equal:
-      val = new_tarval_from_long (relation == ir_relation_equal ? 1 : 0, mode_Bu);
+      val = (relation == ir_relation_equal) ? tarval_b_true : tarval_b_false;
       break;
     case ir_relation_less_greater: // not equals
       if (relation == ir_relation_less || relation == ir_relation_greater)
-        val = new_tarval_from_long(1, mode_Bu);
+        val = tarval_b_true;
       else
-        val = new_tarval_from_long(0, mode_Bu);
+        val = tarval_b_false;
       break;
     case ir_relation_less:
-      val = new_tarval_from_long (relation == ir_relation_less ? 1 : 0, mode_Bu);
+      val = (relation == ir_relation_less) ? tarval_b_true : tarval_b_false;
       break;
     case ir_relation_less_equal:
       if (relation == ir_relation_less || relation == ir_relation_equal)
-        val = new_tarval_from_long(1, mode_Bu);
+        val = tarval_b_true;
       else
-        val = new_tarval_from_long(0, mode_Bu);
+        val = tarval_b_false;
       break;
     case ir_relation_greater:
-      val = new_tarval_from_long (relation == ir_relation_greater ? 1 : 0, mode_Bu);
+      val = (relation == ir_relation_greater) ? tarval_b_true : tarval_b_false;
       break;
     case ir_relation_greater_equal:
       if (relation == ir_relation_greater || relation == ir_relation_equal)
-        val = new_tarval_from_long(1, mode_Bu);
+        val = tarval_b_true;
       else
-        val = new_tarval_from_long(0, mode_Bu);
+        val = tarval_b_false;
       break;
 
     default:
