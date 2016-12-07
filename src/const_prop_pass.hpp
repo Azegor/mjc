@@ -165,8 +165,8 @@ public:
         } else {
           exchange(node, new_r_Bad(graph, mode_X));
         }
+        return true;
       }
-      return true;
     }
     return false;
   }
