@@ -37,8 +37,11 @@ std::string tarvalToStr(ir_tarval *t) {
   else if (t == tarval_bad)
     return "bad";
   else
-    return std::to_string(get_tarval_long(t));
-
+    if (get_tarval_mode(t) == mode_b) {
+      return (get_tarval_b_true() == t) ? "1" : "0";
+    } else {
+      return std::to_string(get_tarval_long(t));
+    }
 }
 
 class ConstPropPass : public FunctionPass<ConstPropPass>
