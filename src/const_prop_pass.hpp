@@ -102,24 +102,26 @@ public:
     edges_deactivate(graph);
   }
 
-  void walk(ir_node * node)
-  {
-    switch(get_irn_opcode(node)) {
-      case iro_Proj:
-        // if predecessor is Tuple proj we have a parameter (TODO: is this the only case?)
-        if (get_irn_mode(get_Proj_pred(node)) == mode_T) {
-          setTV(node, tarval_bad); // definitely not const!
-        } else {
-          setTV(node, tarval_unknown); // some other Proj node
-        }
-        break;
-      case iro_Const:
-        enqueue(node);
-        // fallthrough!
-      default:
-        setTV(node, tarval_unknown);
+  // ---- initialization methods (called only once): ----
+
+  void initProj(ir_node *proj) {
+    // if predecessor is Tuple proj we have a parameter or call result
+    if (get_irn_mode(get_Proj_pred(proj)) == mode_T) {
+      setTV(proj, tarval_bad); // definitely not const!
+    } else {
+      setTV(proj, tarval_unknown); // some other Proj node
     }
   }
+
+  void initConst(ir_node *konst) {
+    setNodeLink(konst, get_Const_tarval(konst)); // also adds successors to worklist
+  }
+
+  void defaultInitOp(ir_node *node) {
+    setTV(node, tarval_unknown); // default all to bad which can never be const
+  }
+
+  // -- visit helper functions --
 
   void substituteNodes() {
     inc_irg_visited(graph); // "clear" visited flags
@@ -195,11 +197,9 @@ public:
     return false;
   }
 
-  // ---- visit methods: ----
+  // ---- visit methods (called multiple times): ----
 
-  void visitConst(ir_node *konst) {
-    setNodeLink(konst, get_Const_tarval(konst));
-  }
+  // visitConst() not necessary (only need to visit once)
 
   void visitAdd(ir_node *add) {
     setNodeLink(add, supremum(get_Add_left(add), get_Add_right(add), tarval_add));
