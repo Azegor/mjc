@@ -27,23 +27,44 @@
 #ifndef OPTIMIZER_H
 #define OPTIMIZER_H
 
-#include <vector>
-#include <libfirm/firm.h>
-#include "firm_pass.hpp"
 #include "const_prop_pass.hpp"
+#include "firm_pass.hpp"
+#include <libfirm/firm.h>
+#include <vector>
 
+class Optimizer
+{
+  std::vector<ir_graph *> &firmGraphs;
+  bool printGraphs, verifyGraphs;
 
-class Optimizer{
-  std::vector<ir_graph*> &firmGraphs;
 public:
-  Optimizer(std::vector<ir_graph*> &firmGraphs) : firmGraphs(firmGraphs) {}
-  void run() {
-    for (auto g : firmGraphs) {
-//       ExampleFunctionPass efp(g);
-//       efp.run();
+  Optimizer(std::vector<ir_graph *> &firmGraphs, bool printGraphs, bool verifyGraphs)
+      : firmGraphs(firmGraphs), printGraphs(printGraphs), verifyGraphs(verifyGraphs) {}
+
+  int run()
+  {
+    int graphErrors = 0;
+    for (auto g : firmGraphs)
+    {
+      //       ExampleFunctionPass efp(g);
+      //       efp.run();
       ConstPropPass cpp(g);
       cpp.run();
+
+      if (printGraphs)
+      {
+        dump_ir_graph(g, "opt");
+      }
+
+      if (verifyGraphs)
+      {
+        if (irg_verify(g) == 0)
+          graphErrors++;
+      }
     }
+    if (graphErrors)
+      return false;
+    return true;
   }
 };
 

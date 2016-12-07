@@ -75,7 +75,6 @@ class Compiler {
   int checkSemantic();
   int fuzzSemantic();
   int attrAstDot();
-  int printFirmGraph();
   int compileWithFirmBackend();
   bool lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool generateCode, bool outputAssembly, const std::string &outFileName = "a.out");
 
