@@ -42,11 +42,40 @@ public:
   FunctionPass(ir_graph *firmgraph) : graph(firmgraph) {}
 
 private:
-  /// typedef void irg_walk_func(ir_node *, void *)
-  // TODO: copy irg_walk_topological and adjust for c++
-  static void init_wrapper(ir_node *node, void *env) {
-    static_cast<FunctionPass*>(env)->initNode(node);
+  void initNodesTopological() {
+    inc_irg_visited(graph);
+    init_topological(get_irg_end(graph));
   }
+
+  void init_topological(ir_node *irn)
+  {
+    if (irn_visited(irn)) {
+      return;
+    }
+
+    /* only break loops at phi/block nodes */
+    const bool is_loop_breaker = is_Phi(irn) || is_Block(irn);
+    if (is_loop_breaker) {
+      mark_irn_visited(irn);
+    }
+
+    if (!is_Block(irn)) {
+      ir_node *const block = get_nodes_block(irn);
+      init_topological(block);
+    }
+
+    for (int i = 0; i < get_irn_arity(irn); ++i) {
+      ir_node *const pred = get_irn_n(irn, i);
+      init_topological(pred);
+    }
+
+    if (is_loop_breaker || !irn_visited(irn)) {
+      initNode(irn);
+    }
+
+    mark_irn_visited(irn);
+  }
+
   [[noreturn]] void errorInvalid(ir_node *node) {
     ir_printf("ERROR: unexpected node %n\n", node);
     ir_finish();
@@ -59,7 +88,7 @@ public:
 
     sub()->before();
 
-    irg_walk_topological(graph, init_wrapper, this); // fills work queue
+    initNodesTopological(); // fills work queue
     std::cout << "worklist size: " << worklist.size() << std::endl;
 
     // calls visit method on work queue items (add more items if necessary in visit* Methods)
