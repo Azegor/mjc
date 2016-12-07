@@ -27,6 +27,9 @@
 #ifndef CONST_PROP_PASS_H
 #define CONST_PROP_PASS_H
 
+#include <iostream>
+#include <cassert>
+
 #include "firm_pass.hpp"
 
 typedef ir_tarval *(*tarval_combine)(ir_tarval const *, ir_tarval const *);

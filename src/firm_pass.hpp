@@ -53,8 +53,31 @@ private:
     std::exit(1);
   }
 
+public:
+  void run() {
+    ir_reserve_resources(graph, IR_RESOURCE_IRN_LINK);
+
+    sub()->before();
+
+    irg_walk_topological(graph, init_wrapper, this); // fills work queue
+    std::cout << "worklist size: " << worklist.size() << std::endl;
+
+    // calls visit method on work queue items (add more items if necessary in visit* Methods)
+    while(!worklist.empty()) {
+      ir_node *node = worklist.front();
+      worklist.pop();
+      visitNode(node);
+    }
+
+    sub()->after();
+
+    ir_free_resources(graph, IR_RESOURCE_IRN_LINK);
+  }
+
 protected:
-  void walk(ir_node *node) { initNode(node); } // default impl.
+  void before() {};
+  void after() {};
+
   void enqueue(ir_node *node) {
     worklist.push(node);
   }
@@ -185,32 +208,6 @@ protected:
         return errorInvalid(node);
     }
   }
-
-public:
-  void run() {
-    ir_reserve_resources(graph, IR_RESOURCE_IRN_LINK);
-
-    sub()->before();
-
-    irg_walk_topological(graph, init_wrapper, this); // fills work queue
-    std::cout << "worklist size: " << worklist.size() << std::endl;
-
-    // calls visit method on work queue items (add more items if necessary in visit* Methods)
-    while(!worklist.empty()) {
-      ir_node *node = worklist.front();
-      worklist.pop();
-      visitNode(node);
-    }
-
-    sub()->after();
-
-    ir_free_resources(graph, IR_RESOURCE_IRN_LINK);
-  }
-
-  // -----
-
-  void before() {};
-  void after() {};
 
   void defaultInitOp(ir_node *) { /* default default is nothing ^^ */ }
 
