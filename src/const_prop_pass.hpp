@@ -100,37 +100,34 @@ public:
   void substituteNodes() {
     inc_irg_visited(graph); // "clear" visited flags
     ir_node *endNode = get_irg_end(graph);
-    substNodesWalkBackwards(endNode);
+    substNodesWalk(endNode);
 
     remove_unreachable_code(graph);
     remove_bads(graph);
   }
-  void substNodesWalkBackwards(ir_node *irn) {
+  // basically a copy of walk_topological without the pointers
+  // TODO: make this walk backwards to save on node exchanges.
+  void substNodesWalk(ir_node *irn) {
     if (irn_visited(irn))
-        return;
+      return;
 
     /* only break loops at phi/block nodes */
     const bool is_loop_breaker = is_Phi(irn) || is_Block(irn);
-
-    if (is_loop_breaker || !irn_visited(irn)) {
-        if (substituteNode(irn))
-          return;
-    }
-
     if (is_loop_breaker)
-        mark_irn_visited(irn);
-
-    for (int i = 0, ary = get_irn_arity(irn); i < ary; ++i) {
-        ir_node *const pred = get_irn_n(irn, i);
-        substNodesWalkBackwards(pred);
-    }
+      mark_irn_visited(irn);
 
     if (!is_Block(irn)) {
-        // get_nodes_block might return wrong block, see docs
-        ir_node *const block = get_nodes_block(irn);
-        substNodesWalkBackwards(block);
+      ir_node *const block = get_nodes_block(irn);
+      substNodesWalk(block);
     }
 
+    for (int i = 0; i < get_irn_arity(irn); ++i) {
+      ir_node *const pred = get_irn_n(irn, i);
+      substNodesWalk(pred);
+    }
+
+    if (is_loop_breaker || !irn_visited(irn))
+      substituteNode(irn);
 
     mark_irn_visited(irn);
   }
