@@ -46,10 +46,13 @@ public:
     int graphErrors = 0;
     for (auto g : firmGraphs)
     {
+      // -- run optimizer passes --
       //       ExampleFunctionPass efp(g);
       //       efp.run();
       ConstPropPass cpp(g);
       cpp.run();
+
+      // -- print graphs and verify if necessary --
 
       if (printGraphs)
       {

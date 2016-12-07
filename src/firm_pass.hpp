@@ -120,7 +120,7 @@ protected:
       case iro_Tuple: return sub()->visitTuple(node);
       case iro_Unknown: return sub()->visitUnknown(node);
       default:
-        return todoImplement(node);
+        return errorInvalid(node);
     }
   }
 

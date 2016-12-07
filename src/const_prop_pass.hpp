@@ -77,17 +77,20 @@ public:
   ConstPropPass(ir_graph *firmgraph) : FunctionPass(firmgraph) {}
 
   ir_tarval *supremum(ir_node *left, ir_node *right,
-                      tarval_combine fn)
+                      tarval_combine transferFn)
   {
     ir_tarval *leftVal = getTV(left);
     ir_tarval *rightVal = getTV(right);
-    if (leftVal == tarval_bad || rightVal == tarval_bad)
+    if (leftVal == tarval_bad || rightVal == tarval_bad) {
       return tarval_bad;
-    if (leftVal == tarval_unknown)
+    }
+    if (leftVal == tarval_unknown) {
       return rightVal;
-    if (rightVal == tarval_unknown)
+    }
+    if (rightVal == tarval_unknown) {
       return leftVal;
-    return (ir_tarval *)fn(leftVal, rightVal); // is constant value
+    }
+    return transferFn(leftVal, rightVal); // is constant value
   }
 
   void before() {
@@ -157,7 +160,7 @@ public:
 
   bool substituteNode(ir_node *node) {
     ir_tarval *val = getTV(node);
-    if (val && val != tarval_unknown && val != tarval_bad) {
+    if (tarval_is_constant(val)) {
       // for memops set memory pojection correctly
       if (is_memop(node)) {
         ir_node *mem_target = get_memop_mem(node); // memory "above"
