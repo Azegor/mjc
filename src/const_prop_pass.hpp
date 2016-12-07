@@ -44,6 +44,13 @@ std::string tarvalToStr(ir_tarval *t) {
     }
 }
 
+void exchangeWithLink(ir_node *oldNode, ir_node* newNode) {
+  // might be needed by later substitutions (e.g. Proj below)
+  // TODO: drop this function once we walk backwards during subst phase
+  set_irn_link(newNode, get_irn_link(oldNode));
+  exchange(oldNode, newNode);
+}
+
 class ConstPropPass : public FunctionPass<ConstPropPass>
 {
 private:
@@ -143,13 +150,13 @@ public:
         foreach_out_edge_safe(node, edge) { // find succ proj
           ir_node *succNode = get_edge_src_irn(edge);
           if (is_Proj(succNode) && get_irn_mode(succNode) == mode_M) {
-            exchange(succNode, mem_target); // set to precceding proj
+            exchangeWithLink(succNode, mem_target); // set to precceding proj
             break;
           }
         }
         // if succ Proj not existant, do nothing
       }
-      exchange(node, new_r_Const(graph, val));
+      exchangeWithLink(node, new_r_Const(graph, val));
       return true;
     }
     if (is_Proj(node) && get_irn_mode(node) == mode_X) {
@@ -160,9 +167,9 @@ public:
       if(cmpVal != tarval_unknown && cmpVal != tarval_bad) {
         if ((cmpVal == tarval_b_true) == (get_Proj_num(node) == pn_Cond_true)) {
           // get_nodes_block might return wrong block, see docs
-          exchange(node, new_r_Jmp(get_nodes_block(node)));
+          exchangeWithLink(node, new_r_Jmp(get_nodes_block(node)));
         } else {
-          exchange(node, new_r_Bad(graph, mode_X));
+          exchangeWithLink(node, new_r_Bad(graph, mode_X));
         }
         return true;
       }
