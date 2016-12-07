@@ -167,6 +167,7 @@ public:
       ir_node *cmp = get_Cond_selector(cond);
       ir_tarval *cmpVal = getTV(cmp);
       if(cmpVal != tarval_unknown && cmpVal != tarval_bad) {
+        assert((cmpVal == tarval_b_true) || (cmpVal == tarval_b_false));
         if ((cmpVal == tarval_b_true) == (get_Proj_num(node) == pn_Cond_true)) {
           // get_nodes_block might return wrong block, see docs
           exchangeWithLink(node, new_r_Jmp(get_nodes_block(node)));
