@@ -32,7 +32,7 @@
 
 #include <queue>
 
-template <typename T>
+template <typename T, typename AttrT = void>
 class FunctionPass {
 protected:
   ir_graph *graph;
@@ -58,6 +58,10 @@ protected:
   void enqueue(ir_node *node) {
     worklist.push(node);
   }
+
+  static void setVal(ir_node *n, AttrT *tv) { set_irn_link(n, tv); }
+  static ir_tarval *getVal(ir_node *n) { return static_cast<AttrT* >(get_irn_link(n)); }
+
   void initNode(ir_node * node) {
     switch(get_irn_opcode(node)) {
       case iro_ASM: return sub()->initASM(node);

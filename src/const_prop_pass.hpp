@@ -51,12 +51,9 @@ void exchangeWithLink(ir_node *oldNode, ir_node* newNode) {
   exchange(oldNode, newNode);
 }
 
-class ConstPropPass : public FunctionPass<ConstPropPass>
+class ConstPropPass : public FunctionPass<ConstPropPass, ir_tarval>
 {
 private:
-  static void setTV(ir_node *n, ir_tarval *tv) { set_irn_link(n, tv); }
-  static ir_tarval *getTV(ir_node *n) { return static_cast<ir_tarval* >(get_irn_link(n)); }
-
   void enqueueAllChildren(ir_node *node) {
     foreach_out_edge_safe(node, edge) {
       std::cout << "   " << get_irn_opname(get_edge_src_irn(edge)) << std::endl;
@@ -65,10 +62,10 @@ private:
   }
 
   void setNodeLink(ir_node *node, ir_tarval *val) {
-    ir_tarval *oldVal = getTV(node);
+    ir_tarval *oldVal = getVal(node);
     if (oldVal != val) {
       std::cout << get_irn_opname(node) << ": " << tarvalToStr(val) << std::endl;
-      setTV(node, val);
+      setVal(node, val);
       enqueueAllChildren(node);
     }
   }
@@ -79,8 +76,8 @@ public:
   ir_tarval *supremum(ir_node *left, ir_node *right,
                       tarval_combine transferFn)
   {
-    ir_tarval *leftVal = getTV(left);
-    ir_tarval *rightVal = getTV(right);
+    ir_tarval *leftVal = getVal(left);
+    ir_tarval *rightVal = getVal(right);
     if (leftVal == tarval_bad || rightVal == tarval_bad) {
       return tarval_bad;
     }
@@ -107,9 +104,9 @@ public:
   void initProj(ir_node *proj) {
     // if predecessor is Tuple proj we have a parameter or call result
     if (get_irn_mode(get_Proj_pred(proj)) == mode_T) {
-      setTV(proj, tarval_bad); // definitely not const!
+      setVal(proj, tarval_bad); // definitely not const!
     } else {
-      setTV(proj, tarval_unknown); // some other Proj node
+      setVal(proj, tarval_unknown); // some other Proj node
     }
   }
 
@@ -118,7 +115,7 @@ public:
   }
 
   void defaultInitOp(ir_node *node) {
-    setTV(node, tarval_unknown); // default all to bad which can never be const
+    setVal(node, tarval_unknown); // default all to bad which can never be const
   }
 
   // -- visit helper functions --
@@ -161,7 +158,7 @@ public:
   }
 
   bool substituteNode(ir_node *node) {
-    ir_tarval *val = getTV(node);
+    ir_tarval *val = getVal(node);
     if (tarval_is_constant(val)) {
       // for memops set memory pojection correctly
       if (is_memop(node)) {
@@ -182,7 +179,7 @@ public:
       ir_node *cond = get_Proj_pred(node);
       assert(is_Cond(cond));
       ir_node *cmp = get_Cond_selector(cond);
-      ir_tarval *cmpVal = getTV(cmp);
+      ir_tarval *cmpVal = getVal(cmp);
       if(cmpVal != tarval_unknown && cmpVal != tarval_bad) {
         assert((cmpVal == tarval_b_true) || (cmpVal == tarval_b_false));
         if ((cmpVal == tarval_b_true) == (get_Proj_num(node) == pn_Cond_true)) {
@@ -222,7 +219,7 @@ public:
   }
 
   void visitMinus(ir_node *minus) {
-    ir_tarval *opVal = getTV(get_Minus_op(minus));
+    ir_tarval *opVal = getVal(get_Minus_op(minus));
 
     if (tarval_is_constant(opVal))
       setNodeLink(minus, tarval_neg(opVal));
@@ -232,7 +229,7 @@ public:
 
   void visitNot(ir_node *_not) {
     // TODO: are not nodes even generated in FirmVisitor?
-    ir_tarval *opVal = getTV(get_Not_op(_not));
+    ir_tarval *opVal = getVal(get_Not_op(_not));
 
     if (tarval_is_constant(opVal))
       setNodeLink(_not, tarval_not(opVal));
@@ -246,7 +243,7 @@ public:
   }
 
   void visitConv(ir_node *conv) {
-    ir_tarval *opVal = getTV(get_Conv_op(conv));
+    ir_tarval *opVal = getVal(get_Conv_op(conv));
     if (tarval_is_constant(opVal))
       setNodeLink(conv, tarval_convert_to(opVal, get_irn_mode(conv)));
     else
@@ -258,7 +255,7 @@ public:
     // watch out when replacing node regarding the work list (successor node)!
     if (get_irn_mode(proj) != mode_M) {
       ir_node *pred = get_Proj_pred(proj);
-      setNodeLink(proj, getTV(pred));
+      setNodeLink(proj, getVal(pred));
     }
   }
 
@@ -268,7 +265,7 @@ public:
 
     for (int i = 0; i < nPreds; i ++) {
       ir_node *pred = get_Phi_pred(phi, i);
-      ir_tarval *predVal = getTV(pred);
+      ir_tarval *predVal = getVal(pred);
 
       if (predVal == tarval_bad) {
         val = tarval_bad;
@@ -296,8 +293,8 @@ public:
   }
 
   void visitCmp(ir_node *cmp) {
-    ir_tarval *leftVal = getTV(get_Cmp_left(cmp));
-    ir_tarval *rightVal = getTV(get_Cmp_right(cmp));
+    ir_tarval *leftVal = getVal(get_Cmp_left(cmp));
+    ir_tarval *rightVal = getVal(get_Cmp_right(cmp));
     ir_tarval *val;
 
     if (leftVal == tarval_bad || rightVal == tarval_bad) {
