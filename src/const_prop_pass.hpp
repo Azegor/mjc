@@ -153,6 +153,21 @@ public:
       exchange(node, new_r_Const(graph, val));
       return true;
     }
+    if (is_Proj(node) && get_irn_mode(node) == mode_X) {
+      ir_node *cond = get_Proj_pred(node);
+      assert(is_Cond(cond));
+      ir_node *cmp = get_Cond_selector(cond);
+      ir_tarval *cmpVal = getTV(cmp);
+      if(cmpVal != tarval_unknown && cmpVal != tarval_bad) {
+        if ((cmpVal == tarval_b_true) == (get_Proj_num(node) == pn_Cond_true)) {
+          // get_nodes_block might return wrong block, see docs
+          exchange(node, new_r_Jmp(get_nodes_block(node)));
+        } else {
+          exchange(node, new_r_Bad(graph, mode_X));
+        }
+      }
+      return true;
+    }
     return false;
   }
 
