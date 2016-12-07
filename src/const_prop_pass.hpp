@@ -222,7 +222,7 @@ public:
     if (tarval_is_constant(opVal))
       setNodeLink(_not, tarval_not(opVal));
     else
-      setNodeLink(_not, opVal); // TODO: not 'tarval_unknown'?
+      setNodeLink(_not, opVal);
   }
 
   // TODO: do we need to do anything?
@@ -231,7 +231,11 @@ public:
   }
 
   void visitConv(ir_node *conv) {
-    setNodeLink(conv, tarval_convert_to(getTV(get_Conv_op(conv)), get_irn_mode(conv)));
+    ir_tarval *opVal = getTV(get_Conv_op(conv));
+    if (tarval_is_constant(opVal))
+      setNodeLink(conv, tarval_convert_to(opVal, get_irn_mode(conv)));
+    else
+      setNodeLink(conv, opVal);
   }
 
   void visitProj(ir_node *proj) {
