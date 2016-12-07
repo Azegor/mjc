@@ -38,7 +38,7 @@ std::string tarvalToStr(ir_tarval *t) {
     return "bad";
   else
     if (get_tarval_mode(t) == mode_b) {
-      return (get_tarval_b_true() == t) ? "1" : "0";
+      return (tarval_b_true == t) ? "true" : "false";
     } else {
       return std::to_string(get_tarval_long(t));
     }
