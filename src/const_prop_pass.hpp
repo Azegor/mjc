@@ -101,9 +101,21 @@ public:
 
   void walk(ir_node * node)
   {
-    set_irn_link(node, tarval_unknown);
-    if (is_Const(node))
-      enqueue(node);
+    switch(get_irn_opcode(node)) {
+      case iro_Proj:
+        // if predecessor is Tuple proj we have a parameter (TODO: is this the only case?)
+        if (get_irn_mode(get_Proj_pred(node)) == mode_T) {
+          setTV(node, tarval_bad); // definitely not const!
+        } else {
+          setTV(node, tarval_unknown); // some other Proj node
+        }
+        break;
+      case iro_Const:
+        enqueue(node);
+        // fallthrough!
+      default:
+        setTV(node, tarval_unknown);
+    }
   }
 
   void substituteNodes() {
