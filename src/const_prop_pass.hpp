@@ -116,6 +116,8 @@ public:
   }
   // basically a copy of walk_topological without the pointers
   // TODO: make this walk backwards to save on node exchanges.
+  //        - what about mem though? if we start replacing with const nodes from the end,
+  //          we have to watch out for side effects earlier!
   void substNodesWalk(ir_node *irn) {
     if (irn_visited(irn))
       return;
