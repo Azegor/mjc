@@ -120,7 +120,7 @@ public:
     if (is_loop_breaker)
         mark_irn_visited(irn);
 
-    for (int i = 0; i < get_irn_arity(irn); ++i) {
+    for (int i = 0, ary = get_irn_arity(irn); i < ary; ++i) {
         ir_node *const pred = get_irn_n(irn, i);
         substNodesWalkBackwards(pred);
     }
@@ -143,7 +143,7 @@ public:
         ir_node *mem_target = get_memop_mem(node); // memory "above"
         foreach_out_edge_safe(node, edge) { // find succ proj
           ir_node *succNode = get_edge_src_irn(edge);
-          if (is_Proj(succNode)){
+          if (is_Proj(succNode) && get_irn_mode(succNode) == mode_M) {
             exchange(succNode, mem_target); // set to precceding proj
             break;
           }
