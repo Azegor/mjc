@@ -50,17 +50,19 @@ private:
   static void setTV(ir_node *n, ir_tarval *tv) { set_irn_link(n, tv); }
   static ir_tarval *getTV(ir_node *n) { return static_cast<ir_tarval* >(get_irn_link(n)); }
 
+  void enqueueAllChildren(ir_node *node) {
+    foreach_out_edge_safe(node, edge) {
+      std::cout << "   " << get_irn_opname(get_edge_src_irn(edge)) << std::endl;
+      enqueue(get_edge_src_irn(edge));
+    }
+  }
+
   void setNodeLink(ir_node *node, ir_tarval *val) {
     ir_tarval *oldVal = getTV(node);
     if (oldVal != val) {
       std::cout << get_irn_opname(node) << ": " << tarvalToStr(val) << std::endl;
       setTV(node, val);
-      //std::cout << get_irn_opname(node) << std::endl;
-      //std::cout << "Edges: " << std::endl;
-      foreach_out_edge_safe(node, edge) {
-        std::cout << "   " << get_irn_opname(get_edge_src_irn(edge)) << std::endl;
-        enqueue(get_edge_src_irn(edge));
-      }
+      enqueueAllChildren(node);
     }
   }
 
@@ -213,11 +215,9 @@ public:
       setNodeLink(_not, opVal); // TODO: not 'tarval_unknown'?
   }
 
-  // TODO
+  // TODO: do we need to do anything?
   void visitCond(ir_node *cond) {
-    (void)cond;
-    // TODO: if const -> replace with jump (will be fun(n|k)y)
-    // watch out when replacing node regarding the work list (successor node)!
+    enqueueAllChildren(cond);
   }
 
   void visitConv(ir_node *conv) {
@@ -225,6 +225,8 @@ public:
   }
 
   void visitProj(ir_node *proj) {
+    // TODO: if mode_X and Cond const -> replace with jump (will be fun(n|k)y)
+    // watch out when replacing node regarding the work list (successor node)!
     if (get_irn_mode(proj) != mode_M) {
       ir_node *pred = get_Proj_pred(proj);
       setNodeLink(proj, getTV(pred));
