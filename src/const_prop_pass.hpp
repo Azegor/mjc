@@ -281,9 +281,7 @@ public:
           val = predVal;
         } else {
           // both constant
-          long curLong = get_tarval_long(val);
-          long predLong = get_tarval_long(predVal);
-          if (curLong != predLong) {
+          if (tarval_cmp (val, predVal) != ir_relation_equal) {
             val = tarval_bad;
             break;
           }
