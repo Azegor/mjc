@@ -100,13 +100,9 @@ public:
 
   // ---- initialization methods (called only once): ----
 
-  void initProj(ir_node *proj) {
-    // if predecessor is Tuple proj we have a parameter or call result
-    if (get_irn_mode(get_Proj_pred(proj)) == mode_T) {
-      setVal(proj, tarval_bad); // definitely not const!
-    } else {
-      setVal(proj, tarval_unknown); // some other Proj node
-    }
+  // IMPORTANT: propagate tarval_bad to following Projs
+  void initStart(ir_node *start) {
+    setNodeLink(start, tarval_bad);
   }
 
   void initConst(ir_node *konst) {
@@ -114,7 +110,8 @@ public:
   }
 
   void defaultInitOp(ir_node *node) {
-    setVal(node, tarval_unknown); // default all to bad which can never be const
+    // no setNodeLink!
+    setVal(node, tarval_unknown); // TODO: default all to bad which can never be const
   }
 
   // -- visit helper functions --
@@ -157,6 +154,9 @@ public:
   }
 
   bool substituteNode(ir_node *node) {
+    if (is_Const(node)) {
+      return false; // don't substitute const nodes
+    }
     ir_tarval *val = getVal(node);
     if (tarval_is_constant(val)) {
       // for memops set memory pojection correctly
@@ -179,7 +179,7 @@ public:
       assert(is_Cond(cond));
       ir_node *cmp = get_Cond_selector(cond);
       ir_tarval *cmpVal = getVal(cmp);
-      if(cmpVal != tarval_unknown && cmpVal != tarval_bad) {
+      if(tarval_is_constant(cmpVal)) {
         assert((cmpVal == tarval_b_true) || (cmpVal == tarval_b_false));
         if ((cmpVal == tarval_b_true) == (get_Proj_num(node) == pn_Cond_true)) {
           // get_nodes_block might return wrong block, see docs
