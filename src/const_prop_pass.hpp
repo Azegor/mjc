@@ -276,9 +276,11 @@ public:
           val = predVal;
         } else if (predVal == tarval_unknown) {
           // val = val;
-        } else if (val != predVal) {
+        } else if (tarval_cmp (val, predVal) != ir_relation_equal) {
           val = tarval_bad;
           break;
+        } else {
+          // keep val -> nop
         }
       }
     }
