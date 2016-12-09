@@ -7,7 +7,7 @@ class Test {
 
   public int name;
   public int test() {
-    int name;
+    int name = 42;
     return name;
   }
 }
