@@ -76,21 +76,17 @@ private:
 public:
   ConstPropPass(ir_graph *firmgraph) : FunctionPass(firmgraph) {}
 
-  ir_tarval *supremum(ir_node *left, ir_node *right,
-                      tarval_combine transferFn)
-  {
+  ir_tarval *transfer(ir_node *left, ir_node *right,
+                      tarval_combine evalFn) {
     ir_tarval *leftVal = getVal(left);
     ir_tarval *rightVal = getVal(right);
     if (leftVal == tarval_bad || rightVal == tarval_bad) {
       return tarval_bad;
     }
-    if (leftVal == tarval_unknown) {
-      return rightVal;
+    if (leftVal == tarval_unknown || rightVal == tarval_unknown) {
+      return tarval_unknown;
     }
-    if (rightVal == tarval_unknown) {
-      return leftVal;
-    }
-    return transferFn(leftVal, rightVal); // is constant value
+    return evalFn(leftVal, rightVal); // is constant value
   }
 
   void before() {
@@ -202,23 +198,23 @@ public:
   // visitConst() not necessary (only need to visit once)
 
   void visitAdd(ir_node *add) {
-    setNodeLink(add, supremum(get_Add_left(add), get_Add_right(add), tarval_add));
+    setNodeLink(add, transfer(get_Add_left(add), get_Add_right(add), tarval_add));
   }
 
   void visitSub(ir_node *sub) {
-    setNodeLink(sub, supremum(get_Sub_left(sub), get_Sub_right(sub), tarval_sub));
+    setNodeLink(sub, transfer(get_Sub_left(sub), get_Sub_right(sub), tarval_sub));
   }
 
   void visitMod(ir_node *mod) {
-    setNodeLink(mod, supremum(get_Mod_left(mod), get_Mod_right(mod), tarval_mod));
+    setNodeLink(mod, transfer(get_Mod_left(mod), get_Mod_right(mod), tarval_mod));
   }
 
   void visitMul(ir_node *mul) {
-    setNodeLink(mul, supremum(get_Mul_left(mul), get_Mul_right(mul), tarval_mul));
+    setNodeLink(mul, transfer(get_Mul_left(mul), get_Mul_right(mul), tarval_mul));
   }
 
   void visitDiv(ir_node *div) {
-    setNodeLink(div, supremum(get_Div_left(div), get_Div_right(div), tarval_div));
+    setNodeLink(div, transfer(get_Div_left(div), get_Div_right(div), tarval_div));
   }
 
   void visitMinus(ir_node *minus) {
@@ -264,30 +260,27 @@ public:
 
   void visitPhi(ir_node *phi) {
     int nPreds = get_Phi_n_preds(phi);
-    ir_tarval *val = tarval_unknown;
+    ir_tarval *val;
 
-    for (int i = 0; i < nPreds; i ++) {
-      ir_node *pred = get_Phi_pred(phi, i);
-      ir_tarval *predVal = getVal(pred);
+    assert(nPreds);
+    val = getVal(get_Phi_pred(phi,0));
+    if (nPreds > 1) {
+      for (int i = 1; i < nPreds; i ++) {
+        ir_node *pred = get_Phi_pred(phi, i);
+        ir_tarval *predVal = getVal(pred);
 
-      if (predVal == tarval_bad) {
-        val = tarval_bad;
-        break;
-      } else if (predVal == tarval_unknown) {
-        // nop
-      } else {
-        // constant
-        if (val == tarval_unknown) {
+        if (val == tarval_bad || predVal == tarval_bad) {
+          val = tarval_bad;
+          break;
+        } else if (val == tarval_unknown) {
           val = predVal;
-        } else {
-          // both constant
-          if (tarval_cmp (val, predVal) != ir_relation_equal) {
-            val = tarval_bad;
-            break;
-          }
+        } else if (predVal == tarval_unknown) {
+          // val = val;
+        } else if (val != predVal) {
+          val = tarval_bad;
+          break;
         }
       }
-
     }
 
     setNodeLink(phi, val);
