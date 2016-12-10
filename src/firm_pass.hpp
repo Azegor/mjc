@@ -115,6 +115,7 @@ protected:
   static ir_tarval *getVal(ir_node *n) { return static_cast<AttrT* >(get_irn_link(n)); }
 
   void initNode(ir_node * node) {
+    enqueue(node); // enqueue every node!
     switch(get_irn_opcode(node)) {
       case iro_ASM: return sub()->initASM(node);
       case iro_Add: return sub()->initAdd(node);
