@@ -59,7 +59,7 @@ class ConstPropPass : public FunctionPass<ConstPropPass, ir_tarval>
 private:
   void enqueueAllChildren(ir_node *node) {
     foreach_out_edge_safe(node, edge) {
-      std::cout << "   " << get_irn_opname(get_edge_src_irn(edge)) << std::endl;
+//       std::cout << "   " << get_irn_opname(get_edge_src_irn(edge)) << std::endl;
       enqueue(get_edge_src_irn(edge));
     }
   }
@@ -67,7 +67,7 @@ private:
   void setNodeLink(ir_node *node, ir_tarval *val) {
     ir_tarval *oldVal = getVal(node);
     if (oldVal != val) {
-      std::cout << get_irn_opname(node) << ": " << tarvalToStr(val) << std::endl;
+//       std::cout << get_irn_opname(node) << ": " << tarvalToStr(val) << std::endl;
       setVal(node, val);
       enqueueAllChildren(node);
     }

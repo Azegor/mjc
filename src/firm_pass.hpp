@@ -89,7 +89,7 @@ public:
     sub()->before();
 
     initNodesTopological(); // fills work queue
-    std::cout << "worklist size: " << worklist.size() << std::endl;
+//     std::cout << "worklist size: " << worklist.size() << std::endl;
 
     // calls visit method on work queue items (add more items if necessary in visit* Methods)
     while(!worklist.empty()) {
