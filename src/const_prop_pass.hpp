@@ -108,24 +108,24 @@ public:
   void initConst(ir_node *konst) {
     setVal(konst, get_Const_tarval(konst)); // also adds successors to worklist
   }
-//   void initAdd(ir_node *add) {
-//     setVal(add, tarval_unknown);
-//   }
-//   void initSub(ir_node *sub) {
-//     setVal(sub, tarval_unknown);
-//   }
-//   void initMul(ir_node *mul) {
-//     setVal(mul, tarval_unknown);
-//   }
-//   void initDiv(ir_node *div) {
-//     setVal(div, tarval_unknown);
-//   }
-//   void initMod(ir_node *mod) {
-//     setVal(mod, tarval_unknown);
-//   }
-//   void initPhi(ir_node *phi) {
-//     setVal(phi, tarval_unknown);
-//   }
+  void initAdd(ir_node *add) {
+    setVal(add, tarval_unknown);
+  }
+  void initSub(ir_node *sub) {
+    setVal(sub, tarval_unknown);
+  }
+  void initMul(ir_node *mul) {
+    setVal(mul, tarval_unknown);
+  }
+  void initDiv(ir_node *div) {
+    setVal(div, tarval_unknown);
+  }
+  void initMod(ir_node *mod) {
+    setVal(mod, tarval_unknown);
+  }
+  void initPhi(ir_node *phi) {
+    setVal(phi, tarval_unknown);
+  }
 
   void defaultInitOp(ir_node *node) {
     // no setNodeLink!
