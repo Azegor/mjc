@@ -405,7 +405,7 @@ public:
     worklist.push(graph);
   }
 
-  virtual void before() {}
+  void before() {}
   void after() {}
 
   void visitMethod(ir_graph*) {}

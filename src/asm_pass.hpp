@@ -11,7 +11,7 @@ class Instruction {
 
 };
 
-};
+}
 
 using InstrList = std::vector<assembly::Instruction>;
 
@@ -25,8 +25,8 @@ class AsmPass : public ProgramPass<AsmPass> {
 public:
   AsmPass(std::vector<ir_graph *> &graphs) : ProgramPass(graphs) {}
 
-  void before() override;
-  void visitMethod(ir_graph *graph) override;
+  void before();
+  void visitMethod(ir_graph *graph);
 
 private:
   std::vector<AsmFunction*> functions;
@@ -39,6 +39,7 @@ public:
   void before();
 
   void visitBlock(ir_node *b) {
+    (void)b;
     func->blockInstructions.emplace_back();
     auto instrList = &func->blockInstructions[func->blockInstructions.size() - 1];
     this->currentInstrList = instrList;
