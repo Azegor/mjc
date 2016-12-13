@@ -57,6 +57,8 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
       // optimize
       ("optimize,O", "optimize program")
       // output file
+      ("compile,c", "compile with own backend")
+      // output file
       ("output,o", bpo::value<std::string>(&compilerOptions.outputFileName),
        "output file name");
 
@@ -127,6 +129,9 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
     }
     if (var_map.count("optimize") || var_map.count("O")) {
       compilerOptions.optimize = true;
+    }
+    if (var_map.count("compile") || var_map.count("c")) {
+      compilerOptions.compile = true;
     }
   } catch (bpo::required_option &e) {
     cl_cerr << co::mode(co::bold) << co::color(co::red)

@@ -186,7 +186,7 @@ int Compiler::compileWithFirmBackend() {
       }
     }
     std::string outputName = options.outputFileName.empty() ? "a.out" : options.outputFileName;
-    if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), options.printFirmGraph, !options.noVerify, options.compileFirm, options.outputAssembly, outputName))
+    if (!lowerFirmGraphsWithFirmBackend(firmVisitor.getFirmGraphs(), options.printFirmGraph, !options.noVerify, options.compileFirm, options.outputAssembly, outputName))
       return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
@@ -196,7 +196,7 @@ int Compiler::compileWithFirmBackend() {
   }
 }
 
-bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool generateCode, bool outputAssembly, const std::string &outFileName) {
+bool Compiler::lowerFirmGraphsWithFirmBackend(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool generateCode, bool outputAssembly, const std::string &outFileName) {
   int graphErrors = 0;
   for (auto g : graphs) {
     lower_highlevel_graph(g);
@@ -236,6 +236,33 @@ bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs,
     }
   }
   return true;
+}
+
+int Compiler::compileWithOwnBackend() {
+  SymbolTable::StringTable strTbl;
+  Parser parser{inputFile, strTbl};
+  try {
+    auto ast = parser.parseProgram();
+    analyzeAstSemantic(ast.get(), parser.getLexer());
+    FirmVisitor firmVisitor{options.printFirmGraph};
+    ast->accept(&firmVisitor);
+    if (options.optimize) {
+      Optimizer opt(firmVisitor.getFirmGraphs(), options.printFirmGraph, !options.noVerify);
+      if (!opt.run()) {
+        return EXIT_FAILURE;
+      }
+    }
+    std::string outputName = options.outputFileName.empty() ? "a.out" : options.outputFileName;
+    // TODO
+//     if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), options.printFirmGraph, !options.noVerify, options.compileFirm, options.outputAssembly, outputName))
+//       return EXIT_FAILURE;
+    std::cout << "TODO: implement" << std::endl;
+
+    return EXIT_SUCCESS;
+  } catch (CompilerError &e) {
+    e.writeErrorMessage(std::cerr);
+    return EXIT_FAILURE;
+  }
 }
 
 void Compiler::analyzeAstSemantic(ast::Program *astRoot, Lexer &lexer) {
@@ -285,6 +312,8 @@ int Compiler::run() {
     return attrAstDot();
   } else if (options.printFirmGraph || options.compileFirm) {
     return compileWithFirmBackend();
+  } else if (options.compile) {
+    return compileWithOwnBackend();
   }
   return EXIT_FAILURE;
 }
