@@ -10,4 +10,4 @@ else
 fi
 cd ${1}
 mjc_rel_path=$(realpath --relative-to=$(pwd) ${mjc_path}) # mjc.py requires relative path
-./mjt.py --output_no_incorrect_reports --all_exec_tests compile-firm ${mjc_rel_path}
+./mjt.py --output_no_incorrect_reports --all_exec_tests all ${mjc_rel_path}

@@ -50,6 +50,8 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
       ("firm-graph", "generate firm graph and dump to file (per function)")
       // compile input file with firm backend
       ("compile-firm", "compile input program with default x86 firm backend")
+      // output assembly
+      ("output-assembly,S", "write generated assembly to <output>.s")
       // disable verification
       ("no-verify", "disable verification when building firm graph")
       // optimize
@@ -116,6 +118,9 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
     }
     if (var_map.count("compile-firm")) {
       compilerOptions.compileFirm = true;
+    }
+    if (var_map.count("output-assembly")) {
+      compilerOptions.outputAssembly = true;
     }
     if (var_map.count("no-verify")) {
       compilerOptions.noVerify = true;

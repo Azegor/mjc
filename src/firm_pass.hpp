@@ -30,27 +30,154 @@
 #include <libfirm/firm.h>
 #include <libfirm/irgwalk.h>
 
-template <typename T>
+#include <queue>
+
+template <typename T, typename AttrT = void>
 class FunctionPass {
+protected:
   ir_graph *graph;
+  std::queue<ir_node*> worklist;
   T *sub() { return static_cast<T*>(this); }
 public:
   FunctionPass(ir_graph *firmgraph) : graph(firmgraph) {}
 
 private:
-  /// typedef void irg_walk_func(ir_node *, void *)
-  static void walk_wrapper(ir_node *node, void *env) {
-    static_cast<T*>(env)->walk(node);
+  void initNodesTopological() {
+    inc_irg_visited(graph);
+    init_topological(get_irg_end(graph));
   }
-  void todoImplement(ir_node *node) {
-    ir_printf("TODO: implement node type %O\n", node);
+
+  void init_topological(ir_node *irn)
+  {
+    if (irn_visited(irn)) {
+      return;
+    }
+
+    /* only break loops at phi/block nodes */
+    const bool is_loop_breaker = is_Phi(irn) || is_Block(irn);
+    if (is_loop_breaker) {
+      mark_irn_visited(irn);
+    }
+
+    if (!is_Block(irn)) {
+      ir_node *const block = get_nodes_block(irn);
+      init_topological(block);
+    }
+
+    for (int i = 0; i < get_irn_arity(irn); ++i) {
+      ir_node *const pred = get_irn_n(irn, i);
+      init_topological(pred);
+    }
+
+    if (is_loop_breaker || !irn_visited(irn)) {
+      initNode(irn);
+    }
+
+    mark_irn_visited(irn);
   }
+
   [[noreturn]] void errorInvalid(ir_node *node) {
     ir_printf("ERROR: unexpected node %n\n", node);
     ir_finish();
     std::exit(1);
   }
-  void walk(ir_node * node) {
+
+public:
+  void run() {
+    ir_reserve_resources(graph, IR_RESOURCE_IRN_LINK);
+
+    sub()->before();
+
+    initNodesTopological(); // fills work queue
+//     std::cout << "worklist size: " << worklist.size() << std::endl;
+
+    // calls visit method on work queue items (add more items if necessary in visit* Methods)
+    while(!worklist.empty()) {
+      ir_node *node = worklist.front();
+      worklist.pop();
+      visitNode(node);
+    }
+
+    sub()->after();
+
+    ir_free_resources(graph, IR_RESOURCE_IRN_LINK);
+  }
+
+protected:
+  void before() {};
+  void after() {};
+
+  void enqueue(ir_node *node) {
+    worklist.push(node);
+  }
+
+  static void setVal(ir_node *n, AttrT *tv) { set_irn_link(n, tv); }
+  static ir_tarval *getVal(ir_node *n) { return static_cast<AttrT* >(get_irn_link(n)); }
+
+  void initNode(ir_node * node) {
+    enqueue(node); // enqueue every node!
+    switch(get_irn_opcode(node)) {
+      case iro_ASM: return sub()->initASM(node);
+      case iro_Add: return sub()->initAdd(node);
+      case iro_Address: return sub()->initAddress(node);
+      case iro_Align: return sub()->initAlign(node);
+      case iro_Alloc: return sub()->initAlloc(node);
+      case iro_Anchor: return sub()->initAnchor(node);
+      case iro_And: return sub()->initAnd(node);
+      case iro_Bad: return sub()->initBad(node);
+      case iro_Bitcast: return sub()->initBitcast(node);
+      case iro_Block: return sub()->initBlock(node);
+      case iro_Builtin: return sub()->initBuiltin(node);
+      case iro_Call: return sub()->initCall(node);
+      case iro_Cmp: return sub()->initCmp(node);
+      case iro_Cond: return sub()->initCond(node);
+      case iro_Confirm: return sub()->initConfirm(node);
+      case iro_Const: return sub()->initConst(node);
+      case iro_Conv: return sub()->initConv(node);
+      case iro_CopyB: return sub()->initCopyB(node);
+      case iro_Deleted: return sub()->initDeleted(node);
+      case iro_Div: return sub()->initDiv(node);
+      case iro_Dummy: return sub()->initDummy(node);
+      case iro_End: return sub()->initEnd(node);
+      case iro_Eor: return sub()->initEor(node);
+      case iro_Free: return sub()->initFree(node);
+      case iro_IJmp: return sub()->initIJmp(node);
+      case iro_Id: return sub()->initId(node);
+      case iro_Jmp: return sub()->initJmp(node);
+      case iro_Load: return sub()->initLoad(node);
+      case iro_Member: return sub()->initMember(node);
+      case iro_Minus: return sub()->initMinus(node);
+      case iro_Mod: return sub()->initMod(node);
+      case iro_Mul: return sub()->initMul(node);
+      case iro_Mulh: return sub()->initMulh(node);
+      case iro_Mux: return sub()->initMux(node);
+      case iro_NoMem: return sub()->initNoMem(node);
+      case iro_Not: return sub()->initNot(node);
+      case iro_Offset: return sub()->initOffset(node);
+      case iro_Or: return sub()->initOr(node);
+      case iro_Phi: return sub()->initPhi(node);
+      case iro_Pin: return sub()->initPin(node);
+      case iro_Proj: return sub()->initProj(node);
+      case iro_Raise: return sub()->initRaise(node);
+      case iro_Return: return sub()->initReturn(node);
+      case iro_Sel: return sub()->initSel(node);
+      case iro_Shl: return sub()->initShl(node);
+      case iro_Shr: return sub()->initShr(node);
+      case iro_Shrs: return sub()->initShrs(node);
+      case iro_Size: return sub()->initSize(node);
+      case iro_Start: return sub()->initStart(node);
+      case iro_Store: return sub()->initStore(node);
+      case iro_Sub: return sub()->initSub(node);
+      case iro_Switch: return sub()->initSwitch(node);
+      case iro_Sync: return sub()->initSync(node);
+      case iro_Tuple: return sub()->initTuple(node);
+      case iro_Unknown: return sub()->initUnknown(node);
+      default:
+        return errorInvalid(node);
+    }
+  }
+
+  void visitNode(ir_node * node) {
     switch(get_irn_opcode(node)) {
       case iro_ASM: return sub()->visitASM(node);
       case iro_Add: return sub()->visitAdd(node);
@@ -108,16 +235,67 @@ private:
       case iro_Tuple: return sub()->visitTuple(node);
       case iro_Unknown: return sub()->visitUnknown(node);
       default:
-        return todoImplement(node);
+        return errorInvalid(node);
     }
   }
 
-public:
-  void run() {
-    irg_walk_topological(graph, walk_wrapper, this);
-  }
+  void defaultInitOp(ir_node *) { /* default default is nothing ^^ */ }
 
-  // -----
+  void initASM(ir_node * node) { sub()->defaultInitOp(node); }
+  void initAdd(ir_node * node) { sub()->defaultInitOp(node); }
+  void initAddress(ir_node * node) { sub()->defaultInitOp(node); }
+  void initAlign(ir_node * node) { sub()->defaultInitOp(node); }
+  void initAlloc(ir_node * node) { sub()->defaultInitOp(node); }
+  void initAnchor(ir_node * node) { sub()->defaultInitOp(node); }
+  void initAnd(ir_node * node) { sub()->defaultInitOp(node); }
+  void initBad(ir_node * node) { sub()->defaultInitOp(node); }
+  void initBitcast(ir_node * node) { sub()->defaultInitOp(node); }
+  void initBlock(ir_node * node) { sub()->defaultInitOp(node); }
+  void initBuiltin(ir_node * node) { sub()->defaultInitOp(node); }
+  void initCall(ir_node * node) { sub()->defaultInitOp(node); }
+  void initCmp(ir_node * node) { sub()->defaultInitOp(node); }
+  void initCond(ir_node * node) { sub()->defaultInitOp(node); }
+  void initConfirm(ir_node * node) { sub()->defaultInitOp(node); }
+  void initConst(ir_node * node) { sub()->defaultInitOp(node); }
+  void initConv(ir_node * node) { sub()->defaultInitOp(node); }
+  void initCopyB(ir_node * node) { sub()->defaultInitOp(node); }
+  void initDeleted(ir_node * node) { sub()->defaultInitOp(node); }
+  void initDiv(ir_node * node) { sub()->defaultInitOp(node); }
+  void initDummy(ir_node * node) { sub()->defaultInitOp(node); }
+  void initEnd(ir_node * node) { sub()->defaultInitOp(node); }
+  void initEor(ir_node * node) { sub()->defaultInitOp(node); }
+  void initFree(ir_node * node) { sub()->defaultInitOp(node); }
+  void initIJmp(ir_node * node) { sub()->defaultInitOp(node); }
+  void initId(ir_node * node) { sub()->defaultInitOp(node); }
+  void initJmp(ir_node * node) { sub()->defaultInitOp(node); }
+  void initLoad(ir_node * node) { sub()->defaultInitOp(node); }
+  void initMember(ir_node * node) { sub()->defaultInitOp(node); }
+  void initMinus(ir_node * node) { sub()->defaultInitOp(node); }
+  void initMod(ir_node * node) { sub()->defaultInitOp(node); }
+  void initMul(ir_node * node) { sub()->defaultInitOp(node); }
+  void initMulh(ir_node * node) { sub()->defaultInitOp(node); }
+  void initMux(ir_node * node) { sub()->defaultInitOp(node); }
+  void initNoMem(ir_node * node) { sub()->defaultInitOp(node); }
+  void initNot(ir_node * node) { sub()->defaultInitOp(node); }
+  void initOffset(ir_node * node) { sub()->defaultInitOp(node); }
+  void initOr(ir_node * node) { sub()->defaultInitOp(node); }
+  void initPhi(ir_node * node) { sub()->defaultInitOp(node); }
+  void initPin(ir_node * node) { sub()->defaultInitOp(node); }
+  void initProj(ir_node * node) { sub()->defaultInitOp(node); }
+  void initRaise(ir_node * node) { sub()->defaultInitOp(node); }
+  void initReturn(ir_node * node) { sub()->defaultInitOp(node); }
+  void initSel(ir_node * node) { sub()->defaultInitOp(node); }
+  void initShl(ir_node * node) { sub()->defaultInitOp(node); }
+  void initShr(ir_node * node) { sub()->defaultInitOp(node); }
+  void initShrs(ir_node * node) { sub()->defaultInitOp(node); }
+  void initSize(ir_node * node) { sub()->defaultInitOp(node); }
+  void initStart(ir_node * node) { sub()->defaultInitOp(node); }
+  void initStore(ir_node * node) { sub()->defaultInitOp(node); }
+  void initSub(ir_node * node) { sub()->defaultInitOp(node); }
+  void initSwitch(ir_node * node) { sub()->defaultInitOp(node); }
+  void initSync(ir_node * node) { sub()->defaultInitOp(node); }
+  void initTuple(ir_node * node) { sub()->defaultInitOp(node); }
+  void initUnknown(ir_node * node) { sub()->defaultInitOp(node); }
 
   void visitASM(ir_node *) {}
   void visitAdd(ir_node *) {}
@@ -179,13 +357,22 @@ public:
 class ExampleFunctionPass : public FunctionPass<ExampleFunctionPass> {
 public:
   ExampleFunctionPass(ir_graph *firmgraph) : FunctionPass(firmgraph) {}
-  void visitPhi(ir_node *) {
-    std::cout << "### visiting phi node" << std::endl;
-  }
-  void visitMod(ir_node *) {
-    std::cout << "### visiting mod node" << std::endl;
-  }
 
+  void defaultInitOp(ir_node *) {
+    std::cout << "init some node (default op)" << std::endl;
+  }
+  void initEnd(ir_node *) {
+    std::cout << "### init end node" << std::endl;
+  }
+  void initStart(ir_node *) {
+    std::cout << "### init start node" << std::endl;
+  }
+  void visitEnd(ir_node *) {
+    std::cout << "### visiting end node" << std::endl;
+  }
+  void visitStart(ir_node *) {
+    std::cout << "### visiting start node" << std::endl;
+  }
 };
 
 template <typename T>
@@ -194,3 +381,4 @@ class ProgramPass {
 };
 
 #endif // FIRM_PASS_H
+
