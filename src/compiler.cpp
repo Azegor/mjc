@@ -258,7 +258,7 @@ int Compiler::compileWithOwnBackend() {
 //     if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), options.printFirmGraph, !options.noVerify, options.compileFirm, options.outputAssembly, outputName))
 //       return EXIT_FAILURE;
 
-    AsmPass asmPass(firmVisitor.getFirmGraphs(), std::cout); // TODO: Write to file
+    AsmPass asmPass(firmVisitor.getFirmGraphs()); // TODO: Write to file
     asmPass.run();
 
     return EXIT_SUCCESS;

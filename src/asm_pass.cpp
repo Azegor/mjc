@@ -3,10 +3,11 @@
 #include <sstream>
 
 void AsmPass::before() {
-  writer.writeTextSection();
+  //writer.writeTextSection();
 }
 
 void AsmPass::visitMethod(ir_graph *graph) {
+#if 0
   const char *graphName = get_entity_ld_name(get_irg_entity(graph));
   std::stringstream ss;
 
@@ -25,10 +26,16 @@ void AsmPass::visitMethod(ir_graph *graph) {
   ss.str("");
   ss << graphName << ":";
   writer.writeLabel(ss.str());
+#endif
 
-  // TODO: Do things
+  auto func = new AsmFunction();
+  AsmMethodPass methodPass(graph, func);
+  methodPass.run();
+  functions.push_back(func);
 
 
+
+#if 0
   ss.str("");
   ss << ".size " << graphName << ", .-" << graphName;
   writer.writeInstruction(ss.str());
@@ -36,4 +43,9 @@ void AsmPass::visitMethod(ir_graph *graph) {
   ss.str("");
   ss << "End " << graphName;
   writer.writeComment(ss.str());
+#endif
+}
+
+void AsmMethodPass::before() {
+  
 }
