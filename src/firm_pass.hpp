@@ -406,7 +406,7 @@ public:
   void before() {}
   void after() {}
 
-  void visitMethod(ir_graph *g) {}
+  void visitMethod(ir_graph*) {}
 };
 
 #endif // FIRM_PASS_H
