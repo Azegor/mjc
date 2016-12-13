@@ -399,8 +399,8 @@ public:
     sub()->after();
   }
 
-  void enqueue(ir_node *node) {
-    worklist.push(node);
+  void enqueue(ir_graph *graph) {
+    worklist.push(graph);
   }
 
   void before() {}
