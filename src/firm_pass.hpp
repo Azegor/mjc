@@ -377,7 +377,36 @@ public:
 
 template <typename T>
 class ProgramPass {
-  // TODO;
+protected:
+  std::queue<ir_graph*> worklist;
+  T *sub() { return static_cast<T*>(this); }
+public:
+  ProgramPass(std::vector<ir_graph *> &graphs) {
+    for (auto g : graphs) {
+      enqueue(g);
+    }
+  }
+
+  void run() {
+    sub()->before();
+
+    while(!worklist.empty()) {
+      ir_graph *graph = worklist.front();
+      worklist.pop();
+      sub()->visitMethod(graph);
+    }
+
+    sub()->after();
+  }
+
+  void enqueue(ir_node *node) {
+    worklist.push(node);
+  }
+
+  void before() {}
+  void after() {}
+
+  void visitMethod(ir_graph *g) {}
 };
 
 #endif // FIRM_PASS_H
