@@ -112,7 +112,7 @@ protected:
   }
 
   static void setVal(ir_node *n, AttrT *tv) { set_irn_link(n, tv); }
-  static ir_tarval *getVal(ir_node *n) { return static_cast<AttrT* >(get_irn_link(n)); }
+  static AttrT *getVal(ir_node *n) { return static_cast<AttrT* >(get_irn_link(n)); }
 
   void initNode(ir_node * node) {
     enqueue(node); // enqueue every node!
