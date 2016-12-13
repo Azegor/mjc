@@ -38,6 +38,7 @@
 #include "parser.hpp"
 #include "semantic_visitor.hpp"
 #include "optimizer.hpp"
+#include "asm_pass.hpp"
 
 #ifndef LIBSEARCHDIR
 #define LIBSEARCHDIR "."
@@ -256,7 +257,9 @@ int Compiler::compileWithOwnBackend() {
     // TODO
 //     if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), options.printFirmGraph, !options.noVerify, options.compileFirm, options.outputAssembly, outputName))
 //       return EXIT_FAILURE;
-    std::cout << "TODO: implement" << std::endl;
+
+    AsmPass asmPass(firmVisitor.getFirmGraphs(), std::cout); // TODO: Write to file
+    asmPass.run();
 
     return EXIT_SUCCESS;
   } catch (CompilerError &e) {

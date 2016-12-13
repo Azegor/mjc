@@ -31,6 +31,8 @@
 #include <libfirm/irgwalk.h>
 
 #include <queue>
+#include <cstdlib>
+#include <iostream>
 
 template <typename T, typename AttrT = void>
 class FunctionPass {
@@ -403,7 +405,7 @@ public:
     worklist.push(graph);
   }
 
-  void before() {}
+  virtual void before() {}
   void after() {}
 
   void visitMethod(ir_graph*) {}

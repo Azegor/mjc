@@ -11,7 +11,6 @@ public:
     writeTextSection();
   }
 
-private:
   void writeTextSection();
 
   void writeInstruction(const std::string& instr) {
@@ -19,6 +18,10 @@ private:
   }
   void writeLabel(const std::string& label) {
     out << label << '\n';
+  }
+
+  void writeComment(const std::string &comment) {
+    out << "# -- " << comment << '\n';
   }
 };
 
