@@ -33,6 +33,7 @@ public:
 
 
     std::cout << "Block" << std::endl;
+    func->addBB(std::move(bb));
   }
 
 private:
