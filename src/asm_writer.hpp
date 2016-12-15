@@ -3,6 +3,8 @@
 
 #include <ostream>
 
+#include "asm.hpp"
+
 class AsmWriter {
   std::ostream &out;
 public:
