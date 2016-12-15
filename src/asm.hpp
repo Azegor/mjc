@@ -133,17 +133,23 @@ struct Register : public Operand {
   }
 };
 
-struct Indirect : public Operand {
-  X86_64Register reg;
-  Indirect(X86_64Register r) : reg(r) {}
+// Indirect specifies a memory location
+struct Memory : public Operand {
+  /// Memory is adressed the following way:
+  /// segment-override:signed-offset(base,index,scale)
+
+  // ignore segment-override
+  ir_tarval *offset;
+  X86_64Register base;
+  X86_64Register index;
+  ir_tarval *scale;
+  Memory(ir_tarval *offset, X86_64Register base, X86_64Register index, ir_tarval *scale) :
+    offset(offset), base(base), index(index), scale(scale) {}
 
   void write(std::ostream &o) const override {
-    o << '(' << reg.getAsmName() << ')';
+    // TODO: incorporate all values
+    o << '(' << base.getAsmName() << ')';
   }
-};
-
-struct MemLoc : public Operand {
-  // TODO
 };
 
 struct Immediate : public Operand {
@@ -240,7 +246,7 @@ struct ArithInstr : public Instruction {
   ArithInstr(OperandPtr s, OperandPtr d, std::string c = ""s)
       : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)) {}
   bool isValid() const override {
-    return src->isOneOf<Immediate, Register, MemLoc>() && dest->isOneOf<Register, MemLoc>();
+    return src->isOneOf<Immediate, Register, Memory>() && dest->isOneOf<Register, Memory>();
   }
 };
 
