@@ -353,9 +353,9 @@ int Compiler::run() {
     return fuzzSemantic();
   } else if (options.dotAttrAst) {
     return attrAstDot();
-  } else if (options.printFirmGraph || options.compileFirm) {
+  } else if (options.compileFirm) {
     return compileWithFirmBackend();
-  } else if (options.compile) {
+  } else if (options.compile || options.printFirmGraph) {
     return compileWithOwnBackend();
   }
   return EXIT_FAILURE;
