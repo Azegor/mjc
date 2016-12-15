@@ -6,6 +6,7 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
+#include <sstream>
 
 #include <cstdint>
 #include <cassert>
@@ -200,9 +201,8 @@ struct Instruction {
 
   friend std::ostream &operator<<(std::ostream &o, const Instruction &i) {
     assert(i.isValid());
-    o << '\t';
     i.write(o);
-    o << i.comment << '\n';
+    o << ' ' << i.comment;
     return o;
   }
 };
@@ -286,6 +286,36 @@ struct Div : public ArithInstr {
   void write(std::ostream &o) const override { o << mnemonic::Div << *src << ", " << *dest; }
 };
 
+// compound types:
+
+class AsmWriter {
+  std::ostream &out;
+public:
+  AsmWriter(std::ostream &o) : out(o) {}
+  void write() {
+    writeTextSection();
+  }
+
+  void writeTextSection();
+
+  void writeText(const std::string& text) {
+    out << text << '\n';
+  }
+
+  void writeInstruction(const Instruction& instr) {
+    out << '\t' << instr << '\n';
+  }
+  void writeLabel(const LocalLabel& label) {
+    out << label << ":\n";
+  }
+  void writeLabel(const NamedLabel& label) {
+    out << label << ":\n";
+  }
+  void writeComment(const std::string &comment) {
+    out << "/* -- " << comment << " */\n";
+  }
+};
+
 class BasicBlock {
   const LocalLabel label;
   std::vector<InstrPtr> instructions;
@@ -299,49 +329,80 @@ public:
     instructions.emplace_back(std::move(instr));
   }
 
-  friend std::ostream &operator<<(std::ostream &o, const BasicBlock &bb) {
-    bb.label.write(o);
-    o << ":\n";
-    for (auto &instr : bb.instructions) {
-      o << *instr;
+  void write(AsmWriter &writer) const {
+    writer.writeLabel(label);
+    for (auto &instr : instructions) {
+      writer.writeInstruction(*instr);
     }
-    return o;
   }
 };
 
 class Function {
-  NamedLabel name;
+  NamedLabel fnName;
   std::vector<BasicBlock> basicBlocks;
 
 public:
-  Function(std::string name) : name(std::move(name)) {}
-  Function(NamedLabel l) : name(std::move(l)) {}
+  Function(std::string name) : fnName(std::move(name)) {}
+  Function(NamedLabel l) : fnName(std::move(l)) {}
+  Function(Function &&) = default;
 
   void addBB(BasicBlock bb) {
     basicBlocks.emplace_back(std::move(bb));
   }
 
-  friend std::ostream &operator<<(std::ostream &o, const Function &f) {
-    for (auto &bb : f.basicBlocks) {
-      o << bb;
-      o << '\n';
+  void write(AsmWriter &writer) const {
+    const std::string &name = fnName.name;
+    std::stringstream ss;
+
+    // write function prolog
+    ss << "Begin " << name;
+    writer.writeComment(ss.str());
+
+    writer.writeText(".p2align 4,,15");
+    ss.str("");
+    ss << ".globl " << name;
+    writer.writeText(ss.str());
+
+    ss.str("");
+    ss << ".type " << name << ", @function";
+    writer.writeText(ss.str());
+
+    writer.writeLabel(fnName);
+
+    // write function content (BBs)
+
+    for (auto &bb : basicBlocks) {
+      bb.write(writer);
     }
-    return o;
+
+    // write function epilog
+
+    ss.str("");
+    ss << ".size " << name << ", .-" << name;
+    writer.writeText(ss.str());
+
+    ss.str("");
+    ss << "End " << name;
+    writer.writeComment(ss.str());
+    writer.writeText(""); // newline
   }
 };
 
 
-struct AsmProgramm {
+struct Programm {
   std::vector<Function> functions;
 
 public:
-  void addBB(Function f) {
+  void addFunction(Function f) {
     functions.emplace_back(std::move(f));
   }
 
-  friend std::ostream &operator<<(std::ostream &o, const AsmProgramm &p) {
-    // TODO
-    (void)p;
+  friend std::ostream &operator<<(std::ostream &o, const Programm &p) {
+    AsmWriter writer(o);
+    writer.writeTextSection();
+    for (auto &fn : p.functions) {
+      fn.write(writer);
+    }
     return o;
   }
 };
