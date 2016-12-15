@@ -90,8 +90,7 @@ public:
 
     sub()->before();
 
-    initNodesTopological(); // fills work queue
-//     std::cout << "worklist size: " << worklist.size() << std::endl;
+    sub()->initWorkQueue(); // fill work queue. Default is all nodes in topological order
 
     // calls visit method on work queue items (add more items if necessary in visit* Methods)
     while(!worklist.empty()) {
@@ -107,6 +106,7 @@ public:
 
 protected:
   void before() {};
+  void initWorkQueue() { initNodesTopological(); }
   void after() {};
 
   void enqueue(ir_node *node) {
