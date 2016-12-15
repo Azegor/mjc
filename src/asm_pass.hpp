@@ -5,11 +5,13 @@
 #include "asm.hpp"
 
 class AsmPass : public ProgramPass<AsmPass> {
+  const std::string &outputFileName;
 public:
-  AsmPass(std::vector<ir_graph *> &graphs) : ProgramPass(graphs) {}
+  AsmPass(std::vector<ir_graph *> &graphs, const std::string &outputFileName) : ProgramPass(graphs), outputFileName(outputFileName) {}
 
   void before();
   void visitMethod(ir_graph *graph);
+  void after();
 
 private:
   Asm::Programm asmProgram;
