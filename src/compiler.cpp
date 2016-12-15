@@ -255,17 +255,57 @@ int Compiler::compileWithOwnBackend() {
     }
     std::string outputName = options.outputFileName.empty() ? "a.out" : options.outputFileName;
     // TODO
-//     if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), options.printFirmGraph, !options.noVerify, options.compileFirm, options.outputAssembly, outputName))
-//       return EXIT_FAILURE;
-
-    AsmPass asmPass(firmVisitor.getFirmGraphs(), outputName);
-    asmPass.run();
+    if (!lowerFirmGraphsWithOwnBackend(firmVisitor.getFirmGraphs(), options.printFirmGraph, !options.noVerify, options.outputAssembly, outputName))
+      return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
   } catch (CompilerError &e) {
     e.writeErrorMessage(std::cerr);
     return EXIT_FAILURE;
   }
+}
+
+bool Compiler::lowerFirmGraphsWithOwnBackend(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool outputAssembly, const std::string &outFileName) {
+  int graphErrors = 0;
+  for (auto g : graphs) {
+    lower_highlevel_graph(g);
+
+    if (printGraphs) {
+      dump_ir_graph(g, "lowered");
+    }
+    if (verifyGraphs) {
+      if (irg_verify(g) == 0)
+        graphErrors++;
+    }
+  }
+  if (graphErrors)
+    return false;
+
+  FILE *f = nullptr;
+  std::string assemblyName;
+  if (outputAssembly) {
+    assemblyName = outFileName + ".s";
+    f = fopen(assemblyName.c_str(), "w");
+  } else {
+    f = tmpfile();
+    assemblyName = "/proc/self/fd/" + std::to_string(fileno(f));
+  }
+
+  // create assembly code
+
+  AsmPass asmPass(graphs, assemblyName);
+  asmPass.run();
+
+
+  int res = 0;
+//     res |= system("gcc -c ../src/runtime.c -o runtime.o");
+//     res |= system("ar rcs libruntime.a runtime.o");
+  res |= system(("gcc -static -x assembler " + assemblyName + " -o " + outFileName + " -L" LIBSEARCHDIR " -lruntime").c_str());
+  fclose(f);
+  if (res) {
+    throw std::runtime_error("Error while linking binary");
+  }
+  return true;
 }
 
 void Compiler::analyzeAstSemantic(ast::Program *astRoot, Lexer &lexer) {
