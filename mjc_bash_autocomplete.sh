@@ -11,5 +11,5 @@
 # }
 # complete -o nospace -F _mjc ./mjc
 
-complete_words='-h --help --echo --input-file --lextest --lexfuzz --parsetest --parsefuzz --print-ast --dot-ast --check --fuzz-check --dot-attr-ast --firm-graph --compile-firm -S --output-assembly --no-verify -O --optimize -o'
+complete_words='-h --help --echo --input-file --lextest --lexfuzz --parsetest --parsefuzz --print-ast --dot-ast --check --fuzz-check --dot-attr-ast --firm-graph --compile-firm -S --output-assembly --no-verify -O --optimize -c --compile -o --output'
 complete -o nospace -W "${complete_words}" -o bashdefault -o default ./mjc
