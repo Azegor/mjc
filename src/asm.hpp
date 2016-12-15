@@ -165,6 +165,8 @@ struct Immediate : public Operand {
 struct LocalLabel : public Operand {
   uint32_t nr;
   LocalLabel() : nr(newNr()) {}
+  LocalLabel(const LocalLabel &) = default;
+  LocalLabel(LocalLabel &&) = default;
 
   void write(std::ostream &o) const override {
     o << ".L" << nr;
@@ -239,6 +241,12 @@ struct Nop : public Instruction {
   bool isValid() const override { return true; }
 };
 
+struct Comment : public Instruction {
+  Comment(std::string comment) : Instruction(std::move(comment)) {}
+  void write(std::ostream &) const override { /* comment printing done by Instruction */ }
+  bool isValid() const override { return true; }
+};
+
 using OperandPtr = std::unique_ptr<Operand>;
 
 struct ArithInstr : public Instruction {
@@ -276,6 +284,66 @@ struct Div : public ArithInstr {
       : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
 
   void write(std::ostream &o) const override { o << mnemonic::Div << *src << ", " << *dest; }
+};
+
+class BasicBlock {
+  const LocalLabel label;
+  std::vector<InstrPtr> instructions;
+
+public:
+  BasicBlock() : label() {}
+  BasicBlock(LocalLabel l) : label(std::move(l)) {}
+  BasicBlock(BasicBlock &&bb) = default;
+
+  void addInstruction(InstrPtr instr) {
+    instructions.emplace_back(std::move(instr));
+  }
+
+  friend std::ostream &operator<<(std::ostream &o, const BasicBlock &bb) {
+    bb.label.write(o);
+    o << ":\n";
+    for (auto &instr : bb.instructions) {
+      o << *instr;
+    }
+    return o;
+  }
+};
+
+class Function {
+  NamedLabel name;
+  std::vector<BasicBlock> basicBlocks;
+
+public:
+  Function(std::string name) : name(std::move(name)) {}
+  Function(NamedLabel l) : name(std::move(l)) {}
+
+  void addBB(BasicBlock bb) {
+    basicBlocks.emplace_back(std::move(bb));
+  }
+
+  friend std::ostream &operator<<(std::ostream &o, const Function &f) {
+    for (auto &bb : f.basicBlocks) {
+      o << bb;
+      o << '\n';
+    }
+    return o;
+  }
+};
+
+
+struct AsmProgramm {
+  std::vector<Function> functions;
+
+public:
+  void addBB(Function f) {
+    functions.emplace_back(std::move(f));
+  }
+
+  friend std::ostream &operator<<(std::ostream &o, const AsmProgramm &p) {
+    // TODO
+    (void)p;
+    return o;
+  }
 };
 
 }

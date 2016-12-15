@@ -23,7 +23,7 @@ public:
   }
 
   void writeComment(const std::string &comment) {
-    out << "# -- " << comment << '\n';
+    out << "/* -- " << comment << " */\n";
   }
 };
 
