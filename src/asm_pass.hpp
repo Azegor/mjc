@@ -56,10 +56,10 @@ public:
   }
 
 
-  void vistAdd(ir_node *add) {
+  void visitAdd(ir_node *add) {
     (void) add;
-    // TODO
-    currentBB->emplaceInstruction<Asm::Add>(nullptr, nullptr, "some add instr");
+    // TODO (only example)
+    currentBB->emplaceInstruction<Asm::Add>(Asm::Register::get(Asm::X86_64Register::Name::rax, Asm::X86_64Register::Access::R), Asm::Register::get(Asm::X86_64Register::Name::rbx, Asm::X86_64Register::Access::R), "Node " + std::to_string(get_irn_node_nr(add)));
   }
 
 private:

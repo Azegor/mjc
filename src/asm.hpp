@@ -47,6 +47,8 @@ struct X86_64Register {
     L, // 8 bit lower part
   };
 
+  X86_64Register(Name n, Access a) : name(n), acc(a) {}
+
   const char* getAsmName() const;
 
   const Name name;
@@ -66,6 +68,7 @@ struct X86_64Register {
 /// --- instruction operands ---
 
 struct Operand {
+  virtual ~Operand() {}
   virtual void write(std::ostream &o) const = 0;
 
   template <typename T> bool isOneOf() const { return typeid(T) == typeid(*this); }
@@ -85,6 +88,10 @@ struct Register : public Operand {
 
   void write(std::ostream &o) const override {
     o << reg.getAsmName();
+  }
+
+  static std::unique_ptr<Register> get(X86_64Register::Name name, X86_64Register::Access access) {
+    return std::make_unique<Register>(X86_64Register(name, access));
   }
 };
 
@@ -148,6 +155,7 @@ struct Instruction {
   const std::string comment;
 
   Instruction(std::string comment) : comment(std::move(comment)) {}
+  virtual ~Instruction() {}
 
   virtual Operand *getDestOperand() const = 0;
   virtual void write(std::ostream &o) const = 0;
@@ -156,7 +164,9 @@ struct Instruction {
   friend std::ostream &operator<<(std::ostream &o, const Instruction &i) {
     assert(i.isValid());
     i.write(o);
-    o << ' ' << i.comment;
+    if (i.comment.length()) {
+      o << " /* " << i.comment << " */";
+    }
     return o;
   }
 };
@@ -211,34 +221,38 @@ struct ArithInstr : public Instruction {
   bool isValid() const override {
     return src->isOneOf<Immediate, Register, Memory>() && dest->isOneOf<Register, Memory>();
   }
+
+  void writeInstr(std::ostream &o, const std::string &mnemonic) const {
+    o << mnemonic << ' ' << *src << ", " << *dest;
+  }
 };
 
 struct Add : public ArithInstr {
   Add(OperandPtr s, OperandPtr d, std::string c = ""s)
       : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
 
-  void write(std::ostream &o) const override { o << mnemonic::Add << *src << ", " << *dest; }
+  void write(std::ostream &o) const override { writeInstr(o, mnemonic::Add); }
 };
 
 struct Sub : public ArithInstr {
   Sub(OperandPtr s, OperandPtr d, std::string c = ""s)
       : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
 
-  void write(std::ostream &o) const override { o << mnemonic::Sub << *src << ", " << *dest; }
+  void write(std::ostream &o) const override { writeInstr(o, mnemonic::Sub); }
 };
 
 struct Mul : public ArithInstr {
   Mul(OperandPtr s, OperandPtr d, std::string c = ""s)
       : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
 
-  void write(std::ostream &o) const override { o << mnemonic::Mul << *src << ", " << *dest; }
+  void write(std::ostream &o) const override { writeInstr(o, mnemonic::Mul); }
 };
 
 struct Div : public ArithInstr {
   Div(OperandPtr s, OperandPtr d, std::string c = ""s)
       : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
 
-  void write(std::ostream &o) const override { o << mnemonic::Div << *src << ", " << *dest; }
+  void write(std::ostream &o) const override { writeInstr(o, mnemonic::Div); }
 };
 
 // compound types:
