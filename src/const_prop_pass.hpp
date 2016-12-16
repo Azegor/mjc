@@ -103,33 +103,42 @@ public:
   // IMPORTANT: propagate tarval_bad to following Projs
   void initStart(ir_node *start) {
     setVal(start, tarval_bad);
+    enqueue(start);
   }
 
   void initConst(ir_node *konst) {
     setVal(konst, get_Const_tarval(konst)); // also adds successors to worklist
+    enqueue(konst);
   }
   void initAdd(ir_node *add) {
     setVal(add, tarval_unknown);
+    enqueue(add);
   }
   void initSub(ir_node *sub) {
     setVal(sub, tarval_unknown);
+    enqueue(sub);
   }
   void initMul(ir_node *mul) {
     setVal(mul, tarval_unknown);
+    enqueue(mul);
   }
   void initDiv(ir_node *div) {
     setVal(div, tarval_unknown);
+    enqueue(div);
   }
   void initMod(ir_node *mod) {
     setVal(mod, tarval_unknown);
+    enqueue(mod);
   }
   void initPhi(ir_node *phi) {
     setVal(phi, tarval_unknown);
+    enqueue(phi);
   }
 
   void defaultInitOp(ir_node *node) {
     // no setNodeLink!
     setVal(node, tarval_bad); // default all to bad which can never be const
+    enqueue(node);
   }
 
   // -- visit helper functions --

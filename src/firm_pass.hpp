@@ -117,7 +117,6 @@ protected:
   static AttrT *getVal(ir_node *n) { return static_cast<AttrT* >(get_irn_link(n)); }
 
   void initNode(ir_node * node) {
-    enqueue(node); // enqueue every node!
     switch(get_irn_opcode(node)) {
       case iro_ASM: return sub()->initASM(node);
       case iro_Add: return sub()->initAdd(node);
@@ -241,7 +240,7 @@ protected:
     }
   }
 
-  void defaultInitOp(ir_node *) { /* default default is nothing ^^ */ }
+  void defaultInitOp(ir_node *node) { enqueue(node); }
 
   void initASM(ir_node * node) { sub()->defaultInitOp(node); }
   void initAdd(ir_node * node) { sub()->defaultInitOp(node); }
@@ -299,61 +298,63 @@ protected:
   void initTuple(ir_node * node) { sub()->defaultInitOp(node); }
   void initUnknown(ir_node * node) { sub()->defaultInitOp(node); }
 
-  void visitASM(ir_node *) {}
-  void visitAdd(ir_node *) {}
-  void visitAddress(ir_node *) {}
-  void visitAlign(ir_node *) {}
-  void visitAlloc(ir_node *) {}
-  void visitAnchor(ir_node *) {}
-  void visitAnd(ir_node *) {}
-  void visitBad(ir_node *) {}
-  void visitBitcast(ir_node *) {}
-  void visitBlock(ir_node *) {}
-  void visitBuiltin(ir_node *) {}
-  void visitCall(ir_node *) {}
-  void visitCmp(ir_node *) {}
-  void visitCond(ir_node *) {}
-  void visitConfirm(ir_node *) {}
-  void visitConst(ir_node *) {}
-  void visitConv(ir_node *) {}
-  void visitCopyB(ir_node *) {}
-  void visitDeleted(ir_node *) {}
-  void visitDiv(ir_node *) {}
-  void visitDummy(ir_node *) {}
-  void visitEnd(ir_node *) {}
-  void visitEor(ir_node *) {}
-  void visitFree(ir_node *) {}
-  void visitIJmp(ir_node *) {}
-  void visitId(ir_node *) {}
-  void visitJmp(ir_node *) {}
-  void visitLoad(ir_node *) {}
-  void visitMember(ir_node *) {}
-  void visitMinus(ir_node *) {}
-  void visitMod(ir_node *) {}
-  void visitMul(ir_node *) {}
-  void visitMulh(ir_node *) {}
-  void visitMux(ir_node *) {}
-  void visitNoMem(ir_node *) {}
-  void visitNot(ir_node *) {}
-  void visitOffset(ir_node *) {}
-  void visitOr(ir_node *) {}
-  void visitPhi(ir_node *) {}
-  void visitPin(ir_node *) {}
-  void visitProj(ir_node *) {}
-  void visitRaise(ir_node *) {}
-  void visitReturn(ir_node *) {}
-  void visitSel(ir_node *) {}
-  void visitShl(ir_node *) {}
-  void visitShr(ir_node *) {}
-  void visitShrs(ir_node *) {}
-  void visitSize(ir_node *) {}
-  void visitStart(ir_node *) {}
-  void visitStore(ir_node *) {}
-  void visitSub(ir_node *) {}
-  void visitSwitch(ir_node *) {}
-  void visitSync(ir_node *) {}
-  void visitTuple(ir_node *) {}
-  void visitUnknown(ir_node *) {}
+  void defaultVisitOp(ir_node *) { /* default default is nothing ^^ */ }
+
+  void visitASM(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitAdd(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitAddress(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitAlign(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitAlloc(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitAnchor(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitAnd(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitBad(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitBitcast(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitBlock(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitBuiltin(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitCall(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitCmp(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitCond(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitConfirm(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitConst(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitConv(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitCopyB(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitDeleted(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitDiv(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitDummy(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitEnd(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitEor(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitFree(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitIJmp(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitId(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitJmp(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitLoad(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitMember(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitMinus(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitMod(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitMul(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitMulh(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitMux(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitNoMem(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitNot(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitOffset(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitOr(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitPhi(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitPin(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitProj(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitRaise(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitReturn(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitSel(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitShl(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitShr(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitShrs(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitSize(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitStart(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitStore(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitSub(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitSwitch(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitSync(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitTuple(ir_node *node) { sub()->defaultVisitOp(node); }
+  void visitUnknown(ir_node *node) { sub()->defaultVisitOp(node); }
 };
 
 class ExampleFunctionPass : public FunctionPass<ExampleFunctionPass> {
