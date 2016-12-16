@@ -74,6 +74,20 @@ void AsmWriter::writeTextSection()
   writeText(".text");
 }
 
+// --- Function ---
+
+void Function::writeProlog(AsmWriter &writer) const {
+  // TODO do the "right way" with writeInstruction!
+  writer.writeText("\tpushq %rbp");
+  writer.writeText("\tmovq %rsp, %rbp");
+  writer.writeText("\tsubq $" + std::to_string(ARSize) + ", %rbp");
+}
+void Function::writeEpilog(AsmWriter &writer) const {
+  writer.writeText("\tmovq %rbp, %rsp");
+  writer.writeText("\tpopq %rbp");
+  writer.writeText("\tret");
+}
+
 void Function::write(AsmWriter &writer) const {
   const std::string &name = fnName.name;
   std::stringstream ss;
@@ -93,11 +107,16 @@ void Function::write(AsmWriter &writer) const {
 
   writer.writeLabel(fnName);
 
+  writeProlog(writer);
+
   // write function content (BBs)
 
   for (auto &bb : basicBlocks) {
     bb.write(writer);
   }
+
+
+  writeEpilog(writer);
 
   // write function epilog
 

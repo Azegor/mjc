@@ -387,6 +387,7 @@ public:
 class Function {
   NamedLabel fnName;
   std::vector<BasicBlock> basicBlocks;
+  int ARSize = 0;
 
 public:
   Function(std::string name) : fnName(std::move(name)) {}
@@ -400,6 +401,13 @@ public:
     basicBlocks.emplace_back(std::move(comment));
     return &basicBlocks.back();
   }
+
+  void setARSize(int size) {
+    ARSize = size;
+  }
+
+  void writeProlog(AsmWriter &writer) const;
+  void writeEpilog(AsmWriter &writer) const;
 
   void write(AsmWriter &writer) const;
 };

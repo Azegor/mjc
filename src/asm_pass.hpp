@@ -34,6 +34,10 @@ public:
     }
     return pos->second;
   }
+
+  int getLocVarUsedSize() const {
+    return currentOffset;
+  }
 };
 
 class AsmMethodPass : public FunctionPass<AsmMethodPass, Asm::Instruction> {
@@ -43,7 +47,10 @@ public:
   AsmMethodPass(ir_graph *graph, Asm::Function *func) : FunctionPass(graph), func(func) {}
 
   void before() { std::cout << "### visiting function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl; }
-  void after() { std::cout << "### finished function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl; }
+  void after() {
+    std::cout << "### finished function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl;
+    func->setARSize(ssm.getLocVarUsedSize());
+  }
 
   void initBlock(ir_node *b) {
     blockNodesList.insert({b, std::vector<ir_node *>()}); // init empty vector
