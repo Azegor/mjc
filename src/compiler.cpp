@@ -255,7 +255,7 @@ int Compiler::compileWithOwnBackend() {
     }
     std::string outputName = options.outputFileName.empty() ? "a.out" : options.outputFileName;
     // TODO
-    if (!lowerFirmGraphsWithOwnBackend(firmVisitor.getFirmGraphs(), options.printFirmGraph, !options.noVerify, options.outputAssembly, outputName))
+    if (!lowerFirmGraphsWithOwnBackend(firmVisitor.getFirmGraphs(), options.printFirmGraph, !options.noVerify, options.compile, options.outputAssembly, outputName))
       return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
@@ -265,7 +265,7 @@ int Compiler::compileWithOwnBackend() {
   }
 }
 
-bool Compiler::lowerFirmGraphsWithOwnBackend(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool outputAssembly, const std::string &outFileName) {
+bool Compiler::lowerFirmGraphsWithOwnBackend(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool generateCode, bool outputAssembly, const std::string &outFileName) {
   int graphErrors = 0;
   for (auto g : graphs) {
     lower_highlevel_graph(g); // FIXME: are we allowed to use this function?
@@ -280,30 +280,31 @@ bool Compiler::lowerFirmGraphsWithOwnBackend(std::vector<ir_graph*> &graphs, boo
   }
   if (graphErrors)
     return false;
+  if (generateCode) {
+    FILE *f = nullptr;
+    std::string assemblyName;
+    if (outputAssembly) {
+      assemblyName = outFileName + ".s";
+      f = fopen(assemblyName.c_str(), "w");
+    } else {
+      f = tmpfile();
+      assemblyName = "/proc/self/fd/" + std::to_string(fileno(f));
+    }
 
-  FILE *f = nullptr;
-  std::string assemblyName;
-  if (outputAssembly) {
-    assemblyName = outFileName + ".s";
-    f = fopen(assemblyName.c_str(), "w");
-  } else {
-    f = tmpfile();
-    assemblyName = "/proc/self/fd/" + std::to_string(fileno(f));
-  }
+    // create assembly code
 
-  // create assembly code
-
-  AsmPass asmPass(graphs, assemblyName);
-  asmPass.run();
+    AsmPass asmPass(graphs, assemblyName);
+    asmPass.run();
 
 
-  int res = 0;
-//     res |= system("gcc -c ../src/runtime.c -o runtime.o");
-//     res |= system("ar rcs libruntime.a runtime.o");
-  res |= system(("gcc -static -x assembler " + assemblyName + " -o " + outFileName + " -L" LIBSEARCHDIR " -lruntime").c_str());
-  fclose(f);
-  if (res) {
-    throw std::runtime_error("Error while linking binary");
+    int res = 0;
+  //     res |= system("gcc -c ../src/runtime.c -o runtime.o");
+  //     res |= system("ar rcs libruntime.a runtime.o");
+    res |= system(("gcc -static -x assembler " + assemblyName + " -o " + outFileName + " -L" LIBSEARCHDIR " -lruntime").c_str());
+    fclose(f);
+    if (res) {
+      throw std::runtime_error("Error while linking binary");
+    }
   }
   return true;
 }
