@@ -258,8 +258,12 @@ public:
   void writeInstruction(const Instruction& instr) {
     out << '\t' << instr << '\n';
   }
-  void writeLabel(const LocalLabel& label) {
-    out << label << ":\n";
+  void writeLabel(const LocalLabel& label, const std::string &comment = ""s) {
+    out << label << ':';
+    if (comment.length()) {
+      out << " /* " << comment << " */";
+    }
+    out << '\n';
   }
   void writeLabel(const NamedLabel& label) {
     out << label << ":\n";
@@ -270,11 +274,12 @@ public:
 };
 
 class BasicBlock {
+  std::string comment;
   const LocalLabel label;
   std::vector<InstrPtr> instructions;
 
 public:
-  BasicBlock() : label() {}
+  BasicBlock(std::string comment = ""s) : comment(std::move(comment)), label() {}
   BasicBlock(LocalLabel l) : label(std::move(l)) {}
   BasicBlock(BasicBlock &&bb) = default;
 
@@ -283,7 +288,7 @@ public:
   }
 
   void write(AsmWriter &writer) const {
-    writer.writeLabel(label);
+    writer.writeLabel(label, comment);
     for (auto &instr : instructions) {
       writer.writeInstruction(*instr);
     }

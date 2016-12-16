@@ -55,7 +55,7 @@ public:
 
   void visitBlock(ir_node *b) {
     (void)b;
-    Asm::BasicBlock bb;
+    Asm::BasicBlock bb("Block " + std::to_string(get_irn_node_nr(b)));
     this->currentBB = &bb;
 
 
