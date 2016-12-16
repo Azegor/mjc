@@ -293,6 +293,8 @@ public:
       writer.writeInstruction(*instr);
     }
   }
+
+  const std::string &getComment() const { return comment; }
 };
 
 class Function {
@@ -306,6 +308,10 @@ public:
 
   void addBB(BasicBlock bb) {
     basicBlocks.emplace_back(std::move(bb));
+  }
+  BasicBlock *newBB(std::string comment = ""s) {
+    basicBlocks.emplace_back(std::move(comment));
+    return &basicBlocks.back();
   }
 
   void write(AsmWriter &writer) const;

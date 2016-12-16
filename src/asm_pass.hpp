@@ -1,6 +1,9 @@
 #ifndef ASM_PASS_HPP
 #define ASM_PASS_HPP
 
+#include <unordered_map>
+#include <vector>
+
 #include "firm_pass.hpp"
 #include "asm.hpp"
 
@@ -23,48 +26,37 @@ class AsmMethodPass : public FunctionPass<AsmMethodPass> {
 public:
   AsmMethodPass(ir_graph *graph, Asm::Function *func) : FunctionPass(graph), func(func) {}
 
-  void before();
+  void before() { std::cout << "### visiting function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl; }
+  void after() { std::cout << "### finished function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl; }
 
-  void initBlockNodesTopological() {
-    inc_irg_visited(graph);
-    init_blocks_topological(get_irg_end(graph));
-  }
-
-  void init_blocks_topological(ir_node *irn)
-  {
-    if (irn_visited(irn)) {
-      return;
-    }
-
-    mark_irn_visited(irn);
-
-    assert(!is_Block(irn)); // irn is never a block, since predecessors of blocks are X nodes
-    ir_node *const block = get_nodes_block(irn);
-    for (int i = 0; i < get_irn_arity(block); ++i) {
-      ir_node *const pred = get_irn_n(block, i);
-      init_blocks_topological(pred);
-    }
-//     ir_printf("coming from %n(%N), enqueuing %n (%N)\n", irn, irn, block, block);
-    initBlock(block);
-    enqueue(block);
-  }
-
-  void initWorkQueue() {
-    initBlockNodesTopological();
+  void initBlock(ir_node *b) {
+    blockNodesList.insert({b, std::vector<ir_node *>()}); // init empty vector
+    enqueue(b);
   }
 
   void visitBlock(ir_node *b) {
-    (void)b;
-    Asm::BasicBlock bb("Block " + std::to_string(get_irn_node_nr(b)));
-    this->currentBB = &bb;
+    this->currentBB = func->newBB("Block " + std::to_string(get_irn_node_nr(b)));
+    std::cout << " --- visiting " << currentBB->getComment() << std::endl;
 
+    auto &blockNodes = blockNodesList.at(b);
+    for (auto n : blockNodes) {
+      assert(!is_Block(n));
+      visitNode(n);
+    }
 
+    this->currentBB = nullptr; // to be safe
+  }
 
-    std::cout << "Block" << std::endl;
-    func->addBB(std::move(bb));
+  void defaultInitOp(ir_node *n) {
+    blockNodesList[get_nodes_block(n)].push_back(n);
+  }
+
+  void defaultVisitOp(ir_node *n) {
+    ir_printf("  visiting node %n (%N) in bb %s\n", n, n, currentBB->getComment().c_str());
   }
 
 private:
+  std::unordered_map<ir_node *, std::vector<ir_node *>> blockNodesList;
   Asm::Function *func;
 
   Asm::BasicBlock *currentBB;

@@ -22,8 +22,3 @@ void AsmPass::after()
   }
   outputFile << asmProgram << std::endl;
 }
-
-
-void AsmMethodPass::before() {
-  
-}
