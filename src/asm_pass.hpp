@@ -4,13 +4,15 @@
 #include <unordered_map>
 #include <vector>
 
-#include "firm_pass.hpp"
 #include "asm.hpp"
+#include "firm_pass.hpp"
 
 class AsmPass : public ProgramPass<AsmPass> {
   const std::string &outputFileName;
+
 public:
-  AsmPass(std::vector<ir_graph *> &graphs, const std::string &outputFileName) : ProgramPass(graphs), outputFileName(outputFileName) {}
+  AsmPass(std::vector<ir_graph *> &graphs, const std::string &outputFileName)
+      : ProgramPass(graphs), outputFileName(outputFileName) {}
 
   void before();
   void visitMethod(ir_graph *graph);
@@ -20,10 +22,10 @@ private:
   Asm::Programm asmProgram;
 };
 
-
 class StackSlotManager {
   int currentOffset = 0;
   std::unordered_map<ir_node *, int> offsets;
+
 public:
   StackSlotManager() {}
 
@@ -35,9 +37,7 @@ public:
     return pos->second;
   }
 
-  int getLocVarUsedSize() const {
-    return currentOffset;
-  }
+  int getLocVarUsedSize() const { return currentOffset; }
 };
 
 class AsmMethodPass : public FunctionPass<AsmMethodPass, Asm::Instruction> {
@@ -46,7 +46,9 @@ class AsmMethodPass : public FunctionPass<AsmMethodPass, Asm::Instruction> {
 public:
   AsmMethodPass(ir_graph *graph, Asm::Function *func) : FunctionPass(graph), func(func) {}
 
-  void before() { std::cout << "### visiting function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl; }
+  void before() {
+    std::cout << "### visiting function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl;
+  }
   void after() {
     std::cout << "### finished function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl;
     func->setARSize(ssm.getLocVarUsedSize());
@@ -70,40 +72,40 @@ public:
     this->currentBB = nullptr; // to be safe
   }
 
-  void defaultInitOp(ir_node *n) {
-    blockNodesList[get_nodes_block(n)].push_back(n);
-  }
+  void defaultInitOp(ir_node *n) { blockNodesList[get_nodes_block(n)].push_back(n); }
 
   void defaultVisitOp(ir_node *n) {
     ir_printf("  visiting node %n (%N) in bb %s\n", n, n, currentBB->getComment().c_str());
   }
 
-
   void visitAdd(ir_node *add);
 
   Asm::OperandPtr getNodeResAsInstOperand(ir_node *node) {
-    switch(get_irn_opcode(node)) {
-      case iro_Const:
-        return std::make_unique<Asm::Immediate>(get_Const_tarval(node));
-      default:
-        return std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node),
-            Asm::X86_64Register(Asm::X86_64Register::Name::rbp,
-                                Asm::X86_64Register::getRegMode(get_irn_mode(node)))
-            );
+    switch (get_irn_opcode(node)) {
+    case iro_Const:
+      return std::make_unique<Asm::Immediate>(get_Const_tarval(node));
+    default:
+      return std::make_unique<Asm::MemoryBase>(
+          ssm.getStackSlot(node),
+          Asm::X86_64Register(Asm::X86_64Register::Name::rbp,
+                              Asm::X86_64Register::getRegMode(get_irn_mode(node))));
     }
     __builtin_trap();
   }
 
   Asm::InstrPtr loadToReg(Asm::OperandPtr val, Asm::X86_64Register reg) {
-    return std::make_unique<Asm::Mov>(std::move(val), Asm::Register::get(reg), "load stackslot val to reg");
+    return std::make_unique<Asm::Mov>(std::move(val), Asm::Register::get(reg),
+                                      "load stackslot val to reg");
   }
 
   Asm::InstrPtr writeResToStackSlot(Asm::OperandPtr reg, ir_node *node) {
-    return std::make_unique<Asm::Mov>(std::move(reg),
-            std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node),
+    return std::make_unique<Asm::Mov>(
+        std::move(reg),
+        std::make_unique<Asm::MemoryBase>(
+            ssm.getStackSlot(node),
             Asm::X86_64Register(Asm::X86_64Register::Name::rbp,
-                                Asm::X86_64Register::getRegMode(get_irn_mode(node)))
-            ), "store reg to stackslot");
+                                Asm::X86_64Register::getRegMode(get_irn_mode(node)))),
+        "store reg to stackslot");
   }
 
 private:
@@ -114,4 +116,3 @@ private:
 };
 
 #endif
-

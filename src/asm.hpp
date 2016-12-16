@@ -3,13 +3,13 @@
 
 #include <memory>
 #include <ostream>
+#include <sstream>
 #include <string>
 #include <typeinfo>
 #include <vector>
-#include <sstream>
 
-#include <cstdint>
 #include <cassert>
+#include <cstdint>
 
 #include <libfirm/firm.h>
 
@@ -52,7 +52,7 @@ struct X86_64Register {
   const Mode mode;
 
   X86_64Register(Name n, Mode m) : name(n), mode(m) {}
-  const char* getAsmName() const;
+  const char *getAsmName() const;
 
   static Mode getRegMode(ir_mode *mode);
 
@@ -71,14 +71,13 @@ private:
 //   GlobLabel, // name of function
 // };
 
-
 /// --- instruction operands ---
 
 struct Operand {
   virtual ~Operand() {}
   virtual void write(std::ostream &o) const = 0;
 
-  template <typename T> bool isOneOf() const { return dynamic_cast<const T*>(this) != nullptr; }
+  template <typename T> bool isOneOf() const { return dynamic_cast<const T *>(this) != nullptr; }
   template <typename T1, typename T2, typename... Args> bool isOneOf() const {
     return isOneOf<T1>() || isOneOf<T2, Args...>();
   }
@@ -95,9 +94,7 @@ struct Register : public WritableOperand {
   X86_64Register reg;
   Register(X86_64Register r) : reg(r) {}
 
-  void write(std::ostream &o) const override {
-    o << reg.getAsmName();
-  }
+  void write(std::ostream &o) const override { o << reg.getAsmName(); }
 
   static std::unique_ptr<Register> get(X86_64Register::Name name, X86_64Register::Mode mode) {
     return get(X86_64Register(name, mode));
@@ -108,15 +105,15 @@ struct Register : public WritableOperand {
 };
 
 struct MemoryOperand : public WritableOperand {};
-  /// Memory is adressed the following way:
-  /// segment-override:signed-offset(base,index,scale)
-  /// variations: (be carefull wich are missing!)
-  /// (base)
-  /// (index, scale)
-  /// (base,index,scale)
-  /// signed-offset(base)
-  /// signed-offset(base,index)
-  /// signed-offset(index, scale)
+/// Memory is adressed the following way:
+/// segment-override:signed-offset(base,index,scale)
+/// variations: (be carefull wich are missing!)
+/// (base)
+/// (index, scale)
+/// (base,index,scale)
+/// signed-offset(base)
+/// signed-offset(base,index)
+/// signed-offset(index, scale)
 
 /// offset and scale can always be specified (0 and 1 respectively) -> no extra classes
 /// have Base, BaseIndex, IndexScale, BaseIndexScale
@@ -127,8 +124,7 @@ struct MemoryBase : public MemoryOperand {
   // ignore segment-override
   int32_t offset;
   X86_64Register base;
-  MemoryBase(int32_t offset, X86_64Register base) :
-    offset(offset), base(base) {}
+  MemoryBase(int32_t offset, X86_64Register base) : offset(offset), base(base) {}
 
   void write(std::ostream &o) const override {
     // TODO: incorporate all values
@@ -146,10 +142,11 @@ struct MemoryIndex : public MemoryOperand {
   X86_64Register base;
   X86_64Register index;
   int32_t scale;
-  MemoryIndex(int32_t offset, X86_64Register base, X86_64Register index = X86_64Register::noReg, int32_t scale = 1) :
-    offset(offset), base(base), index(index), scale(scale) {
-      assert(scale); // may not be missing / zero
-    }
+  MemoryIndex(int32_t offset, X86_64Register base, X86_64Register index = X86_64Register::noReg,
+              int32_t scale = 1)
+      : offset(offset), base(base), index(index), scale(scale) {
+    assert(scale); // may not be missing / zero
+  }
 
   void write(std::ostream &o) const override {
     // TODO: incorporate all values
@@ -167,8 +164,9 @@ struct MemoryBaseIndex : public MemoryOperand {
   X86_64Register base;
   X86_64Register index;
   int32_t scale;
-  MemoryBaseIndex(int32_t offset, X86_64Register base, X86_64Register index = X86_64Register::noReg, int32_t scale = 1) :
-    offset(offset), base(base), index(index), scale(scale) {}
+  MemoryBaseIndex(int32_t offset, X86_64Register base, X86_64Register index = X86_64Register::noReg,
+                  int32_t scale = 1)
+      : offset(offset), base(base), index(index), scale(scale) {}
 
   void write(std::ostream &o) const override {
     // TODO: incorporate all values
@@ -185,7 +183,7 @@ struct Immediate : public Operand {
 
   void write(std::ostream &o) const override {
     o << "$" << get_tarval_long(val);
-//     o << "$0x" << std::hex << get_tarval_long(val);
+    //     o << "$0x" << std::hex << get_tarval_long(val);
   }
 };
 
@@ -195,9 +193,7 @@ struct LocalLabel : public Operand {
   LocalLabel(const LocalLabel &) = default;
   LocalLabel(LocalLabel &&) = default;
 
-  void write(std::ostream &o) const override {
-    o << ".L" << nr;
-  }
+  void write(std::ostream &o) const override { o << ".L" << nr; }
 
   static uint32_t newNr() {
     static uint32_t curVal = 0;
@@ -209,9 +205,7 @@ struct NamedLabel : public Operand {
   std::string name;
   NamedLabel(std::string n) : name(std::move(n)) {}
 
-  void write(std::ostream &o) const override {
-    o << name;
-  }
+  void write(std::ostream &o) const override { o << name; }
 };
 
 /// --- instructions ---
@@ -226,7 +220,8 @@ struct Instruction {
   virtual void write(std::ostream &o) const = 0;
   virtual bool isValid() const = 0; // call within assert
 
-  void writeInstr(std::ostream &o, const std::string &mnemonic, const Operand *o1, const Operand *o2) const {
+  void writeInstr(std::ostream &o, const std::string &mnemonic, const Operand *o1,
+                  const Operand *o2) const {
     o << mnemonic << ' ' << *o1 << ", " << *o2;
   }
 
@@ -258,27 +253,31 @@ using InstrPtr = std::unique_ptr<Instruction>;
 /// --- x86 instructions ---
 
 namespace mnemonic {
-const char * const Nop = "nop";
-const char * const Add = "add";
-const char * const Sub = "sub";
-const char * const Mul = "mul";
-const char * const Div = "div";
+const char *const Nop = "nop";
+const char *const Add = "add";
+const char *const Sub = "sub";
+const char *const Mul = "mul";
+const char *const Div = "div";
 
-const char * const Mov = "mov";
+const char *const Mov = "mov";
 
 // GAS inferrs the operand type if not specified (b, s, w, l, q, t)
 }
 
 struct Nop : public Instruction {
   Nop(std::string comment = ""s) : Instruction(std::move(comment)) {}
-  Operand *getDestOperand() const override { assert(false); return nullptr; }
+  Operand *getDestOperand() const override {
+    assert(false);
+    return nullptr;
+  }
   void write(std::ostream &o) const override { o << mnemonic::Nop; }
   bool isValid() const override { return true; }
 };
 
 struct Comment : public Instruction {
   Comment(std::string comment) : Instruction(std::move(comment)) {}
-  void write(std::ostream &) const override { /* comment printing done by Instruction */ }
+  void write(std::ostream &) const override { /* comment printing done by Instruction */
+  }
   bool isValid() const override { return true; }
 };
 
@@ -335,48 +334,42 @@ struct Mov : public Instruction {
   const OperandPtr src;
   const OperandPtr dest;
 
-  Mov(OperandPtr s, OperandPtr d, std::string c = ""s) : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)) {}
+  Mov(OperandPtr s, OperandPtr d, std::string c = ""s)
+      : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)) {}
 
   Operand *getDestOperand() const override { return dest.get(); }
   bool isValid() const override {
     return true; // TODO
-//     return src->isOneOf<Immediate, WritableOperand>() && dest->isOneOf<WritableOperand>();
+    //     return src->isOneOf<Immediate, WritableOperand>() && dest->isOneOf<WritableOperand>();
   }
 
-  void write(std::ostream &o) const override { writeInstr(o, mnemonic::Mov, src.get(), dest.get()); }
+  void write(std::ostream &o) const override {
+    writeInstr(o, mnemonic::Mov, src.get(), dest.get());
+  }
 };
 
 // compound types:
 
 class AsmWriter {
   std::ostream &out;
+
 public:
   AsmWriter(std::ostream &o) : out(o) {}
-  void write() {
-    writeTextSection();
-  }
+  void write() { writeTextSection(); }
 
   void writeTextSection();
 
-  void writeText(const std::string& text) {
-    out << text << '\n';
-  }
-  void writeInstruction(const Instruction& instr) {
-    out << '\t' << instr << '\n';
-  }
-  void writeLabel(const LocalLabel& label, const std::string &comment = ""s) {
+  void writeText(const std::string &text) { out << text << '\n'; }
+  void writeInstruction(const Instruction &instr) { out << '\t' << instr << '\n'; }
+  void writeLabel(const LocalLabel &label, const std::string &comment = ""s) {
     out << label << ':';
     if (comment.length()) {
       out << " /* " << comment << " */";
     }
     out << '\n';
   }
-  void writeLabel(const NamedLabel& label) {
-    out << label << ":\n";
-  }
-  void writeComment(const std::string &comment) {
-    out << "/* -- " << comment << " */\n";
-  }
+  void writeLabel(const NamedLabel &label) { out << label << ":\n"; }
+  void writeComment(const std::string &comment) { out << "/* -- " << comment << " */\n"; }
 };
 
 class BasicBlock {
@@ -389,11 +382,8 @@ public:
   BasicBlock(LocalLabel l) : label(std::move(l)) {}
   BasicBlock(BasicBlock &&bb) = default;
 
-  void addInstruction(InstrPtr instr) {
-    instructions.emplace_back(std::move(instr));
-  }
-  template <typename T, typename... Args>
-  Instruction *emplaceInstruction(Args&&... args) {
+  void addInstruction(InstrPtr instr) { instructions.emplace_back(std::move(instr)); }
+  template <typename T, typename... Args> Instruction *emplaceInstruction(Args &&... args) {
     auto instr = std::make_unique<T>(std::forward<Args>(args)...);
     auto res = instr.get(); // save before move
     addInstruction(std::move(instr));
@@ -420,17 +410,13 @@ public:
   Function(NamedLabel l) : fnName(std::move(l)) {}
   Function(Function &&) = default;
 
-  void addBB(BasicBlock bb) {
-    basicBlocks.emplace_back(std::move(bb));
-  }
+  void addBB(BasicBlock bb) { basicBlocks.emplace_back(std::move(bb)); }
   BasicBlock *newBB(std::string comment = ""s) {
     basicBlocks.emplace_back(std::move(comment));
     return &basicBlocks.back();
   }
 
-  void setARSize(int size) {
-    ARSize = size;
-  }
+  void setARSize(int size) { ARSize = size; }
 
   void writeProlog(AsmWriter &writer) const;
   void writeEpilog(AsmWriter &writer) const;
@@ -438,14 +424,11 @@ public:
   void write(AsmWriter &writer) const;
 };
 
-
 struct Programm {
   std::vector<Function> functions;
 
 public:
-  void addFunction(Function f) {
-    functions.emplace_back(std::move(f));
-  }
+  void addFunction(Function f) { functions.emplace_back(std::move(f)); }
 
   friend std::ostream &operator<<(std::ostream &o, const Programm &p) {
     AsmWriter writer(o);
@@ -456,7 +439,6 @@ public:
     return o;
   }
 };
-
 }
 
 #endif // ASM_H

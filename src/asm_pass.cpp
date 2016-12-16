@@ -3,7 +3,7 @@
 #include <fstream>
 
 void AsmPass::before() {
-  //writer.writeTextSection();
+  // writer.writeTextSection();
 }
 
 void AsmPass::visitMethod(ir_graph *graph) {
@@ -14,8 +14,7 @@ void AsmPass::visitMethod(ir_graph *graph) {
   asmProgram.addFunction(std::move(func));
 }
 
-void AsmPass::after()
-{
+void AsmPass::after() {
   std::ofstream outputFile(outputFileName);
   if (!outputFile.is_open()) {
     throw std::runtime_error("could not open file '" + outputFileName + '\'');
@@ -23,8 +22,7 @@ void AsmPass::after()
   outputFile << asmProgram << std::endl;
 }
 
-
-void AsmMethodPass::visitAdd(ir_node* add) {
+void AsmMethodPass::visitAdd(ir_node *add) {
   // 1. get left and right predecessor of add node
   // 2. get values from predecessor. Either immediate or generated val (stack slot)
   // 3. create memory or immediate operands
@@ -39,9 +37,8 @@ void AsmMethodPass::visitAdd(ir_node* add) {
   Asm::X86_64Register rightReg(Asm::X86_64Register::Name::rbx, Asm::X86_64Register::Mode::R);
   auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
   currentBB->addInstruction(std::move(rightRegInst));
-//   if (auto rWriteOp = dynamic_cast<Asm::WritableOperand *>(rightOp.get())) {
-  currentBB->emplaceInstruction<Asm::Add>(Asm::Register::get(leftReg),
-                                          Asm::Register::get(rightReg),
+  //   if (auto rWriteOp = dynamic_cast<Asm::WritableOperand *>(rightOp.get())) {
+  currentBB->emplaceInstruction<Asm::Add>(Asm::Register::get(leftReg), Asm::Register::get(rightReg),
                                           "Node " + std::to_string(get_irn_node_nr(add)));
   currentBB->addInstruction(writeResToStackSlot(Asm::Register::get(rightReg), add));
 }
