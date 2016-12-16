@@ -79,11 +79,22 @@ public:
     // 3. create memory or immediate operands
     // 4. create instruction with operands
     // TODO (only example)
-    /*auto instr = */currentBB->emplaceInstruction<Asm::Add>(
-        getNodeInstrOperand(get_Add_left(add)),
-        getNodeInstrOperand(get_Add_right(add)),
-        "Node " + std::to_string(get_irn_node_nr(add)));
-//     setVal(add, instr);
+    auto leftOp = getNodeInstrOperand(get_Add_left(add));
+    auto rightOp = getNodeInstrOperand(get_Add_right(add));
+    if (auto rWriteOp = dynamic_cast<Asm::WritableOperand *>(rightOp.get())) {
+      currentBB->emplaceInstruction<Asm::Add>(std::move(leftOp),
+                                              std::unique_ptr<Asm::WritableOperand>(rWriteOp),
+                                              "Node " + std::to_string(get_irn_node_nr(add)));
+      rightOp.release(); // release since moved
+    } else {
+      auto lWriteOp = dynamic_cast<Asm::WritableOperand *>(leftOp.get());
+      assert(lWriteOp);
+      // since add is commutativ, we can swap the operands!
+      currentBB->emplaceInstruction<Asm::Add>(std::move(rightOp),
+                                              std::unique_ptr<Asm::WritableOperand>(lWriteOp),
+                                              "Node " + std::to_string(get_irn_node_nr(add)));
+      leftOp.release(); // release since moved
+    }
   }
 
   Asm::OperandPtr getNodeInstrOperand(ir_node *node) {
@@ -91,7 +102,7 @@ public:
       case iro_Const:
         return std::make_unique<Asm::Immediate>(get_Const_tarval(node));
       default:
-        return std::make_unique<Asm::Memory>(ssm.getStackSlot(node),
+        return std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node),
             Asm::X86_64Register(Asm::X86_64Register::Name::rbp,
                                 Asm::X86_64Register::getRegMode(get_irn_mode(node)))
             );

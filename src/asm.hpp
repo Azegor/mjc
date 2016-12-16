@@ -78,7 +78,7 @@ struct Operand {
   virtual ~Operand() {}
   virtual void write(std::ostream &o) const = 0;
 
-  template <typename T> bool isOneOf() const { return typeid(T) == typeid(*this); }
+  template <typename T> bool isOneOf() const { return dynamic_cast<const T*>(this) != nullptr; }
   template <typename T1, typename T2, typename... Args> bool isOneOf() const {
     return isOneOf<T1>() || isOneOf<T2, Args...>();
   }
@@ -104,22 +104,75 @@ struct Register : public WritableOperand {
   }
 };
 
-// Indirect specifies a memory location
-struct Memory : public WritableOperand {
+struct MemoryOperand : public WritableOperand {};
   /// Memory is adressed the following way:
   /// segment-override:signed-offset(base,index,scale)
+  /// variations: (be carefull wich are missing!)
+  /// (base)
+  /// (index, scale)
+  /// (base,index,scale)
+  /// signed-offset(base)
+  /// signed-offset(base,index)
+  /// signed-offset(index, scale)
+
+/// offset and scale can always be specified (0 and 1 respectively) -> no extra classes
+/// have Base, BaseIndex, IndexScale, BaseIndexScale
+
+// Indirect specifies a memory location
+struct MemoryBase : public MemoryOperand {
+
+  // ignore segment-override
+  int32_t offset;
+  X86_64Register base;
+  MemoryBase(int32_t offset, X86_64Register base) :
+    offset(offset), base(base) {}
+
+  void write(std::ostream &o) const override {
+    // TODO: incorporate all values
+    if (offset) {
+      o << offset;
+    }
+    o << '(' << base.getAsmName() << ')';
+  }
+};
+
+struct MemoryIndex : public MemoryOperand {
 
   // ignore segment-override
   int32_t offset;
   X86_64Register base;
   X86_64Register index;
   int32_t scale;
-  Memory(int32_t offset, X86_64Register base, X86_64Register index = X86_64Register::noReg, int32_t scale = 1) :
+  MemoryIndex(int32_t offset, X86_64Register base, X86_64Register index = X86_64Register::noReg, int32_t scale = 1) :
+    offset(offset), base(base), index(index), scale(scale) {
+      assert(scale); // may not be missing / zero
+    }
+
+  void write(std::ostream &o) const override {
+    // TODO: incorporate all values
+    if (offset) {
+      o << offset;
+    }
+    o << '(' << index.getAsmName() << ',' << scale << ')';
+  }
+};
+
+struct MemoryBaseIndex : public MemoryOperand {
+
+  // ignore segment-override
+  int32_t offset;
+  X86_64Register base;
+  X86_64Register index;
+  int32_t scale;
+  MemoryBaseIndex(int32_t offset, X86_64Register base, X86_64Register index = X86_64Register::noReg, int32_t scale = 1) :
     offset(offset), base(base), index(index), scale(scale) {}
 
   void write(std::ostream &o) const override {
     // TODO: incorporate all values
-    o << '(' << base.getAsmName() << ')';
+    if (offset) {
+      o << offset;
+    }
+    o << '(' << base.getAsmName() << ',' << index.getAsmName() << ',' << scale << ')';
   }
 };
 
@@ -221,17 +274,17 @@ struct Comment : public Instruction {
 };
 
 using OperandPtr = std::unique_ptr<Operand>;
-// using WritableOperandPtr = std::unique_ptr<WritableOperand>;
+using WritableOperandPtr = std::unique_ptr<WritableOperand>;
 
 struct ArithInstr : public Instruction {
   const OperandPtr src;
-  const OperandPtr dest;
-  ArithInstr(OperandPtr s, OperandPtr d, std::string c = ""s)
+  const WritableOperandPtr dest;
+  ArithInstr(OperandPtr s, WritableOperandPtr d, std::string c = ""s)
       : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)) {}
   Operand *getDestOperand() const override { return dest.get(); }
   bool isValid() const override {
     // TODO: is this still necessary? we can enforce this via the typesystem
-    return src->isOneOf<Immediate, Register, Memory>() && dest->isOneOf<Register, Memory>();
+    return src->isOneOf<Immediate, WritableOperand>() && dest->isOneOf<WritableOperand>();
   }
 
   void writeInstr(std::ostream &o, const std::string &mnemonic) const {
@@ -240,28 +293,28 @@ struct ArithInstr : public Instruction {
 };
 
 struct Add : public ArithInstr {
-  Add(OperandPtr s, OperandPtr d, std::string c = ""s)
+  Add(OperandPtr s, WritableOperandPtr d, std::string c = ""s)
       : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
 
   void write(std::ostream &o) const override { writeInstr(o, mnemonic::Add); }
 };
 
 struct Sub : public ArithInstr {
-  Sub(OperandPtr s, OperandPtr d, std::string c = ""s)
+  Sub(OperandPtr s, WritableOperandPtr d, std::string c = ""s)
       : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
 
   void write(std::ostream &o) const override { writeInstr(o, mnemonic::Sub); }
 };
 
 struct Mul : public ArithInstr {
-  Mul(OperandPtr s, OperandPtr d, std::string c = ""s)
+  Mul(OperandPtr s, WritableOperandPtr d, std::string c = ""s)
       : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
 
   void write(std::ostream &o) const override { writeInstr(o, mnemonic::Mul); }
 };
 
 struct Div : public ArithInstr {
-  Div(OperandPtr s, OperandPtr d, std::string c = ""s)
+  Div(OperandPtr s, WritableOperandPtr d, std::string c = ""s)
       : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
 
   void write(std::ostream &o) const override { writeInstr(o, mnemonic::Div); }
