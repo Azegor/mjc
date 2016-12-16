@@ -29,21 +29,19 @@ void AsmMethodPass::visitAdd(ir_node* add) {
   // 2. get values from predecessor. Either immediate or generated val (stack slot)
   // 3. create memory or immediate operands
   // 4. create instruction with operands
+
   // TODO cleanup and avoid code duplication in other visit Methods
   auto leftOp = getNodeResAsInstOperand(get_Add_left(add));
+  Asm::X86_64Register leftReg(Asm::X86_64Register::Name::rax, Asm::X86_64Register::Mode::R);
+  auto leftRegInst = loadToReg(std::move(leftOp), leftReg);
+  currentBB->addInstruction(std::move(leftRegInst));
   auto rightOp = getNodeResAsInstOperand(get_Add_right(add));
-  if (auto rWriteOp = dynamic_cast<Asm::WritableOperand *>(rightOp.get())) {
-    currentBB->emplaceInstruction<Asm::Add>(std::move(leftOp),
-                                            std::unique_ptr<Asm::WritableOperand>(rWriteOp),
-                                            "Node " + std::to_string(get_irn_node_nr(add)));
-    rightOp.release(); // release since moved
-  } else {
-    auto lWriteOp = dynamic_cast<Asm::WritableOperand *>(leftOp.get());
-    assert(lWriteOp);
-    // since add is commutativ, we can swap the operands!
-    currentBB->emplaceInstruction<Asm::Add>(std::move(rightOp),
-                                            std::unique_ptr<Asm::WritableOperand>(lWriteOp),
-                                            "Node " + std::to_string(get_irn_node_nr(add)));
-    leftOp.release(); // release since moved
-  }
+  Asm::X86_64Register rightReg(Asm::X86_64Register::Name::rbx, Asm::X86_64Register::Mode::R);
+  auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
+  currentBB->addInstruction(std::move(rightRegInst));
+//   if (auto rWriteOp = dynamic_cast<Asm::WritableOperand *>(rightOp.get())) {
+  currentBB->emplaceInstruction<Asm::Add>(Asm::Register::get(leftReg),
+                                          Asm::Register::get(rightReg),
+                                          "Node " + std::to_string(get_irn_node_nr(add)));
+  currentBB->addInstruction(writeResToStackSlot(Asm::Register::get(rightReg), add));
 }

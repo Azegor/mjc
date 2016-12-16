@@ -91,6 +91,19 @@ public:
                                 Asm::X86_64Register::getRegMode(get_irn_mode(node)))
             );
     }
+    __builtin_trap();
+  }
+
+  Asm::InstrPtr loadToReg(Asm::OperandPtr val, Asm::X86_64Register reg) {
+    return std::make_unique<Asm::Mov>(std::move(val), Asm::Register::get(reg), "load stackslot val to reg");
+  }
+
+  Asm::InstrPtr writeResToStackSlot(Asm::OperandPtr reg, ir_node *node) {
+    return std::make_unique<Asm::Mov>(std::move(reg),
+            std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node),
+            Asm::X86_64Register(Asm::X86_64Register::Name::rbp,
+                                Asm::X86_64Register::getRegMode(get_irn_mode(node)))
+            ), "store reg to stackslot");
   }
 
 private:

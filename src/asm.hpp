@@ -100,7 +100,10 @@ struct Register : public WritableOperand {
   }
 
   static std::unique_ptr<Register> get(X86_64Register::Name name, X86_64Register::Mode mode) {
-    return std::make_unique<Register>(X86_64Register(name, mode));
+    return get(X86_64Register(name, mode));
+  }
+  static std::unique_ptr<Register> get(X86_64Register reg) {
+    return std::make_unique<Register>(reg);
   }
 };
 
@@ -223,6 +226,10 @@ struct Instruction {
   virtual void write(std::ostream &o) const = 0;
   virtual bool isValid() const = 0; // call within assert
 
+  void writeInstr(std::ostream &o, const std::string &mnemonic, const Operand *o1, const Operand *o2) const {
+    o << mnemonic << ' ' << *o1 << ", " << *o2;
+  }
+
   friend std::ostream &operator<<(std::ostream &o, const Instruction &i) {
     assert(i.isValid());
     i.write(o);
@@ -256,6 +263,8 @@ const char * const Add = "add";
 const char * const Sub = "sub";
 const char * const Mul = "mul";
 const char * const Div = "div";
+
+const char * const Mov = "mov";
 
 // GAS inferrs the operand type if not specified (b, s, w, l, q, t)
 }
@@ -318,6 +327,23 @@ struct Div : public ArithInstr {
       : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
 
   void write(std::ostream &o) const override { writeInstr(o, mnemonic::Div); }
+};
+
+//
+
+struct Mov : public Instruction {
+  const OperandPtr src;
+  const OperandPtr dest;
+
+  Mov(OperandPtr s, OperandPtr d, std::string c = ""s) : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)) {}
+
+  Operand *getDestOperand() const override { return dest.get(); }
+  bool isValid() const override {
+    return true; // TODO
+//     return src->isOneOf<Immediate, WritableOperand>() && dest->isOneOf<WritableOperand>();
+  }
+
+  void write(std::ostream &o) const override { writeInstr(o, mnemonic::Mov, src.get(), dest.get()); }
 };
 
 // compound types:
