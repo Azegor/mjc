@@ -207,6 +207,7 @@ struct ArithInstr : public Instruction {
   const OperandPtr src, dest;
   ArithInstr(OperandPtr s, OperandPtr d, std::string c = ""s)
       : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)) {}
+  Operand *getDestOperand() const override { return dest.get(); }
   bool isValid() const override {
     return src->isOneOf<Immediate, Register, Memory>() && dest->isOneOf<Register, Memory>();
   }
@@ -285,6 +286,10 @@ public:
 
   void addInstruction(InstrPtr instr) {
     instructions.emplace_back(std::move(instr));
+  }
+  template <typename T, typename... Args>
+  void emplaceInstruction(Args&&... args) {
+    addInstruction(std::make_unique<T>(std::forward<Args>(args)...));
   }
 
   void write(AsmWriter &writer) const {

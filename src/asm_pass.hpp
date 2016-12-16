@@ -55,6 +55,13 @@ public:
     ir_printf("  visiting node %n (%N) in bb %s\n", n, n, currentBB->getComment().c_str());
   }
 
+
+  void vistAdd(ir_node *add) {
+    (void) add;
+    // TODO
+    currentBB->emplaceInstruction<Asm::Add>(nullptr, nullptr, "some add instr");
+  }
+
 private:
   std::unordered_map<ir_node *, std::vector<ir_node *>> blockNodesList;
   Asm::Function *func;
