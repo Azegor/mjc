@@ -11,8 +11,7 @@
 #include <cstdint>
 #include <cassert>
 
-struct ir_tarval;
-long get_tarval_long (ir_tarval const *tv);
+#include <libfirm/firm.h>
 
 namespace Asm {
 
@@ -22,6 +21,7 @@ using namespace std::string_literals;
 
 struct X86_64Register {
   enum class Name : uint8_t {
+    none,
     rax,
     rbx,
     rcx,
@@ -39,7 +39,8 @@ struct X86_64Register {
     r14,
     r15,
   };
-  enum class Access : uint8_t {
+  enum class Mode : uint8_t {
+    None,
     R, // 64 bit
     E, // 32 bit
     _, // 16 bit
@@ -47,12 +48,18 @@ struct X86_64Register {
     L, // 8 bit lower part
   };
 
-  X86_64Register(Name n, Access a) : name(n), acc(a) {}
+  const Name name;
+  const Mode mode;
 
+  X86_64Register(Name n, Mode m) : name(n), mode(m) {}
   const char* getAsmName() const;
 
-  const Name name;
-  const Access acc;
+  static Mode getRegMode(ir_mode *mode);
+
+  static X86_64Register noReg;
+
+private:
+  X86_64Register() : name(Name::none), mode(Mode::None) {}
 };
 
 // enum class OperandType : uint8_t {
@@ -82,7 +89,9 @@ struct Operand {
   }
 };
 
-struct Register : public Operand {
+struct WritableOperand : public Operand {};
+
+struct Register : public WritableOperand {
   X86_64Register reg;
   Register(X86_64Register r) : reg(r) {}
 
@@ -90,22 +99,22 @@ struct Register : public Operand {
     o << reg.getAsmName();
   }
 
-  static std::unique_ptr<Register> get(X86_64Register::Name name, X86_64Register::Access access) {
-    return std::make_unique<Register>(X86_64Register(name, access));
+  static std::unique_ptr<Register> get(X86_64Register::Name name, X86_64Register::Mode mode) {
+    return std::make_unique<Register>(X86_64Register(name, mode));
   }
 };
 
 // Indirect specifies a memory location
-struct Memory : public Operand {
+struct Memory : public WritableOperand {
   /// Memory is adressed the following way:
   /// segment-override:signed-offset(base,index,scale)
 
   // ignore segment-override
-  ir_tarval *offset;
+  int32_t offset;
   X86_64Register base;
   X86_64Register index;
-  ir_tarval *scale;
-  Memory(ir_tarval *offset, X86_64Register base, X86_64Register index, ir_tarval *scale) :
+  int32_t scale;
+  Memory(int32_t offset, X86_64Register base, X86_64Register index = X86_64Register::noReg, int32_t scale = 1) :
     offset(offset), base(base), index(index), scale(scale) {}
 
   void write(std::ostream &o) const override {
@@ -212,13 +221,16 @@ struct Comment : public Instruction {
 };
 
 using OperandPtr = std::unique_ptr<Operand>;
+// using WritableOperandPtr = std::unique_ptr<WritableOperand>;
 
 struct ArithInstr : public Instruction {
-  const OperandPtr src, dest;
+  const OperandPtr src;
+  const OperandPtr dest;
   ArithInstr(OperandPtr s, OperandPtr d, std::string c = ""s)
       : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)) {}
   Operand *getDestOperand() const override { return dest.get(); }
   bool isValid() const override {
+    // TODO: is this still necessary? we can enforce this via the typesystem
     return src->isOneOf<Immediate, Register, Memory>() && dest->isOneOf<Register, Memory>();
   }
 
@@ -302,8 +314,11 @@ public:
     instructions.emplace_back(std::move(instr));
   }
   template <typename T, typename... Args>
-  void emplaceInstruction(Args&&... args) {
-    addInstruction(std::make_unique<T>(std::forward<Args>(args)...));
+  Instruction *emplaceInstruction(Args&&... args) {
+    auto instr = std::make_unique<T>(std::forward<Args>(args)...);
+    auto res = instr.get(); // save before move
+    addInstruction(std::move(instr));
+    return res;
   }
 
   void write(AsmWriter &writer) const {

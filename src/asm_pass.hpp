@@ -21,8 +21,24 @@ private:
 };
 
 
+class StackSlotManager {
+  int currentOffset = 0;
+  std::unordered_map<ir_node *, int> offsets;
+public:
+  StackSlotManager() {}
 
-class AsmMethodPass : public FunctionPass<AsmMethodPass> {
+  int getStackSlot(ir_node *node) {
+    auto pos = offsets.find(node);
+    if (pos == offsets.end()) {
+      return offsets.insert({node, (currentOffset -= 8)}).second;
+    }
+    return pos->second;
+  }
+};
+
+class AsmMethodPass : public FunctionPass<AsmMethodPass, Asm::Instruction> {
+  StackSlotManager ssm;
+
 public:
   AsmMethodPass(ir_graph *graph, Asm::Function *func) : FunctionPass(graph), func(func) {}
 
@@ -58,8 +74,28 @@ public:
 
   void visitAdd(ir_node *add) {
     (void) add;
+    // 1. get left and right predecessor of add node
+    // 2. get values from predecessor. Either immediate or generated val (stack slot)
+    // 3. create memory or immediate operands
+    // 4. create instruction with operands
     // TODO (only example)
-    currentBB->emplaceInstruction<Asm::Add>(Asm::Register::get(Asm::X86_64Register::Name::rax, Asm::X86_64Register::Access::R), Asm::Register::get(Asm::X86_64Register::Name::rbx, Asm::X86_64Register::Access::R), "Node " + std::to_string(get_irn_node_nr(add)));
+    /*auto instr = */currentBB->emplaceInstruction<Asm::Add>(
+        getNodeInstrOperand(get_Add_left(add)),
+        getNodeInstrOperand(get_Add_right(add)),
+        "Node " + std::to_string(get_irn_node_nr(add)));
+//     setVal(add, instr);
+  }
+
+  Asm::OperandPtr getNodeInstrOperand(ir_node *node) {
+    switch(get_irn_opcode(node)) {
+      case iro_Const:
+        return std::make_unique<Asm::Immediate>(get_Const_tarval(node));
+      default:
+        return std::make_unique<Asm::Memory>(ssm.getStackSlot(node),
+            Asm::X86_64Register(Asm::X86_64Register::Name::rbp,
+                                Asm::X86_64Register::getRegMode(get_irn_mode(node)))
+            );
+    }
   }
 
 private:

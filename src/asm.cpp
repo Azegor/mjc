@@ -2,53 +2,72 @@
 
 namespace Asm {
 
-  const char* X86_64Register::getAsmName() const {
-    switch (acc) {
-      case Access::R: {
-          switch(name) {
-            case Name::rax: return "%rax";
-            case Name::rbx: return "%rbx";
-            case Name::rcx: return "%rcx";
-            case Name::rdx: return "%rdx";
-            case Name::rbp: return "%rbp";
-            case Name::rsp: return "%rsp";
-            case Name::rsi: return "%rsi";
-            case Name::rdi: return "%rdi";
-            case Name::r8 : return "%r8";
-            case Name::r9 : return "%r9";
-            case Name::r10: return "%r10";
-            case Name::r11: return "%r11";
-            case Name::r12: return "%r12";
-            case Name::r13: return "%r13";
-            case Name::r14: return "%r14";
-            case Name::r15: return "%r15";
-          }
-      }
-      case Access::E: {
-          switch(name) {
-            case Name::rax: return "%eax";
-            case Name::rbx: return "%ebx";
-            case Name::rcx: return "%ecx";
-            case Name::rdx: return "%edx";
-            case Name::rbp: return "%ebp";
-            case Name::rsp: return "%esp";
-            case Name::rsi: return "%esi";
-            case Name::rdi: return "%edi";
-            case Name::r8 : return "%e8";
-            case Name::r9 : return "%e9";
-            case Name::r10: return "%e10";
-            case Name::r11: return "%e11";
-            case Name::r12: return "%e12";
-            case Name::r13: return "%e13";
-            case Name::r14: return "%e14";
-            case Name::r15: return "%e15";
-          }
-      }
-      default:
-        // TODO
-        __builtin_trap();
+X86_64Register X86_64Register::noReg;
+
+const char* X86_64Register::getAsmName() const {
+  switch (mode) {
+    case Mode::R: {
+        switch(name) {
+          case Name::none: __builtin_trap();
+          case Name::rax: return "%rax";
+          case Name::rbx: return "%rbx";
+          case Name::rcx: return "%rcx";
+          case Name::rdx: return "%rdx";
+          case Name::rbp: return "%rbp";
+          case Name::rsp: return "%rsp";
+          case Name::rsi: return "%rsi";
+          case Name::rdi: return "%rdi";
+          case Name::r8 : return "%r8";
+          case Name::r9 : return "%r9";
+          case Name::r10: return "%r10";
+          case Name::r11: return "%r11";
+          case Name::r12: return "%r12";
+          case Name::r13: return "%r13";
+          case Name::r14: return "%r14";
+          case Name::r15: return "%r15";
+        }
     }
+    case Mode::E: {
+        switch(name) {
+          case Name::none: __builtin_trap();
+          case Name::rax: return "%eax";
+          case Name::rbx: return "%ebx";
+          case Name::rcx: return "%ecx";
+          case Name::rdx: return "%edx";
+          case Name::rbp: return "%ebp";
+          case Name::rsp: return "%esp";
+          case Name::rsi: return "%esi";
+          case Name::rdi: return "%edi";
+          case Name::r8 : return "%e8";
+          case Name::r9 : return "%e9";
+          case Name::r10: return "%e10";
+          case Name::r11: return "%e11";
+          case Name::r12: return "%e12";
+          case Name::r13: return "%e13";
+          case Name::r14: return "%e14";
+          case Name::r15: return "%e15";
+        }
+    }
+    default:
+      // TODO
+      __builtin_trap();
   }
+}
+
+Asm::X86_64Register::Mode X86_64Register::getRegMode(ir_mode* mode)
+{
+  if (mode == mode_Is) {
+    return Mode::E;
+  }
+  if (mode == mode_P) {
+    return Mode::R;
+  }
+  if (mode == mode_Bu) {
+    return Mode::E; // TODO: what to use here? maybe use L?
+  }
+  __builtin_trap();
+}
+
 
 void AsmWriter::writeTextSection()
 {
