@@ -19,7 +19,7 @@ using namespace std::string_literals;
 
 // TODO: everything
 
-struct X86_64Register {
+struct X86Reg {
   enum class Name : uint8_t {
     none,
     rax,
@@ -51,15 +51,15 @@ struct X86_64Register {
   const Name name;
   const Mode mode;
 
-  X86_64Register(Name n, Mode m) : name(n), mode(m) {}
+  X86Reg(Name n, Mode m) : name(n), mode(m) {}
   const char *getAsmName() const;
 
   static Mode getRegMode(ir_mode *mode);
 
-  static X86_64Register noReg;
+  static X86Reg noReg;
 
 private:
-  X86_64Register() : name(Name::none), mode(Mode::None) {}
+  X86Reg() : name(Name::none), mode(Mode::None) {}
 };
 
 // enum class OperandType : uint8_t {
@@ -91,15 +91,15 @@ struct Operand {
 struct WritableOperand : public Operand {};
 
 struct Register : public WritableOperand {
-  X86_64Register reg;
-  Register(X86_64Register r) : reg(r) {}
+  X86Reg reg;
+  Register(X86Reg r) : reg(r) {}
 
   void write(std::ostream &o) const override { o << reg.getAsmName(); }
 
-  static std::unique_ptr<Register> get(X86_64Register::Name name, X86_64Register::Mode mode) {
-    return get(X86_64Register(name, mode));
+  static std::unique_ptr<Register> get(X86Reg::Name name, X86Reg::Mode mode) {
+    return get(X86Reg(name, mode));
   }
-  static std::unique_ptr<Register> get(X86_64Register reg) {
+  static std::unique_ptr<Register> get(X86Reg reg) {
     return std::make_unique<Register>(reg);
   }
 };
@@ -123,8 +123,8 @@ struct MemoryBase : public MemoryOperand {
 
   // ignore segment-override
   int32_t offset;
-  X86_64Register base;
-  MemoryBase(int32_t offset, X86_64Register base) : offset(offset), base(base) {}
+  X86Reg base;
+  MemoryBase(int32_t offset, X86Reg base) : offset(offset), base(base) {}
 
   void write(std::ostream &o) const override {
     // TODO: incorporate all values
@@ -139,10 +139,10 @@ struct MemoryIndex : public MemoryOperand {
 
   // ignore segment-override
   int32_t offset;
-  X86_64Register base;
-  X86_64Register index;
+  X86Reg base;
+  X86Reg index;
   int32_t scale;
-  MemoryIndex(int32_t offset, X86_64Register base, X86_64Register index = X86_64Register::noReg,
+  MemoryIndex(int32_t offset, X86Reg base, X86Reg index = X86Reg::noReg,
               int32_t scale = 1)
       : offset(offset), base(base), index(index), scale(scale) {
     assert(scale); // may not be missing / zero
@@ -161,10 +161,10 @@ struct MemoryBaseIndex : public MemoryOperand {
 
   // ignore segment-override
   int32_t offset;
-  X86_64Register base;
-  X86_64Register index;
+  X86Reg base;
+  X86Reg index;
   int32_t scale;
-  MemoryBaseIndex(int32_t offset, X86_64Register base, X86_64Register index = X86_64Register::noReg,
+  MemoryBaseIndex(int32_t offset, X86Reg base, X86Reg index = X86Reg::noReg,
                   int32_t scale = 1)
       : offset(offset), base(base), index(index), scale(scale) {}
 

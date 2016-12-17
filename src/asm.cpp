@@ -2,9 +2,9 @@
 
 namespace Asm {
 
-X86_64Register X86_64Register::noReg;
+X86Reg X86Reg::noReg;
 
-const char *X86_64Register::getAsmName() const {
+const char *X86Reg::getAsmName() const {
   switch (mode) {
   case Mode::R: {
     switch(name) {
@@ -54,7 +54,7 @@ const char *X86_64Register::getAsmName() const {
   }
 }
 
-Asm::X86_64Register::Mode X86_64Register::getRegMode(ir_mode *mode) {
+Asm::X86Reg::Mode X86Reg::getRegMode(ir_mode *mode) {
   if (mode == mode_Is) {
     return Mode::E;
   }

@@ -87,24 +87,24 @@ public:
     default:
       return std::make_unique<Asm::MemoryBase>(
           ssm.getStackSlot(node),
-          Asm::X86_64Register(Asm::X86_64Register::Name::rbp,
-                              Asm::X86_64Register::getRegMode(get_irn_mode(node))));
+          Asm::X86Reg(Asm::X86Reg::Name::rbp,
+                              Asm::X86Reg::getRegMode(get_irn_mode(node))));
     }
     __builtin_trap();
   }
 
-  Asm::InstrPtr loadToReg(Asm::OperandPtr val, Asm::X86_64Register reg) {
+  Asm::InstrPtr loadToReg(Asm::OperandPtr val, Asm::X86Reg reg) {
     return std::make_unique<Asm::Mov>(std::move(val), Asm::Register::get(reg),
                                       "load stackslot val to reg");
   }
 
-  Asm::InstrPtr writeResToStackSlot(Asm::X86_64Register reg, ir_node *node) {
+  Asm::InstrPtr writeResToStackSlot(Asm::X86Reg reg, ir_node *node) {
     return std::make_unique<Asm::Mov>(
         Asm::Register::get(reg),
         std::make_unique<Asm::MemoryBase>(
             ssm.getStackSlot(node),
-            Asm::X86_64Register(Asm::X86_64Register::Name::rbp,
-                                Asm::X86_64Register::getRegMode(get_irn_mode(node)))),
+            Asm::X86Reg(Asm::X86Reg::Name::rbp,
+                                Asm::X86Reg::getRegMode(get_irn_mode(node)))),
         "store reg to stackslot");
   }
 
