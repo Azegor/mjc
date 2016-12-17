@@ -23,21 +23,21 @@ private:
 };
 
 class StackSlotManager {
-  int currentOffset = 0;
-  std::unordered_map<ir_node *, int> offsets;
+  int32_t currentOffset = 0;
+  std::unordered_map<ir_node *, int32_t> offsets;
 
 public:
   StackSlotManager() {}
 
-  int getStackSlot(ir_node *node) {
+  int32_t getStackSlot(ir_node *node) {
     auto pos = offsets.find(node);
     if (pos == offsets.end()) {
-      return offsets.insert({node, (currentOffset += 8)}).second;
+      pos = offsets.insert({node, (currentOffset += 8)}).first;
     }
     return pos->second;
   }
 
-  int getLocVarUsedSize() const { return currentOffset; }
+  int32_t getLocVarUsedSize() const { return currentOffset; }
 };
 
 class AsmMethodPass : public FunctionPass<AsmMethodPass, Asm::Instruction> {
