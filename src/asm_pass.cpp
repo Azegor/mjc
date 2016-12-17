@@ -40,5 +40,5 @@ void AsmMethodPass::visitAdd(ir_node *add) {
   //   if (auto rWriteOp = dynamic_cast<Asm::WritableOperand *>(rightOp.get())) {
   currentBB->emplaceInstruction<Asm::Add>(Asm::Register::get(leftReg), Asm::Register::get(rightReg),
                                           "Node " + std::to_string(get_irn_node_nr(add)));
-  currentBB->addInstruction(writeResToStackSlot(Asm::Register::get(rightReg), add));
+  currentBB->addInstruction(writeResToStackSlot(rightReg, add));
 }

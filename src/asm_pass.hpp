@@ -98,9 +98,9 @@ public:
                                       "load stackslot val to reg");
   }
 
-  Asm::InstrPtr writeResToStackSlot(Asm::OperandPtr reg, ir_node *node) {
+  Asm::InstrPtr writeResToStackSlot(Asm::X86_64Register reg, ir_node *node) {
     return std::make_unique<Asm::Mov>(
-        std::move(reg),
+        Asm::Register::get(reg),
         std::make_unique<Asm::MemoryBase>(
             ssm.getStackSlot(node),
             Asm::X86_64Register(Asm::X86_64Register::Name::rbp,
