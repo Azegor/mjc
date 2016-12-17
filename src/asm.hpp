@@ -22,14 +22,14 @@ using namespace std::string_literals;
 struct X86Reg {
   enum class Name : uint8_t {
     none,
-    rax,
-    rbx,
-    rcx,
-    rdx,
-    rbp,
-    rsp,
-    rsi,
-    rdi,
+    ax,
+    bx,
+    cx,
+    dx,
+    bp,
+    sp,
+    si,
+    di,
     r8,
     r9,
     r10,
@@ -361,15 +361,36 @@ public:
 
   void writeText(const std::string &text) { out << text << '\n'; }
   void writeInstruction(const Instruction &instr) { out << '\t' << instr << '\n'; }
+  void writeInstruction(const std::string &instr, const std::string &comment = ""s) {
+    writeImpl('\t' + instr, comment);
+  }
   void writeLabel(const LocalLabel &label, const std::string &comment = ""s) {
+    writeLabelImpl(label, comment);
+  }
+  void writeLabel(const NamedLabel &label, const std::string &comment = ""s) {
+    writeLabelImpl(label, comment);
+  }
+
+  void writeComment(const std::string &comment) { out << "/* -- " << comment << " */\n"; }
+
+
+private:
+  template <typename T>
+  void writeLabelImpl(const T& label, const std::string &comment) {
     out << label << ':';
     if (comment.length()) {
       out << " /* " << comment << " */";
     }
     out << '\n';
   }
-  void writeLabel(const NamedLabel &label) { out << label << ":\n"; }
-  void writeComment(const std::string &comment) { out << "/* -- " << comment << " */\n"; }
+  template <typename T>
+  void writeImpl(const T& content, const std::string &comment) {
+    out << content;
+    if (comment.length()) {
+      out << " /* " << comment << " */";
+    }
+    out << '\n';
+  }
 };
 
 class BasicBlock {

@@ -9,14 +9,14 @@ const char *X86Reg::getAsmName() const {
   case Mode::R: {
     switch(name) {
     case Name::none: __builtin_trap();
-    case Name::rax: return "%rax";
-    case Name::rbx: return "%rbx";
-    case Name::rcx: return "%rcx";
-    case Name::rdx: return "%rdx";
-    case Name::rbp: return "%rbp";
-    case Name::rsp: return "%rsp";
-    case Name::rsi: return "%rsi";
-    case Name::rdi: return "%rdi";
+    case Name::ax : return "%rax";
+    case Name::bx : return "%rbx";
+    case Name::cx : return "%rcx";
+    case Name::dx : return "%rdx";
+    case Name::bp : return "%rbp";
+    case Name::sp : return "%rsp";
+    case Name::si : return "%rsi";
+    case Name::di : return "%rdi";
     case Name::r8 : return "%r8";
     case Name::r9 : return "%r9";
     case Name::r10: return "%r10";
@@ -30,14 +30,14 @@ const char *X86Reg::getAsmName() const {
   case Mode::E: {
     switch(name) {
     case Name::none: __builtin_trap();
-    case Name::rax: return "%eax";
-    case Name::rbx: return "%ebx";
-    case Name::rcx: return "%ecx";
-    case Name::rdx: return "%edx";
-    case Name::rbp: return "%ebp";
-    case Name::rsp: return "%esp";
-    case Name::rsi: return "%esi";
-    case Name::rdi: return "%edi";
+    case Name::ax : return "%eax";
+    case Name::bx : return "%ebx";
+    case Name::cx : return "%ecx";
+    case Name::dx : return "%edx";
+    case Name::bp : return "%ebp";
+    case Name::sp : return "%esp";
+    case Name::si : return "%esi";
+    case Name::di : return "%edi";
     case Name::r8 : return "%e8";
     case Name::r9 : return "%e9";
     case Name::r10: return "%e10";
@@ -73,14 +73,16 @@ void AsmWriter::writeTextSection() { writeText(".text"); }
 
 void Function::writeProlog(AsmWriter &writer) const {
   // TODO do the "right way" with writeInstruction!
-  writer.writeText("\tpushq %rbp");
-  writer.writeText("\tmovq %rsp, %rbp");
-  writer.writeText("\tsubq $" + std::to_string(ARSize) + ", %rbp");
+  writer.writeInstruction("pushq %rbp");
+  writer.writeInstruction("movq %rsp, %rbp");
+  writer.writeInstruction("subq $" + std::to_string(ARSize) + ", %rbp");
+  writer.writeLabel('.' + fnName.name + "_body");
 }
 void Function::writeEpilog(AsmWriter &writer) const {
-  writer.writeText("\tmovq %rbp, %rsp");
-  writer.writeText("\tpopq %rbp");
-  writer.writeText("\tret");
+  writer.writeLabel('.' + fnName.name + "_epilog");
+  writer.writeInstruction("\tmovq %rbp, %rsp");
+  writer.writeInstruction("\tpopq %rbp");
+  writer.writeInstruction("\tret");
 }
 
 void Function::write(AsmWriter &writer) const {

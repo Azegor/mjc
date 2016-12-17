@@ -29,12 +29,13 @@ void AsmMethodPass::visitAdd(ir_node *add) {
   // 4. create instruction with operands
 
   // TODO cleanup and avoid code duplication in other visit Methods
+  auto regMode = Asm::X86Reg::getRegMode(get_irn_mode(add));
   auto leftOp = getNodeResAsInstOperand(get_Add_left(add));
-  Asm::X86Reg leftReg(Asm::X86Reg::Name::rax, Asm::X86Reg::Mode::R);
+  Asm::X86Reg leftReg(Asm::X86Reg::Name::ax, regMode);
   auto leftRegInst = loadToReg(std::move(leftOp), leftReg);
   currentBB->addInstruction(std::move(leftRegInst));
   auto rightOp = getNodeResAsInstOperand(get_Add_right(add));
-  Asm::X86Reg rightReg(Asm::X86Reg::Name::rbx, Asm::X86Reg::Mode::R);
+  Asm::X86Reg rightReg(Asm::X86Reg::Name::bx, regMode);
   auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
   currentBB->addInstruction(std::move(rightRegInst));
   //   if (auto rWriteOp = dynamic_cast<Asm::WritableOperand *>(rightOp.get())) {

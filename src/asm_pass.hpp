@@ -32,7 +32,7 @@ public:
   int getStackSlot(ir_node *node) {
     auto pos = offsets.find(node);
     if (pos == offsets.end()) {
-      return offsets.insert({node, (currentOffset -= 8)}).second;
+      return offsets.insert({node, (currentOffset += 8)}).second;
     }
     return pos->second;
   }
@@ -87,7 +87,7 @@ public:
     default:
       return std::make_unique<Asm::MemoryBase>(
           ssm.getStackSlot(node),
-          Asm::X86Reg(Asm::X86Reg::Name::rbp,
+          Asm::X86Reg(Asm::X86Reg::Name::bp,
                               Asm::X86Reg::getRegMode(get_irn_mode(node))));
     }
     __builtin_trap();
@@ -103,7 +103,7 @@ public:
         Asm::Register::get(reg),
         std::make_unique<Asm::MemoryBase>(
             ssm.getStackSlot(node),
-            Asm::X86Reg(Asm::X86Reg::Name::rbp,
+            Asm::X86Reg(Asm::X86Reg::Name::bp,
                                 Asm::X86Reg::getRegMode(get_irn_mode(node)))),
         "store reg to stackslot");
   }
