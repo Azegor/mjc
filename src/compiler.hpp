@@ -51,11 +51,12 @@ struct CompilerOptions {
   bool fuzzSemantic = false;
   bool dotAttrAst = false;
   bool printFirmGraph = false;
-  bool outputAssembly = false;
   bool compileFirm = false;
   bool noVerify = false;
   bool optimize = false;
-  bool compile = false;
+
+  bool outputAssembly = true;
+  bool compile = true;
   // ...
 };
 
