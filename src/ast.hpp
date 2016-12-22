@@ -1028,6 +1028,7 @@ public:
         name(std::move(memberName)) {}
 
   static ast::DummySystemOut dummySystemOut;
+  static ast::DummySystemIn  dummySystemIn;
 
   void accept(Visitor *visitor) override { visitor->visitFieldAccess(*this); }
   void acceptChildren(Visitor *visitor) override {
@@ -1194,6 +1195,13 @@ class DummySystemOut : public Field {
 
 public:
   DummySystemOut() : Field({}, nullptr, dummySymbol) {}
+};
+
+class DummySystemIn : public Field {
+  static SymbolTable::Symbol dummySymbol;
+
+public:
+  DummySystemIn() : Field({}, nullptr, dummySymbol) {}
 };
 
 // ----

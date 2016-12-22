@@ -28,3 +28,10 @@ void *allocate(size_t num, size_t size) {
   assert(res);
   return res;
 }
+
+int read_int() {
+  int c = fgetc(stdin);
+  if (c == EOF)
+    return -1;
+  return c;
+}

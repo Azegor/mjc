@@ -314,6 +314,9 @@ void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
       if (access.getName() == "out") {
         access.setDef(&ast::FieldAccess::dummySystemOut);
         return;
+      } else if (access.getName() == "in") {
+        access.setDef(&ast::FieldAccess::dummySystemIn);
+        return;
       } else {
         error(access,
               "invalid field access '" + access.getName() + "' on 'System'");
@@ -323,6 +326,8 @@ void SemanticVisitor::visitFieldAccess(ast::FieldAccess &access) {
   if (auto left = dynamic_cast<ast::FieldAccess *>(access.getLeft())) {
     if (left->getDef() == &ast::FieldAccess::dummySystemOut) {
       error(access, "invalid access '" + access.getName() + "' on System.out");
+    } else if (left->getDef() == &ast::FieldAccess::dummySystemIn) {
+      error(access, "invalid access '" + access.getName() + "' on System.in");
     }
   }
 
@@ -399,6 +404,16 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
       } else {
         error(invocation, "Invalid method call '" + invocation.getName() +
                               "' on 'System.out'");
+      }
+    } else if (left->getDef() == &ast::FieldAccess::dummySystemIn) {
+      if (invocation.getName() == "read") {
+        // TODO: Check args
+        invocation.targetType.setInt();
+        invocation.setIsSysoutCall(true);
+        return;
+      } else {
+        error(invocation, "Invalid method call '" + invocation.getName() +
+                              "' on 'System.in'");
       }
     }
   }

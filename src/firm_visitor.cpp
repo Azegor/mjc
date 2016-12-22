@@ -66,6 +66,11 @@ FirmVisitor::FirmVisitor(bool print){
 //   sysoutEntity = new_global_entity(get_glob_type(), "print_int_fast", sysoutType,
 //                                    ir_visibility_external, IR_LINKAGE_DEFAULT);
 
+  sysinType = new_type_method(0, 1, false, cc_cdecl_set, mtp_no_property);
+  set_method_res_type(sysinType, 0, intType);
+  sysinEntity = new_global_entity(get_glob_type(), "read_int", sysinType,
+                                  ir_visibility_external, IR_LINKAGE_DEFAULT);
+
   // create only one instance for calloc (logical), which returns pointer to unsigned char
   // which ist the best representation for void*.
   ir_type *callocType = new_type_method(2, 1, false, cc_cdecl_set, mtp_no_property);
@@ -267,21 +272,38 @@ void FirmVisitor::visitReturnStatement(ast::ReturnStatement &stmt) {
 }
 
 void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
+  // TODO: We're abusing isSysoutCall for Sysin...
   if (invocation.isSysoutCall()) {
+    invocation.acceptChildren(this);
     // "to create the call we first create a node representing the address
     //  of the function we want to call" ... "then we use new_Call to
     //  create the call"
-    invocation.acceptChildren(this);
+    if (invocation.getName() == "println") {
+      ir_node *args[] = {popNode()->load()}; // int argument
+      ir_node *store = get_store();
+      ir_node *callee = new_Address(sysoutEntity);
+      ir_node *callNode = new_Call(store, callee, 1, args, this->sysoutType);
 
-    ir_node *args[] = {popNode()->load()}; // int argument
-    ir_node *store = get_store();
-    ir_node *callee = new_Address(sysoutEntity);
-    ir_node *callNode = new_Call(store, callee, 1, args, this->sysoutType);
+      // Update the current store
+      ir_node *newStore = new_Proj(callNode, get_modeM(), pn_Call_M);
+      set_store(newStore);
+      pushNode(nullptr); // needs to return a node for consistency!
+    } else if (invocation.getName() == "read") {
+      // System.in.read
+      ir_node *store = get_store();
+      ir_node *callee = new_Address(sysinEntity);
+      ir_node *callNode = new_Call(store, callee, 0, nullptr, this->sysinType);
+      ir_node *newStore = new_Proj(callNode, get_modeM(), pn_Call_M);
+      set_store(newStore);
 
-    // Update the current store
-    ir_node *newStore = new_Proj(callNode, get_modeM(), pn_Call_M);
-    set_store(newStore);
-    pushNode(nullptr); // needs to return a node for consistency!
+      // Get the int return value
+      ir_node *tuple = new_Proj(callNode, mode_T, pn_Call_T_result);
+      ir_node *result = new_Proj(tuple, mode_Is, 0);
+      pushNode(result);
+
+    } else {
+      assert(false);
+    }
   } else {
 
     auto left = invocation.getLeft();
@@ -631,7 +653,8 @@ void FirmVisitor::visitField(ast::Field &field) {
 
 void FirmVisitor::visitFieldAccess(ast::FieldAccess &access) {
   // sysout special case...
-  if (access.getDef() == &ast::FieldAccess::dummySystemOut) {
+  if (access.getDef() == &ast::FieldAccess::dummySystemOut ||
+      access.getDef() == &ast::FieldAccess::dummySystemIn) {
     return;
   }
   auto firmClass = &classes.at(

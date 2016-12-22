@@ -35,6 +35,7 @@ namespace ast {
 class Type;
 class DummyDefinition;
 class DummySystemOut;
+class DummySystemIn;
 }
 
 namespace SymbolTable {
@@ -58,6 +59,7 @@ class Symbol {
   explicit Symbol(std::string name) : name(std::move(name)) {}
   friend class ast::DummyDefinition;
   friend class ast::DummySystemOut;
+  friend class ast::DummySystemIn;
 
 public:
   std::string name;

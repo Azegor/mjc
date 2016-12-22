@@ -2,9 +2,11 @@
 
 SymbolTable::Symbol ast::DummyDefinition::dummySymbol("<Dummy>");
 SymbolTable::Symbol ast::DummySystemOut::dummySymbol("System.out");
+SymbolTable::Symbol ast::DummySystemIn::dummySymbol("System.in");
 
 ast::DummyDefinition ast::VarRef::dummySystem;
 ast::DummySystemOut ast::FieldAccess::dummySystemOut;
+ast::DummySystemIn  ast::FieldAccess::dummySystemIn;
 
 static const char *typeKindToString(sem::TypeKind kind) {
   switch (kind) {
