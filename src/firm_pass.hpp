@@ -240,7 +240,21 @@ protected:
     }
   }
 
-  void defaultInitOp(ir_node *node) { enqueue(node); }
+  void defaultInitOp(ir_node *node) {
+    if (is_Const(node))
+      return;
+
+    //ir_node *b = node;
+    //if (!is_Block(node)) b = get_nodes_block(node);
+    //std::cout << "Node " << get_irn_node_nr(node) << " Block: " << get_irn_node_nr(b) << std::endl;
+    //std::cout << "Enqueue " << get_irn_node_nr(node) << " " << get_irn_opname(node);// << std::endl;
+    //if (!is_Block(node)) {
+      //ir_node *b = get_nodes_block(node);
+      //std::cout << " in " << get_irn_node_nr(b) << " Block";
+    //}
+    //std::cout << std::endl;
+    enqueue(node);
+  }
 
   void initASM(ir_node * node) { sub()->defaultInitOp(node); }
   void initAdd(ir_node * node) { sub()->defaultInitOp(node); }

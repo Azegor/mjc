@@ -79,6 +79,7 @@ set(MJC_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/src/firm_visitor.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/asm.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/asm_pass.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/asm_direct_pass.cpp"
 )
 add_executable(mjc
   ${MJC_SOURCES}

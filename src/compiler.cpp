@@ -39,6 +39,7 @@
 #include "semantic_visitor.hpp"
 #include "optimizer.hpp"
 #include "asm_pass.hpp"
+#include "asm_direct_pass.hpp"
 
 #ifndef LIBSEARCHDIR
 #define LIBSEARCHDIR "."
@@ -268,7 +269,7 @@ int Compiler::compileWithOwnBackend() {
 bool Compiler::lowerFirmGraphsWithOwnBackend(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool generateCode, bool outputAssembly, const std::string &outFileName) {
   int graphErrors = 0;
   for (auto g : graphs) {
-    lower_highlevel_graph(g); // FIXME: are we allowed to use this function?
+    //lower_highlevel_graph(g); // FIXME: are we allowed to use this function?
 
     if (printGraphs) {
       dump_ir_graph(g, "lowered");
@@ -278,8 +279,10 @@ bool Compiler::lowerFirmGraphsWithOwnBackend(std::vector<ir_graph*> &graphs, boo
         graphErrors++;
     }
   }
+
   if (graphErrors)
     return false;
+
   if (generateCode) {
     FILE *f = nullptr;
     std::string assemblyName;
@@ -292,9 +295,12 @@ bool Compiler::lowerFirmGraphsWithOwnBackend(std::vector<ir_graph*> &graphs, boo
     }
 
     // create assembly code
+    AsmDirectPass asmDirectPass(graphs, assemblyName);
+    asmDirectPass.run();
 
-    AsmPass asmPass(graphs, assemblyName);
-    asmPass.run();
+    // TODO: Re-enable this
+    //AsmPass asmPass(graphs, assemblyName);
+    //asmPass.run();
 
 
     int res = 0;

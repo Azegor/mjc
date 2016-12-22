@@ -355,8 +355,13 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
 }
 
 void FirmVisitor::visitIntLiteral(ast::IntLiteral &lit) {
+  //std::cout << "Int literal " << lit.getValue() << " Block: " << get_irn_node_nr(get_cur_block()) << std::endl;
   // We only have signed 32 bit integers.
   ir_node *node = new_Const_long(mode_Is, lit.getValue());
+  //std::cout << "Node: " << get_irn_node_nr(node) << std::endl;
+  //std::cout << "Now: ";
+  //ir_node *b = get_nodes_block(node);
+  //std::cout << get_irn_node_nr(b) << std::endl;
   pushNode(node);
 }
 
