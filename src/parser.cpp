@@ -135,6 +135,10 @@ ast::MainMethodPtr Parser::parseMainMethod() {
   // name doesn't matter here, but keep for pretty print:
   auto paramName = expectGetIdentAndNext(TT::Identifier);
   expectAndNext(TT::RParen);
+  if (curTok.str == "throws") {
+    readNextToken(); // skip throws
+    expectAndNext(TT::Identifier);
+  }
   auto block = parseBlock();
   return ast::make_Ptr<ast::MainMethod>(
       {startPos, curTok.endPos()}, std::move(methodName),
@@ -158,6 +162,10 @@ void Parser::parseFieldOrMethod(std::vector<ast::FieldPtr> &fields,
     readNextToken();
     auto params = parseParameterList();
     expectAndNext(TT::RParen);
+    if (curTok.str == "throws") {
+      readNextToken(); // skip throws
+      expectAndNext(TT::Identifier);
+    }
     auto block = parseBlock();
     methods.emplace_back(ast::make_Ptr<ast::RegularMethod>(
         {startPos, block->getLoc().endToken}, std::move(type), std::move(name),
