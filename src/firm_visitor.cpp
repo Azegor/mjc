@@ -49,7 +49,7 @@ FirmVisitor::FirmVisitor(bool print){
   set_optimize(0);
 
   //64 bit pointer mode
-  auto _mode_P = new_reference_mode("P64", irma_twos_complement, 64, 64);
+  auto _mode_P = new_reference_mode("P64", 64, 64);
   set_modeP(_mode_P);
 
   this->printGraphs = print;
