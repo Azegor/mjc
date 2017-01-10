@@ -55,8 +55,12 @@ const char *X86Reg::getAsmName() const {
 }
 
 Asm::X86Reg::Mode X86Reg::getRegMode(ir_mode *mode) {
+
+  return Mode::R;
+
+#if 0
   if (mode == mode_Is) {
-    return Mode::E;
+    return Mode::R;
   }
   if (mode == mode_P) {
     return Mode::R;
@@ -64,7 +68,12 @@ Asm::X86Reg::Mode X86Reg::getRegMode(ir_mode *mode) {
   if (mode == mode_Bu) {
     return Mode::E; // TODO: what to use here? maybe use L?
   }
-  __builtin_trap();
+  if (mode == mode_T) {
+    return Mode::R;
+  }
+  ir_printf("Invalid node mode %m\n", mode);
+  assert(0);
+#endif
 }
 
 void AsmWriter::writeTextSection() { writeText(".text"); }
@@ -74,15 +83,19 @@ void AsmWriter::writeTextSection() { writeText(".text"); }
 void Function::writeProlog(AsmWriter &writer) const {
   // TODO do the "right way" with writeInstruction!
   writer.writeInstruction("pushq %rbp");
-  writer.writeInstruction("movq %rsp, %rbp");
-  writer.writeInstruction("subq $" + std::to_string(ARSize) + ", %rbp");
+  writer.writeInstruction("mov %rsp, %rbp");
+  //writer.writeInstruction("movq %rsp, %rbp");
+  writer.writeInstruction("subq $" + std::to_string(ARsize) + ", %rsp");
   writer.writeLabel('.' + fnName.name + "_body");
 }
 void Function::writeEpilog(AsmWriter &writer) const {
-  writer.writeLabel('.' + fnName.name + "_epilog");
-  writer.writeInstruction("\tmovq %rbp, %rsp");
-  writer.writeInstruction("\tpopq %rbp");
-  writer.writeInstruction("\tret");
+  //writer.writeLabel('.' + fnName.name + "_epilog");
+  //writer.writeInstruction("\tmovq %rbp, %rsp");
+  //writer.writeInstruction("\tpopq %rbp");
+  //writer.writeInstruction("xorl %eax, %eax");
+  writer.writeInstruction("addq $" + std::to_string(ARsize) + ", %rsp");
+  writer.writeInstruction("leave");
+  writer.writeInstruction("ret");
 }
 
 void Function::write(AsmWriter &writer) const {
@@ -93,13 +106,13 @@ void Function::write(AsmWriter &writer) const {
   ss << "Begin " << name;
   writer.writeComment(ss.str());
 
-  writer.writeText(".p2align 4,,15");
+  writer.writeText("\t.p2align 4,,15");
   ss.str("");
-  ss << ".globl " << name;
+  ss << "\t.globl " << name;
   writer.writeText(ss.str());
 
   ss.str("");
-  ss << ".type " << name << ", @function";
+  ss << "\t.type " << name << ", @function";
   writer.writeText(ss.str());
 
   writer.writeLabel(fnName);
@@ -117,7 +130,7 @@ void Function::write(AsmWriter &writer) const {
   // write function epilog
 
   ss.str("");
-  ss << ".size " << name << ", .-" << name;
+  ss << "\t.size " << name << ", .-" << name;
   writer.writeText(ss.str());
 
   ss.str("");

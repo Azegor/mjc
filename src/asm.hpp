@@ -439,7 +439,7 @@ public:
 class Function {
   NamedLabel fnName;
   std::unordered_map<ir_node *, BasicBlock> basicBlocks;
-  int ARSize = 0;
+  int ARsize = 0 ;
 
 public:
   Function(std::string name) : fnName(std::move(name)) {}
@@ -458,7 +458,7 @@ public:
     return &basicBlocks[node];
   }
 
-  void setARSize(int size) { ARSize = size; }
+  void setARSize(int size) { ARsize = size; }
 
   void writeProlog(AsmWriter &writer) const;
   void writeEpilog(AsmWriter &writer) const;

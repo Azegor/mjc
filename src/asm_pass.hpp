@@ -32,7 +32,9 @@ public:
   int32_t getStackSlot(ir_node *node) {
     auto pos = offsets.find(node);
     if (pos == offsets.end()) {
-      pos = offsets.insert({node, (currentOffset += 8)}).first;
+      pos = offsets.insert({node, (currentOffset)}).first;
+      ir_printf("New Stack slot for node %n %N: %d\n", node, node, pos->second);
+      currentOffset += 8;
     }
     return pos->second;
   }
@@ -63,7 +65,7 @@ public:
         continue;
 
       blockList.push_back(curBlock);
-      func->newBB(curBlock);
+      func->newBB(curBlock, "Block " + std::to_string(get_irn_node_nr(curBlock)));
       //std::cout << "EnList " << get_irn_node_nr(curBlock) << " " << get_irn_opname(curBlock) << std::endl;
 
       set_irn_visited(curBlock, get_irg_visited(this->graph));
@@ -81,6 +83,8 @@ public:
   }
   void after() {
     std::cout << "### finished function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl;
+    //std::cout << "AR Slots: " << func->ARSlots << std::endl;
+    std::cout << "AR size: " << ssm.getLocVarUsedSize() << std::endl;
     func->setARSize(ssm.getLocVarUsedSize());
   }
 
@@ -108,6 +112,7 @@ public:
   void defaultInitOp(ir_node *n) {
      k ++;
      std::cout << "k : " << k << std::endl;
+     //func->ARSlots ++;
      FunctionPass::defaultInitOp(n);
   }
 
@@ -115,6 +120,16 @@ public:
 
   void defaultVisitOp(ir_node *n) {
     ir_printf("  visiting node %n (%N)\n", n, n);//, currentBB->getComment().c_str());
+  }
+
+  void writeValue(Asm::OperandPtr reg, ir_node *node) {
+    auto bb = getBB(node);
+
+    bb->emplaceInstruction<Asm::Mov>(std::move(reg),
+     std::make_unique<Asm::MemoryBase>(
+          ssm.getStackSlot(node),
+          Asm::X86Reg(Asm::X86Reg::Name::bp,
+                      Asm::X86Reg::getRegMode(get_irn_mode(node)))));
   }
 
   Asm::BasicBlock* getBB(ir_node *n) {
@@ -133,7 +148,7 @@ public:
       return std::make_unique<Asm::MemoryBase>(
           ssm.getStackSlot(node),
           Asm::X86Reg(Asm::X86Reg::Name::bp,
-                              Asm::X86Reg::getRegMode(get_irn_mode(node))));
+                      Asm::X86Reg::getRegMode(get_irn_mode(node))));
     }
     __builtin_trap();
   }
