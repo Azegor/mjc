@@ -39,7 +39,6 @@
 #include "semantic_visitor.hpp"
 #include "optimizer.hpp"
 #include "asm_pass.hpp"
-#include "asm_direct_pass.hpp"
 
 #ifndef LIBSEARCHDIR
 #define LIBSEARCHDIR "."

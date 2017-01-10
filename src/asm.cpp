@@ -55,7 +55,8 @@ const char *X86Reg::getAsmName() const {
 }
 
 Asm::X86Reg::Mode X86Reg::getRegMode(ir_mode *mode) {
-
+  // TODO: Resurrect this?
+  (void)mode;
   return Mode::R;
 
 #if 0
