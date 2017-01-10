@@ -1,3 +1,6 @@
 [submodule "libfirm"]
 	path = libfirm
 	url = http://pp.info.uni-karlsruhe.de/git/libfirm.git
+[submodule "mjtest"]
+	path = mjtest
+	url = https://github.com/mj3-16/mjtest.git
