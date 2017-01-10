@@ -109,7 +109,7 @@ void Function::write(AsmWriter &writer) const {
   // write function content (BBs)
 
   for (auto &bb : basicBlocks) {
-    bb.write(writer);
+    bb.second.write(writer);
   }
 
   writeEpilog(writer);

@@ -295,12 +295,12 @@ bool Compiler::lowerFirmGraphsWithOwnBackend(std::vector<ir_graph*> &graphs, boo
     }
 
     // create assembly code
-    AsmDirectPass asmDirectPass(graphs, assemblyName);
-    asmDirectPass.run();
+    //AsmDirectPass asmDirectPass(graphs, assemblyName);
+    //asmDirectPass.run();
 
     // TODO: Re-enable this
-    //AsmPass asmPass(graphs, assemblyName);
-    //asmPass.run();
+    AsmPass asmPass(graphs, assemblyName);
+    asmPass.run();
 
 
     int res = 0;

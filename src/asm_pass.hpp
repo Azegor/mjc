@@ -19,7 +19,7 @@ public:
   void after();
 
 private:
-  Asm::Programm asmProgram;
+  Asm::Program asmProgram;
 };
 
 class StackSlotManager {
@@ -42,9 +42,39 @@ public:
 
 class AsmMethodPass : public FunctionPass<AsmMethodPass, Asm::Instruction> {
   StackSlotManager ssm;
+  std::vector<ir_node *> blockSchedule;
 
 public:
-  AsmMethodPass(ir_graph *graph, Asm::Function *func) : FunctionPass(graph), func(func) {}
+  AsmMethodPass(ir_graph *graph, Asm::Function *func) : FunctionPass(graph), func(func) {
+    edges_activate(this->graph);
+    inc_irg_visited(this->graph);
+    ir_node *block = get_irg_start_block(this->graph);
+
+    std::queue<ir_node *> blockStack;
+    blockStack.push(block);
+
+    std::vector<ir_node *> blockList;
+
+    while (!blockStack.empty()) {
+      ir_node *curBlock = blockStack.front();
+      blockStack.pop();
+
+      if (irn_visited(curBlock))
+        continue;
+
+      blockList.push_back(curBlock);
+      func->newBB(curBlock);
+      //std::cout << "EnList " << get_irn_node_nr(curBlock) << " " << get_irn_opname(curBlock) << std::endl;
+
+      set_irn_visited(curBlock, get_irg_visited(this->graph));
+
+      foreach_block_succ(curBlock, edge) {
+        ir_node *pred = get_edge_src_irn(edge);
+        blockStack.push(pred);
+      }
+    }
+
+  }
 
   void before() {
     std::cout << "### visiting function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl;
@@ -54,11 +84,12 @@ public:
     func->setARSize(ssm.getLocVarUsedSize());
   }
 
-  void initBlock(ir_node *b) {
-    blockNodesList.insert({b, std::vector<ir_node *>()}); // init empty vector
-    enqueue(b);
-  }
+  //void initBlock(ir_node *b) {
+    //blockNodesList.insert({b, std::vector<ir_node *>()}); // init empty vector
+    //enqueue(b);
+  //}
 
+#if 0
   void visitBlock(ir_node *b) {
     this->currentBB = func->newBB("Block " + std::to_string(get_irn_node_nr(b)));
     std::cout << " --- visiting " << currentBB->getComment() << std::endl;
@@ -71,14 +102,28 @@ public:
 
     this->currentBB = nullptr; // to be safe
   }
+#endif
 
-  void defaultInitOp(ir_node *n) { blockNodesList[get_nodes_block(n)].push_back(n); }
-
-  void defaultVisitOp(ir_node *n) {
-    ir_printf("  visiting node %n (%N) in bb %s\n", n, n, currentBB->getComment().c_str());
+  int k = 0;
+  void defaultInitOp(ir_node *n) {
+     k ++;
+     std::cout << "k : " << k << std::endl;
+     FunctionPass::defaultInitOp(n);
   }
 
-  void visitAdd(ir_node *add);
+  //void defaultInitOp(ir_node *n) { blockNodesList[get_nodes_block(n)].push_back(n); }
+
+  void defaultVisitOp(ir_node *n) {
+    ir_printf("  visiting node %n (%N)\n", n, n);//, currentBB->getComment().c_str());
+  }
+
+  Asm::BasicBlock* getBB(ir_node *n) {
+    ir_node *block = get_nodes_block(n);
+    return func->getBB(block);
+  }
+
+  void visitCall(ir_node *node);
+  void visitAdd(ir_node *node);
 
   Asm::OperandPtr getNodeResAsInstOperand(ir_node *node) {
     switch (get_irn_opcode(node)) {
@@ -109,10 +154,7 @@ public:
   }
 
 private:
-  std::unordered_map<ir_node *, std::vector<ir_node *>> blockNodesList;
   Asm::Function *func;
-
-  Asm::BasicBlock *currentBB;
 };
 
 #endif

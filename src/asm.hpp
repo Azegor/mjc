@@ -7,6 +7,7 @@
 #include <string>
 #include <typeinfo>
 #include <vector>
+#include <unordered_map>
 
 #include <cassert>
 #include <cstdint>
@@ -258,11 +259,25 @@ const char *const Add = "add";
 const char *const Sub = "sub";
 const char *const Mul = "mul";
 const char *const Div = "div";
+const char *const Call = "call";
 
 const char *const Mov = "mov";
 
 // GAS inferrs the operand type if not specified (b, s, w, l, q, t)
 }
+
+struct Call : public Instruction {
+  std::string functionName;
+  Call(std::string functionName) : Instruction("call"), functionName(functionName) {}
+  void write(std::ostream &o) const override {
+    o << mnemonic::Call << " " << functionName;
+  }
+  Operand *getDestOperand() const override {
+    assert(0);
+    return nullptr;
+  }
+  bool isValid() const override { return true; }
+};
 
 struct Nop : public Instruction {
   Nop(std::string comment = ""s) : Instruction(std::move(comment)) {}
@@ -423,7 +438,7 @@ public:
 
 class Function {
   NamedLabel fnName;
-  std::vector<BasicBlock> basicBlocks;
+  std::unordered_map<ir_node *, BasicBlock> basicBlocks;
   int ARSize = 0;
 
 public:
@@ -431,10 +446,16 @@ public:
   Function(NamedLabel l) : fnName(std::move(l)) {}
   Function(Function &&) = default;
 
-  void addBB(BasicBlock bb) { basicBlocks.emplace_back(std::move(bb)); }
-  BasicBlock *newBB(std::string comment = ""s) {
-    basicBlocks.emplace_back(std::move(comment));
-    return &basicBlocks.back();
+  void addBB(ir_node *node, BasicBlock bb) {
+    basicBlocks.emplace(std::make_pair(node, std::move(bb)));
+  }
+  BasicBlock *newBB(ir_node *node, std::string comment = ""s) {
+    basicBlocks.emplace(std::make_pair(node, std::move(comment)));
+    return &basicBlocks[node];
+  }
+
+  BasicBlock *getBB(ir_node *node) {
+    return &basicBlocks[node];
   }
 
   void setARSize(int size) { ARSize = size; }
@@ -445,13 +466,13 @@ public:
   void write(AsmWriter &writer) const;
 };
 
-struct Programm {
+struct Program {
   std::vector<Function> functions;
 
 public:
   void addFunction(Function f) { functions.emplace_back(std::move(f)); }
 
-  friend std::ostream &operator<<(std::ostream &o, const Programm &p) {
+  friend std::ostream &operator<<(std::ostream &o, const Program &p) {
     AsmWriter writer(o);
     writer.writeTextSection();
     for (auto &fn : p.functions) {
