@@ -35,3 +35,11 @@ int read_int() {
     return -1;
   return c;
 }
+
+void write_int(int val) {
+  printf("%d", val);
+}
+
+void flush_int() {
+   // *shrug*
+}

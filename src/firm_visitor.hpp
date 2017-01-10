@@ -163,6 +163,14 @@ private:
   // System.out.println special case
   ir_type *sysoutType;
   ir_entity *sysoutEntity;
+
+  // System.out.write
+  ir_type *writeType;
+  ir_entity *writeEntity;
+  // System.out.flush
+  ir_type *flushType;
+  ir_entity *flushEntity;
+
   // System.in.read special case
   ir_type *sysinType;
   ir_entity *sysinEntity;

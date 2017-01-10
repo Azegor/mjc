@@ -401,13 +401,40 @@ void SemanticVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
         invocation.setIsSysoutCall(true);
         invocation.targetType.setVoid();
         return;
+      } else if (invocation.getName() == "write") {
+        auto &args = invocation.getArguments();
+        if (args.size() != 1) {
+          error(invocation,
+                "System.out.write takes exactly one int argument, " +
+                    std::to_string(args.size()) + " given");
+        } else if (!args.at(0)->targetType.isInt()) {
+          std::stringstream ss;
+          ss << "System.out.write takes one int argument, "
+                "but argument is of type "
+             << args.at(0)->targetType;
+          error(invocation, ss.str());
+        }
+        invocation.setIsSysoutCall(true);
+        invocation.targetType.setVoid();
+        return;
+      } else if (invocation.getName() == "flush") {
+        auto &args = invocation.getArguments();
+        if (args.size() != 0) {
+          error(invocation, "System.out.flush takes no arguments");
+        }
+        invocation.setIsSysoutCall(true);
+        invocation.targetType.setVoid();
+        return;
       } else {
         error(invocation, "Invalid method call '" + invocation.getName() +
                               "' on 'System.out'");
       }
     } else if (left->getDef() == &ast::FieldAccess::dummySystemIn) {
       if (invocation.getName() == "read") {
-        // TODO: Check args
+        auto &args = invocation.getArguments();
+        if (args.size() != 0) {
+          error(invocation, "System.out.flush takes no arguments");
+        }
         invocation.targetType.setInt();
         invocation.setIsSysoutCall(true);
         return;

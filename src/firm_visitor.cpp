@@ -63,8 +63,19 @@ FirmVisitor::FirmVisitor(bool print){
   set_method_param_type(sysoutType, 0, intType);
   sysoutEntity = new_global_entity(get_glob_type(), "print_int", sysoutType,
                                    ir_visibility_external, IR_LINKAGE_DEFAULT);
-//   sysoutEntity = new_global_entity(get_glob_type(), "print_int_fast", sysoutType,
-//                                    ir_visibility_external, IR_LINKAGE_DEFAULT);
+
+  // System.out.write takes 1 int parameter and returns void
+  writeType = new_type_method(1, 0, false, cc_cdecl_set, mtp_no_property);
+  set_method_param_type(writeType, 0, intType);
+  writeEntity = new_global_entity(get_glob_type(), "write_int", writeType,
+                                   ir_visibility_external, IR_LINKAGE_DEFAULT);
+
+  // System.out.flush takes 0 parameters and returns void
+  flushType = new_type_method(0, 0, false, cc_cdecl_set, mtp_no_property);
+  flushEntity = new_global_entity(get_glob_type(), "flush_int", flushType,
+                                   ir_visibility_external, IR_LINKAGE_DEFAULT);
+
+
 
   sysinType = new_type_method(0, 1, false, cc_cdecl_set, mtp_no_property);
   set_method_res_type(sysinType, 0, intType);
@@ -283,6 +294,25 @@ void FirmVisitor::visitMethodInvocation(ast::MethodInvocation &invocation) {
       ir_node *store = get_store();
       ir_node *callee = new_Address(sysoutEntity);
       ir_node *callNode = new_Call(store, callee, 1, args, this->sysoutType);
+
+      // Update the current store
+      ir_node *newStore = new_Proj(callNode, get_modeM(), pn_Call_M);
+      set_store(newStore);
+      pushNode(nullptr); // needs to return a node for consistency!
+    } else if (invocation.getName() == "write") {
+      ir_node *args[] = {popNode()->load()}; // int argument
+      ir_node *store = get_store();
+      ir_node *callee = new_Address(writeEntity);
+      ir_node *callNode = new_Call(store, callee, 1, args, this->writeType);
+
+      // Update the current store
+      ir_node *newStore = new_Proj(callNode, get_modeM(), pn_Call_M);
+      set_store(newStore);
+      pushNode(nullptr); // needs to return a node for consistency!
+    } else if (invocation.getName() == "flush") {
+      ir_node *store = get_store();
+      ir_node *callee = new_Address(flushEntity);
+      ir_node *callNode = new_Call(store, callee, 0, nullptr, this->flushType);
 
       // Update the current store
       ir_node *newStore = new_Proj(callNode, get_modeM(), pn_Call_M);
