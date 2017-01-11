@@ -46,6 +46,14 @@ ir_relation getInverseRelation(ir_relation relation) {
       return ir_relation_less_greater;
     case ir_relation_less_greater:
       return ir_relation_equal;
+    case ir_relation_greater:
+      return ir_relation_less_equal;
+    case ir_relation_less:
+      return ir_relation_greater_equal;
+    case ir_relation_less_equal:
+      return ir_relation_greater;
+    case ir_relation_greater_equal:
+      return ir_relation_less;
     default:
       assert(0);
   }
@@ -151,7 +159,9 @@ void AsmMethodPass::visitCmp(ir_node *node) {
   auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
   bb->addInstruction(std::move(rightRegInst));
 
-  bb->emplaceInstruction<Asm::Cmp>(Asm::Register::get(leftReg), Asm::Register::get(rightReg));
+  /* left and right swapped! */
+  bb->emplaceInstruction<Asm::Cmp>(Asm::Register::get(rightReg),
+                                   Asm::Register::get(leftReg));
 }
 
 void AsmMethodPass::visitCond(ir_node *node) {
@@ -160,7 +170,6 @@ void AsmMethodPass::visitCond(ir_node *node) {
   ir_node *selector = get_Cond_selector(node);
   ir_relation relation = get_Cmp_relation(selector);
   assert(is_Cmp(selector));
-  assert(relation == ir_relation_equal);
 
   ir_node *falseProj = getNthSucc(node, 0);
   ir_node *trueProj  = getNthSucc(node, 1);

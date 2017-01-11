@@ -256,16 +256,20 @@ using InstrPtr = std::unique_ptr<Instruction>;
 /// --- x86 instructions ---
 
 namespace mnemonic {
-const char *const Nop = "nop";
-const char *const Add = "add";
-const char *const Sub = "sub";
-const char *const Mul = "mul";
-const char *const Div = "div";
+const char *const Nop  = "nop";
+const char *const Add  = "add";
+const char *const Sub  = "sub";
+const char *const Mul  = "mul";
+const char *const Div  = "div";
 const char *const Call = "call";
-const char *const Cmp = "cmp";
-const char *const Je  = "je";
-const char *const Jne = "jne";
-const char *const Jmp = "jmp";
+const char *const Cmp  = "cmp";
+const char *const Je   = "je";
+const char *const Jne  = "jne";
+const char *const Jmp  = "jmp";
+const char *const Jg   = "jg";
+const char *const Jge  = "jge";
+const char *const Jl   = "jl";
+const char *const Jle  = "jle";
 
 const char *const Mov = "mov";
 
@@ -324,6 +328,18 @@ struct Jmp : public Instruction {
         break;
       case ir_relation_true:
         o << mnemonic::Jmp;
+        break;
+      case ir_relation_greater:
+        o << mnemonic::Jg;
+        break;
+      case ir_relation_greater_equal:
+        o << mnemonic::Jge;
+        break;
+      case ir_relation_less:
+        o << mnemonic::Jl;
+        break;
+      case ir_relation_less_equal:
+        o << mnemonic::Jle;
         break;
       default:
         assert(false);
