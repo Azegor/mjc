@@ -3,7 +3,7 @@
 compiler=${1}
 in_file=${2}
 
-compiler_out=$("${compiler}" --firm-graph "${in_file}" 2>&1)
+compiler_out=$("${compiler}" --compile-firm "${in_file}" 2>&1)
 compiler_retval=$?
 
 

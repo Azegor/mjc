@@ -187,13 +187,8 @@ int Compiler::compile() {
       }
     }
     std::string outputName = options.outputFileName.empty() ? "a.out" : options.outputFileName;
-    if (options.compileFirm) {
-      if (!lowerFirmGraphsWithFirmBackend(firmVisitor.getFirmGraphs(), options.printFirmGraph, !options.noVerify, options.outputAssembly, outputName))
-        return EXIT_FAILURE;
-    } else {
-      if (!lowerFirmGraphsWithOwnBackend(firmVisitor.getFirmGraphs(), options.printFirmGraph, !options.noVerify, options.outputAssembly, outputName))
-        return EXIT_FAILURE;
-    }
+    if (!lowerFirmGraphs(firmVisitor.getFirmGraphs(), options.printFirmGraph, !options.noVerify, options.outputAssembly, outputName))
+      return EXIT_FAILURE;
 
     return EXIT_SUCCESS;
   } catch (CompilerError &e) {
@@ -202,10 +197,14 @@ int Compiler::compile() {
   }
 }
 
-bool Compiler::lowerFirmGraphsWithFirmBackend(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool outputAssembly, const std::string &outFileName) {
+bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool outputAssembly, const std::string &outFileName) {
   int graphErrors = 0;
   for (auto g : graphs) {
-    lower_highlevel_graph(g);
+    if (options.compileFirm) {
+      lower_highlevel_graph(g);
+    } else {
+      //lower_highlevel_graph(g); // FIXME: are we allowed to use this function?
+    }
 
     if (printGraphs) {
       dump_ir_graph(g, "lowered");
@@ -227,61 +226,21 @@ bool Compiler::lowerFirmGraphsWithFirmBackend(std::vector<ir_graph*> &graphs, bo
     f = tmpfile();
     assemblyName = "/proc/self/fd/" + std::to_string(fileno(f));
   }
-  // XXX This only "works" on 64bit cpus
-  be_parse_arg("isa=amd64");
-  be_main(f, "test.java");
-  fflush(f);
+  if (options.compileFirm) {
+    // XXX This only "works" on 64bit cpus
+    be_parse_arg("isa=amd64");
+    be_main(f, "test.java");
+    fflush(f);
+  } else {
+    // XXX This is a bit of a hack as we opened the tmpfile already...
+    // but we won't write to it here so it's probably okay
+    AsmPass asmPass(graphs, assemblyName);
+    asmPass.run();
+  }
+
   int res = 0;
 //   res |= system("gcc -c ../src/runtime.c -o runtime.o");
 //   res |= system("ar rcs libruntime.a runtime.o");
-  res |= system(("gcc -static -x assembler " + assemblyName + " -o " + outFileName + " -L" LIBSEARCHDIR " -lruntime").c_str());
-  fclose(f);
-  if (res) {
-    throw std::runtime_error("Error while linking binary");
-  }
-
-  return true;
-}
-
-bool Compiler::lowerFirmGraphsWithOwnBackend(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool outputAssembly, const std::string &outFileName) {
-  int graphErrors = 0;
-  for (auto g : graphs) {
-    //lower_highlevel_graph(g); // FIXME: are we allowed to use this function?
-
-    if (printGraphs) {
-      dump_ir_graph(g, "lowered");
-    }
-    if (verifyGraphs) {
-      if (irg_verify(g) == 0)
-        graphErrors++;
-    }
-  }
-
-  if (graphErrors)
-    return false;
-
-  FILE *f = nullptr;
-  std::string assemblyName;
-  if (outputAssembly) {
-    assemblyName = outFileName + ".s";
-    f = fopen(assemblyName.c_str(), "w");
-  } else {
-    f = tmpfile();
-    assemblyName = "/proc/self/fd/" + std::to_string(fileno(f));
-  }
-
-  // create assembly code
-  //AsmDirectPass asmDirectPass(graphs, assemblyName);
-  //asmDirectPass.run();
-
-  // TODO: Re-enable this
-  AsmPass asmPass(graphs, assemblyName);
-  asmPass.run();
-
-
-  int res = 0;
-//     res |= system("gcc -c ../src/runtime.c -o runtime.o");
-//     res |= system("ar rcs libruntime.a runtime.o");
   res |= system(("gcc -static -x assembler " + assemblyName + " -o " + outFileName + " -L" LIBSEARCHDIR " -lruntime").c_str());
   fclose(f);
   if (res) {
