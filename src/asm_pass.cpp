@@ -152,11 +152,13 @@ void AsmMethodPass::visitCall(ir_node *node) {
     assert(get_method_n_ress(callType) == 1);
 
     ir_node *projSucc = getSucc(node, iro_Proj, mode_T);
-    ir_node *resultProj = getProjSucc(projSucc);
+      if (projSucc != nullptr) {
+      ir_node *resultProj = getProjSucc(projSucc);
 
-    if (resultProj != nullptr) {
-      auto reg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::R));
-      writeValue(std::move(reg), resultProj);
+      if (resultProj != nullptr) {
+        auto reg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::R));
+        writeValue(std::move(reg), resultProj);
+      }
     }
   }
 }
