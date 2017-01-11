@@ -39,6 +39,10 @@ public:
     return pos->second;
   }
 
+  bool hasSlot(ir_node *node) {
+    return offsets.find(node) != offsets.end();
+  }
+
   int32_t getLocVarUsedSize() const { return currentOffset; }
 };
 
@@ -145,16 +149,19 @@ public:
   void visitProj(ir_node *node) { (void)node; /* Silence */ }
 
   Asm::OperandPtr getNodeResAsInstOperand(ir_node *node) {
-    switch (get_irn_opcode(node)) {
-    case iro_Const:
+    if (is_Const(node))
       return std::make_unique<Asm::Immediate>(get_Const_tarval(node));
-    default:
-      return std::make_unique<Asm::MemoryBase>(
-          ssm.getStackSlot(node),
-          Asm::X86Reg(Asm::X86Reg::Name::bp,
-                      Asm::X86Reg::getRegMode(get_irn_mode(node))));
+
+    if (!ssm.hasSlot(node)) {
+      ir_printf("%n %N has no stack slot!\n", node, node);
+      assert(false);
     }
-    __builtin_trap();
+
+    return std::make_unique<Asm::MemoryBase>(
+        ssm.getStackSlot(node),
+        Asm::X86Reg(Asm::X86Reg::Name::bp,
+                    Asm::X86Reg::getRegMode(get_irn_mode(node))));
+
   }
 
   Asm::InstrPtr loadToReg(Asm::OperandPtr val, Asm::X86Reg reg) {

@@ -153,7 +153,7 @@ void AsmMethodPass::visitCall(ir_node *node) {
 
   bb->emplaceInstruction<Asm::Call>(std::string(funcName));
 
-  // Write result of function call into stack slot of call node
+  // Write result of function call into stack slot of call->proj->proj node
   if (get_method_n_ress(callType) > 0) {
     assert(get_method_n_ress(callType) == 1);
 
