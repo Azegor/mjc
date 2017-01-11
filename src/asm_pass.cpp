@@ -26,6 +26,20 @@ ir_node *getSucc(ir_node *node, unsigned opcode, ir_mode *mode) {
   return nullptr;
 }
 
+ir_node *getNthSucc(ir_node *node, int k) {
+  int i = -1;
+  foreach_out_edge_safe(node, edge) {
+    if (i < k) {
+      i ++;
+      continue;
+    }
+    ir_node *src = get_edge_src_irn(edge);
+    return src;
+  }
+
+  return nullptr;
+}
+
 
 void AsmPass::before() {
   // writer.writeTextSection();
@@ -110,4 +124,24 @@ void AsmMethodPass::visitCall(ir_node *node) {
       writeValue(std::move(reg), resultProj);
     }
   }
+}
+
+void AsmMethodPass::visitCmp(ir_node *node) {
+  auto bb = getBB(node);
+  auto regMode = Asm::X86Reg::getRegMode(get_irn_mode(node));
+  auto leftOp = getNodeResAsInstOperand(get_Cmp_left(node));
+  Asm::X86Reg leftReg(Asm::X86Reg::Name::ax, regMode);
+  auto leftRegInst = loadToReg(std::move(leftOp), leftReg);
+  bb->addInstruction(std::move(leftRegInst));
+
+  auto rightOp = getNodeResAsInstOperand(get_Cmp_right(node));
+  Asm::X86Reg rightReg(Asm::X86Reg::Name::bx, regMode);
+  auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
+  bb->addInstruction(std::move(rightRegInst));
+
+  bb->emplaceInstruction<Asm::Cmp>(Asm::Register::get(leftReg), Asm::Register::get(rightReg));
+}
+
+void AsmMethodPass::visitCond(ir_node *node) {
+  (void)node;
 }

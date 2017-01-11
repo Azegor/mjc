@@ -261,11 +261,15 @@ const char *const Sub = "sub";
 const char *const Mul = "mul";
 const char *const Div = "div";
 const char *const Call = "call";
+const char *const Cmp = "cmp";
 
 const char *const Mov = "mov";
 
 // GAS inferrs the operand type if not specified (b, s, w, l, q, t)
 }
+
+using OperandPtr = std::unique_ptr<Operand>;
+using WritableOperandPtr = std::unique_ptr<WritableOperand>;
 
 struct Call : public Instruction {
   std::string functionName;
@@ -278,6 +282,22 @@ struct Call : public Instruction {
     return nullptr;
   }
   bool isValid() const override { return true; }
+};
+
+struct Cmp : public Instruction {
+  const OperandPtr left;
+  const OperandPtr right;
+
+  Cmp(OperandPtr left, OperandPtr right) :
+    Instruction("cmp"), left(std::move(left)), right(std::move(right)) {}
+  bool isValid() const override { return true; }
+  Operand *getDestOperand() const override {
+    assert(false);
+    return nullptr;
+  }
+  void write(std::ostream &o) const override {
+    o << mnemonic::Cmp << ' ' << *left << ", " << *right;
+  }
 };
 
 struct Nop : public Instruction {
@@ -296,9 +316,6 @@ struct Comment : public Instruction {
   }
   bool isValid() const override { return true; }
 };
-
-using OperandPtr = std::unique_ptr<Operand>;
-using WritableOperandPtr = std::unique_ptr<WritableOperand>;
 
 struct ArithInstr : public Instruction {
   const OperandPtr src;
