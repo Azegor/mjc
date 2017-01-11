@@ -315,6 +315,10 @@ struct Comment : public Instruction {
   Comment(std::string comment) : Instruction(std::move(comment)) {}
   void write(std::ostream &) const override { /* comment printing done by Instruction */
   }
+  Operand *getDestOperand() const override {
+    assert(false);
+    return nullptr;
+  }
   bool isValid() const override { return true; }
 };
 
