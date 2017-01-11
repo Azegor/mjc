@@ -141,6 +141,7 @@ public:
   void visitAdd(ir_node *node);
   void visitCond(ir_node *node);
   void visitCmp(ir_node *node);
+  void visitJmp(ir_node *node);
   void visitProj(ir_node *node) { (void)node; /* Silence */ }
 
   Asm::OperandPtr getNodeResAsInstOperand(ir_node *node) {

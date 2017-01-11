@@ -186,3 +186,12 @@ void AsmMethodPass::visitCond(ir_node *node) {
   bb->emplaceInstruction<Asm::Jmp>("L" + std::to_string(get_irn_node_nr(falseBlock)),
                                    getInverseRelation(relation));
 }
+
+void AsmMethodPass::visitJmp(ir_node *node) {
+  auto bb = getBB(node);
+  ir_node *jumpTarget = getNthSucc(node, 0);
+  assert(is_Block(jumpTarget));
+  std::string targetLabel = "L" + std::to_string(get_irn_node_nr(jumpTarget));
+
+  bb->emplaceJump<Asm::Jmp>(targetLabel, ir_relation_true);
+}

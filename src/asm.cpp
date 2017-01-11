@@ -85,16 +85,11 @@ void Function::writeProlog(AsmWriter &writer) const {
   // TODO do the "right way" with writeInstruction!
   writer.writeInstruction("pushq %rbp");
   writer.writeInstruction("mov %rsp, %rbp");
-  //writer.writeInstruction("movq %rsp, %rbp");
   writer.writeInstruction("subq $" + std::to_string(ARsize) + ", %rsp");
   writer.writeLabel('.' + fnName.name + "_body");
   writer.writeInstruction("jmp .L" + std::to_string(startBlockId));
 }
 void Function::writeEpilog(AsmWriter &writer) const {
-  //writer.writeLabel('.' + fnName.name + "_epilog");
-  //writer.writeInstruction("\tmovq %rbp, %rsp");
-  //writer.writeInstruction("\tpopq %rbp");
-  //writer.writeInstruction("xorl %eax, %eax");
   writer.writeInstruction("addq $" + std::to_string(ARsize) + ", %rsp");
   writer.writeInstruction("leave");
   writer.writeInstruction("ret");

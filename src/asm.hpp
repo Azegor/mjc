@@ -265,6 +265,7 @@ const char *const Call = "call";
 const char *const Cmp = "cmp";
 const char *const Je  = "je";
 const char *const Jne = "jne";
+const char *const Jmp = "jmp";
 
 const char *const Mov = "mov";
 
@@ -320,6 +321,9 @@ struct Jmp : public Instruction {
         break;
       case ir_relation_less_greater:
         o << mnemonic::Jne;
+        break;
+      case ir_relation_true:
+        o << mnemonic::Jmp;
         break;
       default:
         assert(false);
@@ -463,6 +467,7 @@ class BasicBlock {
   std::string comment;
   const LocalLabel label;
   std::vector<InstrPtr> instructions;
+  InstrPtr jumpInstruction;
 
 public:
   BasicBlock(std::string comment = ""s) : comment(std::move(comment)), label() {}
@@ -478,11 +483,20 @@ public:
     return res;
   }
 
+template <typename T, typename... Args> void emplaceJump(Args &&... args) {
+    this->jumpInstruction = std::make_unique<T>(std::forward<Args>(args)...);
+  }
+
+
   void write(AsmWriter &writer) const {
     writer.writeLabel(label, comment);
     for (auto &instr : instructions) {
       writer.writeInstruction(*instr);
     }
+
+    if (jumpInstruction != nullptr)
+      writer.writeInstruction(*jumpInstruction);
+
   }
 
   const std::string &getComment() const { return comment; }
