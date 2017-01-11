@@ -128,6 +128,21 @@ void AsmMethodPass::visitCall(ir_node *node) {
     bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(p),
                                      Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::di, Asm::X86Reg::Mode::R)));
 
+  } else if (strcmp(funcName, "allocate") == 0) {
+    int nParams = get_Call_n_params(node);
+    assert(nParams == 2);
+    ir_node *n = get_Call_param(node, 0);
+    ir_node *size = get_Call_param(node, 1);
+    ir_printf("Allocate params: %n %N, %n %N\n", n, n, size, size);
+
+    // num in rdi
+    bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(n),
+                                     Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::di, Asm::X86Reg::Mode::R)));
+    // size in rsi
+    bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(size),
+                                     Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::si, Asm::X86Reg::Mode::R)));
+
+
   }
 
   bb->emplaceInstruction<Asm::Call>(std::string(funcName));
