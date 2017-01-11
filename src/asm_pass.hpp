@@ -112,18 +112,8 @@ public:
   }
 #endif
 
-  int k = 0;
-  void defaultInitOp(ir_node *n) {
-     k ++;
-     std::cout << "k : " << k << std::endl;
-     //func->ARSlots ++;
-     FunctionPass::defaultInitOp(n);
-  }
-
-  //void defaultInitOp(ir_node *n) { blockNodesList[get_nodes_block(n)].push_back(n); }
-
   void defaultVisitOp(ir_node *n) {
-    ir_printf("  visiting node %n (%N)\n", n, n);//, currentBB->getComment().c_str());
+    ir_printf("  visiting node %n (%N)\n", n, n);
   }
 
   void writeValue(Asm::OperandPtr reg, ir_node *node) {
@@ -146,7 +136,14 @@ public:
   void visitCond(ir_node *node);
   void visitCmp(ir_node *node);
   void visitJmp(ir_node *node);
-  void visitProj(ir_node *node) { (void)node; /* Silence */ }
+  void visitLoad(ir_node *node);
+
+  // Uninteresting nodes
+  void visitProj(ir_node *node)    { (void)node; /* Silence */ }
+  void visitBlock(ir_node *node)   { (void)node; /* Silence */ }
+  void visitStart(ir_node *node)   { (void)node; /* Silence */ }
+  void visitAddress(ir_node *node) { (void)node; /* Silence */ }
+  void visitConst(ir_node *node)   { (void)node; /* Silence */ }
 
   Asm::OperandPtr getNodeResAsInstOperand(ir_node *node) {
     if (is_Const(node))
