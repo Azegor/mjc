@@ -56,7 +56,6 @@ struct CompilerOptions {
   bool optimize = false;
 
   bool outputAssembly = true;
-  bool compile = true;
   // ...
 };
 
@@ -77,10 +76,9 @@ class Compiler {
   int checkSemantic();
   int fuzzSemantic();
   int attrAstDot();
-  int compileWithFirmBackend();
-  int compileWithOwnBackend();
-  bool lowerFirmGraphsWithFirmBackend(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool generateCode, bool outputAssembly, const std::string &outFileName = "a.out");
-  bool lowerFirmGraphsWithOwnBackend(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool generateCode, bool outputAssembly, const std::string &outFileName = "a.out");
+  int compile();
+  bool lowerFirmGraphsWithFirmBackend(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool outputAssembly, const std::string &outFileName = "a.out");
+  bool lowerFirmGraphsWithOwnBackend(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool outputAssembly, const std::string &outFileName = "a.out");
 
   void checkOptions();
   bool sanityChecks();
