@@ -27,7 +27,7 @@ ir_node *getSucc(ir_node *node, unsigned opcode, ir_mode *mode) {
 }
 
 ir_node *getNthSucc(ir_node *node, int k) {
-  int i = -1;
+  int i = 0;
   foreach_out_edge_safe(node, edge) {
     if (i < k) {
       i ++;
