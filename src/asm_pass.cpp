@@ -3,6 +3,30 @@
 #include <fstream>
 #include <cstring>
 
+/* Return first Proj suceessor of @node */
+ir_node * getProjSucc(ir_node *node) {
+  foreach_out_edge_safe(node, edge) {
+    ir_node *src = get_edge_src_irn(edge);
+    if (is_Proj(src))
+      return src;
+  }
+  return nullptr;
+}
+
+/* Return first successor node with the given opcode and the given mode */
+ir_node *getSucc(ir_node *node, unsigned opcode, ir_mode *mode) {
+  foreach_out_edge_safe(node, edge) {
+    ir_node *src = get_edge_src_irn(edge);
+
+    if (get_irn_opcode(src) == opcode &&
+        get_irn_mode(src) == mode)
+      return src;
+  }
+
+  return nullptr;
+}
+
+
 void AsmPass::before() {
   // writer.writeTextSection();
 }
@@ -77,21 +101,9 @@ void AsmMethodPass::visitCall(ir_node *node) {
   // Write result of function call into stack slot of call node
   if (get_method_n_ress(callType) > 0) {
     assert(get_method_n_ress(callType) == 1);
-    ir_node *resultProj = nullptr;
 
-    foreach_out_edge_safe(node, edge) {
-      //ir_printf("%n -> %n\n", node, get_edge_src_irn(edge));
-      ir_node *src = get_edge_src_irn(edge);
-      if (is_Proj(src) && get_irn_mode(src) == mode_T) {
-        // result projection, should have exactly one successor, another Proj node.
-        foreach_out_edge_safe(src, _edge) {
-          ir_node *_src = get_edge_src_irn(_edge);
-          assert(is_Proj(_src));
-          resultProj = _src;
-          break;
-        }
-      }
-    }
+    ir_node *projSucc = getSucc(node, iro_Proj, mode_T);
+    ir_node *resultProj = getProjSucc(projSucc);
 
     if (resultProj != nullptr) {
       auto reg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::R));
