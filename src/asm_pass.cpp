@@ -59,6 +59,12 @@ ir_relation getInverseRelation(ir_relation relation) {
   }
 }
 
+std::string getBlockLabel(ir_node *node) {
+  assert(is_Block(node));
+
+  return "L" + std::to_string(get_irn_node_nr(node));
+}
+
 
 void AsmPass::before() {
   // writer.writeTextSection();
@@ -205,11 +211,11 @@ void AsmMethodPass::visitCond(ir_node *node) {
   ir_node *trueBlock = getNthSucc(trueProj, 0);
   assert(is_Block(trueBlock));
 
-  bb->emplaceInstruction<Asm::Jmp>("L" + std::to_string(get_irn_node_nr(trueBlock)),
+  bb->emplaceInstruction<Asm::Jmp>(getBlockLabel(trueBlock),
                                    relation);
 
 
-  bb->emplaceInstruction<Asm::Jmp>("L" + std::to_string(get_irn_node_nr(falseBlock)),
+  bb->emplaceInstruction<Asm::Jmp>(getBlockLabel(falseBlock),
                                    getInverseRelation(relation));
 }
 
@@ -217,7 +223,7 @@ void AsmMethodPass::visitJmp(ir_node *node) {
   auto bb = getBB(node);
   ir_node *jumpTarget = getNthSucc(node, 0);
   assert(is_Block(jumpTarget));
-  std::string targetLabel = "L" + std::to_string(get_irn_node_nr(jumpTarget));
 
-  bb->emplaceJump<Asm::Jmp>(targetLabel, ir_relation_true);
+  bb->emplaceJump<Asm::Jmp>(getBlockLabel(jumpTarget),
+                            ir_relation_true);
 }
