@@ -194,6 +194,7 @@ struct LocalLabel : public Operand {
   LocalLabel() : nr(newNr()) {}
   LocalLabel(const LocalLabel &) = default;
   LocalLabel(LocalLabel &&) = default;
+  LocalLabel(uint32_t nr) : nr(nr) {}
 
   void write(std::ostream &o) const override { o << ".L" << nr; }
 
@@ -433,6 +434,7 @@ class BasicBlock {
 
 public:
   BasicBlock(std::string comment = ""s) : comment(std::move(comment)), label() {}
+  BasicBlock(int num, std::string comment = ""s) : comment(std::move(comment)), label(num) {}
   BasicBlock(LocalLabel l) : label(std::move(l)) {}
   BasicBlock(BasicBlock &&bb) = default;
 
@@ -464,11 +466,10 @@ public:
   Function(NamedLabel l) : fnName(std::move(l)) {}
   Function(Function &&) = default;
 
-  void addBB(ir_node *node, BasicBlock bb) {
-    basicBlocks.emplace(std::make_pair(node, std::move(bb)));
-  }
   BasicBlock *newBB(ir_node *node, std::string comment = ""s) {
-    basicBlocks.emplace(std::make_pair(node, std::move(comment)));
+    basicBlocks.emplace(std::piecewise_construct,
+                        std::make_tuple(node),
+                        std::make_tuple(get_irn_node_nr(node), std::move(comment)));
     return &basicBlocks[node];
   }
 
