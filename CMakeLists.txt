@@ -61,7 +61,6 @@ ExternalProject_Add(libfirm
     "PREFIX=/"
     "DESTDIR=${CMAKE_PREFIX_PATH}"
     "install"
-  BUILD_ALWAYS 1
 )
 
 # copied from libfirm.pc
