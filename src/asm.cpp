@@ -90,6 +90,7 @@ void Function::writeProlog(AsmWriter &writer) const {
   writer.writeInstruction("jmp .L" + std::to_string(startBlockId));
 }
 void Function::writeEpilog(AsmWriter &writer) const {
+  writer.writeInstruction("/* Epilog */");
   writer.writeInstruction("addq $" + std::to_string(ARsize) + ", %rsp");
   writer.writeInstruction("leave");
   writer.writeInstruction("ret");
