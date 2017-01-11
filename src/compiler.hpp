@@ -55,7 +55,7 @@ struct CompilerOptions {
   bool noVerify = false;
   bool optimize = false;
 
-  bool outputAssembly = true;
+  bool outputAssembly = false;
   // ...
 };
 
