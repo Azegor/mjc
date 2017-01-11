@@ -203,7 +203,7 @@ bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs,
     if (options.compileFirm) {
       lower_highlevel_graph(g);
     } else {
-      //lower_highlevel_graph(g); // FIXME: are we allowed to use this function?
+      lower_highlevel_graph(g); // FIXME: are we allowed to use this function?
     }
 
     if (printGraphs) {
