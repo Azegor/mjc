@@ -88,6 +88,7 @@ void Function::writeProlog(AsmWriter &writer) const {
   //writer.writeInstruction("movq %rsp, %rbp");
   writer.writeInstruction("subq $" + std::to_string(ARsize) + ", %rsp");
   writer.writeLabel('.' + fnName.name + "_body");
+  writer.writeInstruction("jmp .L" + std::to_string(startBlockId));
 }
 void Function::writeEpilog(AsmWriter &writer) const {
   //writer.writeLabel('.' + fnName.name + "_epilog");
