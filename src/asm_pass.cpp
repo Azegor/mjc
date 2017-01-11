@@ -40,6 +40,17 @@ ir_node *getNthSucc(ir_node *node, int k) {
   return nullptr;
 }
 
+ir_relation getInverseRelation(ir_relation relation) {
+  switch(relation) {
+    case ir_relation_equal:
+      return ir_relation_less_greater;
+    case ir_relation_less_greater:
+      return ir_relation_equal;
+    default:
+      assert(0);
+  }
+}
+
 
 void AsmPass::before() {
   // writer.writeTextSection();
@@ -48,6 +59,7 @@ void AsmPass::before() {
 void AsmPass::visitMethod(ir_graph *graph) {
   const char *functionName = get_entity_ld_name(get_irg_entity(graph));
   Asm::Function func(functionName);
+  func.setStartBlockId(get_irn_node_nr(get_irg_start_block(graph)));
   AsmMethodPass methodPass(graph, &func);
   methodPass.run();
   asmProgram.addFunction(std::move(func));
@@ -143,5 +155,34 @@ void AsmMethodPass::visitCmp(ir_node *node) {
 }
 
 void AsmMethodPass::visitCond(ir_node *node) {
-  (void)node;
+  auto bb = getBB(node);
+
+  ir_node *selector = get_Cond_selector(node);
+  ir_relation relation = get_Cmp_relation(selector);
+  assert(is_Cmp(selector));
+  assert(relation == ir_relation_equal);
+
+  ir_node *falseProj = getNthSucc(node, 0);
+  ir_node *trueProj  = getNthSucc(node, 1);
+
+  if (get_Proj_num(falseProj) != pn_Cond_false) {
+    assert(get_Proj_num(trueProj) == pn_Cond_false);
+    std::swap(falseProj, trueProj);
+  }
+
+  assert(is_Proj(falseProj));
+  assert(get_Proj_num(falseProj) == pn_Cond_false);
+  assert(get_Proj_num(trueProj) == pn_Cond_true);
+
+  ir_node *falseBlock = getNthSucc(falseProj, 0);
+  assert(is_Block(falseBlock));
+  ir_node *trueBlock = getNthSucc(trueProj, 0);
+  assert(is_Block(trueBlock));
+
+  bb->emplaceInstruction<Asm::Jmp>("L" + std::to_string(get_irn_node_nr(trueBlock)),
+                                   relation);
+
+
+  bb->emplaceInstruction<Asm::Jmp>("L" + std::to_string(get_irn_node_nr(falseBlock)),
+                                   getInverseRelation(relation));
 }

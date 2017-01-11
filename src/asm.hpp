@@ -263,6 +263,8 @@ const char *const Mul = "mul";
 const char *const Div = "div";
 const char *const Call = "call";
 const char *const Cmp = "cmp";
+const char *const Je  = "je";
+const char *const Jne = "jne";
 
 const char *const Mov = "mov";
 
@@ -299,6 +301,32 @@ struct Cmp : public Instruction {
   void write(std::ostream &o) const override {
     o << mnemonic::Cmp << ' ' << *left << ", " << *right;
   }
+};
+
+struct Jmp : public Instruction {
+  ir_relation relation;
+  std::string targetLabel;
+  Jmp(const std::string targetLabel, ir_relation relation)
+    : Instruction(""), relation(relation), targetLabel(std::move(targetLabel)) {}
+
+  Operand *getDestOperand() const override {
+    assert(false);
+    return nullptr;
+  }
+  void write(std::ostream &o) const override {
+    switch(relation) {
+      case ir_relation_equal:
+        o << mnemonic::Je;
+        break;
+      case ir_relation_less_greater:
+        o << mnemonic::Jne;
+        break;
+      default:
+        assert(false);
+    }
+    o << " ." << targetLabel;
+  }
+  bool isValid() const override { return true; }
 };
 
 struct Nop : public Instruction {
@@ -463,7 +491,8 @@ public:
 class Function {
   NamedLabel fnName;
   std::unordered_map<ir_node *, BasicBlock> basicBlocks;
-  int ARsize = 0 ;
+  int ARsize = 0;
+  int startBlockId = -1;
 
 public:
   Function(std::string name) : fnName(std::move(name)) {}
@@ -476,6 +505,8 @@ public:
                         std::make_tuple(get_irn_node_nr(node), std::move(comment)));
     return &basicBlocks[node];
   }
+
+  void setStartBlockId(int id) { startBlockId = id; }
 
   BasicBlock *getBB(ir_node *node) {
     return &basicBlocks[node];
