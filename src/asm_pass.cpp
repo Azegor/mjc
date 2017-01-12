@@ -102,7 +102,7 @@ void AsmMethodPass::visitAdd(ir_node *node) {
   // 4. create instruction with operands
 
   // TODO cleanup and avoid code duplication in other visit Methods
-  auto regMode = Asm::X86Reg::getRegMode(get_irn_mode(node));
+  auto regMode = Asm::X86Reg::getRegMode(node);
   auto leftOp = getNodeResAsInstOperand(get_Add_left(node));
   Asm::X86Reg leftReg(Asm::X86Reg::Name::ax, regMode);
   auto leftRegInst = loadToReg(std::move(leftOp), leftReg);
@@ -120,7 +120,7 @@ void AsmMethodPass::visitMul(ir_node *node) {
   auto bb = getBB(node);
 
   // TODO cleanup and avoid code duplication in other visit Methods
-  auto regMode = Asm::X86Reg::getRegMode(get_irn_mode(node));
+  auto regMode = Asm::X86Reg::getRegMode(node);
   auto leftOp = getNodeResAsInstOperand(get_Mul_left(node));
   Asm::X86Reg leftReg(Asm::X86Reg::Name::ax, regMode);
   auto leftRegInst = loadToReg(std::move(leftOp), leftReg);
@@ -191,7 +191,7 @@ void AsmMethodPass::visitCall(ir_node *node) {
 
 void AsmMethodPass::visitCmp(ir_node *node) {
   auto bb = getBB(node);
-  auto regMode = Asm::X86Reg::getRegMode(get_irn_mode(node));
+  auto regMode = Asm::X86Reg::getRegMode(get_Cmp_right(node));
   auto leftOp = getNodeResAsInstOperand(get_Cmp_left(node));
   Asm::X86Reg leftReg(Asm::X86Reg::Name::ax, regMode);
   auto leftRegInst = loadToReg(std::move(leftOp), leftReg);
@@ -295,6 +295,7 @@ void AsmMethodPass::visitReturn(ir_node *node) {
   ir_node *succ = getNthSucc(node, 0);
   assert(is_Block(succ));
 
+  // TODO: Write return value into rax
   // return nodes should have exactly one successor, the end block.
 
   bb->emplaceJump(getBlockLabel(succ), ir_relation_true);

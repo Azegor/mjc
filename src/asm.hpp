@@ -55,7 +55,7 @@ struct X86Reg {
   X86Reg(Name n, Mode m) : name(n), mode(m) {}
   const char *getAsmName() const;
 
-  static Mode getRegMode(ir_mode *mode);
+  static Mode getRegMode(ir_node *node);
 
   static X86Reg noReg;
 

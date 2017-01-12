@@ -125,7 +125,7 @@ public:
      std::make_unique<Asm::MemoryBase>(
           ssm.getStackSlot(node, bb),
           Asm::X86Reg(Asm::X86Reg::Name::bp,
-                      Asm::X86Reg::getRegMode(get_irn_mode(node)))), std::move(comment));
+                      Asm::X86Reg::getRegMode(node))), std::move(comment));
   }
 
   Asm::BasicBlock* getBB(ir_node *n) {
@@ -167,7 +167,7 @@ public:
     return std::make_unique<Asm::MemoryBase>(
         ssm.getStackSlot(node, getBB(node)),
         Asm::X86Reg(Asm::X86Reg::Name::bp,
-                    Asm::X86Reg::getRegMode(get_irn_mode(node))));
+                    Asm::X86Reg::getRegMode(node)));
 
   }
 
@@ -182,7 +182,7 @@ public:
         std::make_unique<Asm::MemoryBase>(
             ssm.getStackSlot(node, getBB(node)),
             Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                Asm::X86Reg::getRegMode(get_irn_mode(node)))),
+                                Asm::X86Reg::getRegMode(node))),
         "store reg to stackslot");
   }
 

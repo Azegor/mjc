@@ -54,12 +54,9 @@ const char *X86Reg::getAsmName() const {
   }
 }
 
-Asm::X86Reg::Mode X86Reg::getRegMode(ir_mode *mode) {
-  // TODO: Resurrect this?
-  (void)mode;
-  return Mode::R;
+Asm::X86Reg::Mode X86Reg::getRegMode(ir_node *node) {
+  ir_mode *mode = get_irn_mode(node);
 
-#if 0
   if (mode == mode_Is) {
     return Mode::R;
   }
@@ -72,9 +69,11 @@ Asm::X86Reg::Mode X86Reg::getRegMode(ir_mode *mode) {
   if (mode == mode_T) {
     return Mode::R;
   }
-  ir_printf("Invalid node mode %m\n", mode);
+  if (mode == mode_Ls) {
+    return Mode::R;
+  }
+  ir_printf("Invalid node mode %m for node %n %N\n", mode, node, node);
   assert(0);
-#endif
 }
 
 void AsmWriter::writeTextSection() { writeText(".text"); }
