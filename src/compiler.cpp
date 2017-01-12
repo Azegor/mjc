@@ -200,11 +200,7 @@ int Compiler::compile() {
 bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool outputAssembly, const std::string &outFileName) {
   int graphErrors = 0;
   for (auto g : graphs) {
-    if (options.compileFirm) {
-      lower_highlevel_graph(g);
-    } else {
-      lower_highlevel_graph(g); // FIXME: are we allowed to use this function?
-    }
+    lower_highlevel_graph(g);
 
     if (printGraphs) {
       dump_ir_graph(g, "lowered");
