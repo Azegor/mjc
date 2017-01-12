@@ -318,12 +318,13 @@ void AsmMethodPass::visitStore(ir_node *node) {
    * 2) write SOURCE value into address in tmp register.
    */
 
+  // TODO: Use the correct register modes here
   auto destOp = getNodeResAsInstOperand(dest);
   auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
   bb->emplaceInstruction<Asm::Mov>(std::move(destOp), std::move(tmpReg), "1)");
   // r15 now contains the address to write to!
 
-  auto r15Op = std::make_unique<Asm::MemoryBase>(0, Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+  auto r15Op = std::make_unique<Asm::MemoryBase>(0, Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::L));
   auto sourceOp = getNodeResAsInstOperand(source);
   bb->emplaceInstruction<Asm::Mov>(std::move(sourceOp), std::move(r15Op), "2)");
 }

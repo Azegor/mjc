@@ -8,7 +8,7 @@ const char *X86Reg::getAsmName() const {
   switch (mode) {
   case Mode::R: {
     switch(name) {
-    case Name::none: __builtin_trap();
+    case Name::none: assert(false);
     case Name::ax : return "%rax";
     case Name::bx : return "%rbx";
     case Name::cx : return "%rcx";
@@ -27,9 +27,10 @@ const char *X86Reg::getAsmName() const {
     case Name::r15: return "%r15";
     }
   }
-  case Mode::E: {
+  case Mode::E:
+  case Mode::L: {
     switch(name) {
-    case Name::none: __builtin_trap();
+    case Name::none: assert(false);
     case Name::ax : return "%eax";
     case Name::bx : return "%ebx";
     case Name::cx : return "%ecx";
@@ -45,12 +46,12 @@ const char *X86Reg::getAsmName() const {
     case Name::r12: return "%e12";
     case Name::r13: return "%e13";
     case Name::r14: return "%e14";
-    case Name::r15: return "%e15";
+    case Name::r15: return "%r15";
     }
   }
   default:
     // TODO
-    __builtin_trap();
+    assert(false);
   }
 }
 

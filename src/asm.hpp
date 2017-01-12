@@ -270,7 +270,9 @@ const char *const Jge  = "jge";
 const char *const Jl   = "jl";
 const char *const Jle  = "jle";
 
-const char *const Mov = "movq"; // TODO: the 'q' here should go(?)
+const char *const Mov  = "mov";
+const char *const Movq = "movq";
+const char *const Movl = "movl";
 
 // GAS inferrs the operand type if not specified (b, s, w, l, q, t)
 }
@@ -429,7 +431,20 @@ struct Mov : public Instruction {
   }
 
   void write(std::ostream &o) const override {
-    writeInstr(o, mnemonic::Mov, src.get(), dest.get());
+    // XXX Ehm this is a little ugly
+    if (auto d = dynamic_cast<Asm::Register*>(dest.get())) {
+      if (d->reg.mode == X86Reg::Mode::L)
+        writeInstr(o, mnemonic::Movl, src.get(), dest.get());
+      else
+        writeInstr(o, mnemonic::Movq, src.get(), dest.get());
+    }else if (auto d = dynamic_cast<Asm::MemoryBase*>(dest.get())) {
+      if (d->base.mode == X86Reg::Mode::L)
+        writeInstr(o, mnemonic::Movl, src.get(), dest.get());
+      else
+        writeInstr(o, mnemonic::Movq, src.get(), dest.get());
+    }else {
+      writeInstr(o, mnemonic::Mov, src.get(), dest.get());
+    }
   }
 };
 
