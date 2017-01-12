@@ -87,6 +87,13 @@ void AsmPass::after() {
   outputFile << asmProgram << std::endl;
 }
 
+void AsmMethodPass::visitConv(ir_node *node) {
+  //auto bb = getBB(node);
+  ir_node *pred = get_Conv_op(node);
+  assert(is_Const(pred));
+  // TODO: Just copy stack slot of pred to node?
+}
+
 void AsmMethodPass::visitAdd(ir_node *node) {
   auto bb = getBB(node);
   // 1. get left and right predecessor of add node
@@ -127,7 +134,6 @@ void AsmMethodPass::visitCall(ir_node *node) {
     int nParams = get_Call_n_params(node);
     assert(nParams == 1);
     ir_node *p = get_Call_param(node, 0);
-    //ir_printf("call param: %n %N\n", p, p);
     bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(p),
                                      Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::di, Asm::X86Reg::Mode::R)));
 

@@ -133,6 +133,7 @@ public:
     return func->getBB(block);
   }
 
+  void visitConv(ir_node *node);
   void visitCall(ir_node *node);
   void visitAdd(ir_node *node);
   void visitCond(ir_node *node);
@@ -153,6 +154,9 @@ public:
   Asm::OperandPtr getNodeResAsInstOperand(ir_node *node) {
     if (is_Const(node))
       return std::make_unique<Asm::Immediate>(get_Const_tarval(node));
+    else if (is_Conv(node) && is_Const(get_Conv_op(node))) {
+      return std::make_unique<Asm::Immediate>(get_Const_tarval(get_Conv_op(node)));
+    }
 
     if (!ssm.hasSlot(node)) {
       ir_printf("%n %N has no stack slot!\n", node, node);
