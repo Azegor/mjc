@@ -189,6 +189,18 @@ foreach(file ${input_files})
 endforeach()
 MESSAGE(STATUS "  Added ${Count} constprop tests")
 
+# asm tests: Compile with own backend
+set(Count 0)
+file(GLOB input_files "${CMAKE_CURRENT_SOURCE_DIR}/asm/*.java")
+foreach(file ${input_files})
+  math(EXPR Count "${Count} + 1")
+  get_filename_component(filename "${file}" NAME)
+  add_test(NAME "ASM_${filename}"
+    COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/asm_test.sh" $<TARGET_FILE:mjc> "${file}")
+endforeach()
+MESSAGE(STATUS "  Added ${Count} ASM tests")
+
+
 # libfirm codegen + compare to javac
 # set(Count 0)
 # file(GLOB input_files "${CMAKE_CURRENT_SOURCE_DIR}/firmtest/compare_javac/*.java")
