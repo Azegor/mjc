@@ -45,6 +45,13 @@ public:
     return offsets.find(node) != offsets.end();
   }
 
+  void copySlot(ir_node *from, ir_node *to) {
+    assert(hasSlot(from));
+    assert(!hasSlot(to));
+
+    offsets.insert({to, offsets[from]});
+  }
+
   int32_t getLocVarUsedSize() const { return currentOffset; }
 };
 

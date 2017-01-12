@@ -90,8 +90,15 @@ void AsmPass::after() {
 void AsmMethodPass::visitConv(ir_node *node) {
   //auto bb = getBB(node);
   ir_node *pred = get_Conv_op(node);
-  assert(is_Const(pred));
-  // TODO: Just copy stack slot of pred to node?
+  if (is_Const(pred)) {
+    // We already handle this simple case in getNodeResAsInstOperand
+    return;
+  }
+
+  // Just use pred's stack slot for this Conv node as well.
+  ssm.copySlot(pred, node);
+  // TODO: Depending on the conversion, this might actually promote a
+  //       value from e.g. L to R mode.
 }
 
 void AsmMethodPass::visitAdd(ir_node *node) {
