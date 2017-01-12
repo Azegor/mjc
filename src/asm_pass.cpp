@@ -135,9 +135,11 @@ void AsmMethodPass::visitSub(ir_node *node) {
   Asm::X86Reg rightReg(Asm::X86Reg::Name::bx, regMode);
   auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
   bb->addInstruction(std::move(rightRegInst));
-  bb->emplaceInstruction<Asm::Sub>(Asm::Register::get(leftReg), Asm::Register::get(rightReg),
+
+  // Left and right swapped!
+  bb->emplaceInstruction<Asm::Sub>(Asm::Register::get(rightReg), Asm::Register::get(leftReg),
                                    "Node " + std::to_string(get_irn_node_nr(node)));
-  bb->addInstruction(writeResToStackSlot(rightReg, node));
+  bb->addInstruction(writeResToStackSlot(leftReg, node));
 }
 
 void AsmMethodPass::visitMul(ir_node *node) {
