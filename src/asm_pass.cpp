@@ -274,11 +274,28 @@ void AsmMethodPass::visitReturn(ir_node *node) {
 
 void AsmMethodPass::visitStore(ir_node *node) {
   auto bb = getBB(node);
-  bb->addComment("Store");
-
-  ir_node *dest = get_Store_ptr(node);
   ir_node *source = get_Store_value(node);
-  ir_printf("%n %N --> %n %N\n", source, source, dest, dest);
+  ir_node *dest = get_Store_ptr(node);
 
+  bb->addComment("Store " + std::string(gdb_node_helper(source)) + " into " +
+                 std::string(gdb_node_helper(dest)));
 
+  // dest is a pointer, so we need to save into the address of that pointer,
+  // not into the register of that node.
+  assert(get_irn_mode(dest) == mode_P);
+  assert(is_Proj(dest));
+
+  /*
+   * 1) Copy contents from DEST register into tmp register (will contain address)
+   * 2) write SOURCE value into address in tmp register.
+   */
+
+  auto destOp = getNodeResAsInstOperand(dest);
+  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+  bb->emplaceInstruction<Asm::Mov>(std::move(destOp), std::move(tmpReg), "1)");
+  // r15 now contains the address to write to!
+
+  auto r15Op = std::make_unique<Asm::MemoryBase>(0, Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+  auto sourceOp = getNodeResAsInstOperand(source);
+  bb->emplaceInstruction<Asm::Mov>(std::move(sourceOp), std::move(r15Op));
 }

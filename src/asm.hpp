@@ -270,7 +270,7 @@ const char *const Jge  = "jge";
 const char *const Jl   = "jl";
 const char *const Jle  = "jle";
 
-const char *const Mov = "mov";
+const char *const Mov = "movq"; // TODO: the 'q' here should go(?)
 
 // GAS inferrs the operand type if not specified (b, s, w, l, q, t)
 }
