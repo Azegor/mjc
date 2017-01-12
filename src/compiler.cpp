@@ -239,9 +239,9 @@ bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs,
   }
 
   int res = 0;
-//   res |= system("gcc -c ../src/runtime.c -o runtime.o");
-//   res |= system("ar rcs libruntime.a runtime.o");
-  res |= system(("gcc -static -x assembler " + assemblyName + " -o " + outFileName + " -L" LIBSEARCHDIR " -lruntime").c_str());
+  // XXX -g and -gstabs+ for debugging so we can step through asm instructions
+  res |= system(("gcc -g -gstabs+ -static -x assembler " + assemblyName + " -o " + outFileName + " -L" LIBSEARCHDIR " -lruntime").c_str());
+  //res |= system(("gcc -static -x assembler " + assemblyName + " -o " + outFileName + " -L" LIBSEARCHDIR " -lruntime").c_str());
   fclose(f);
   if (res) {
     throw std::runtime_error("Error while linking binary");
