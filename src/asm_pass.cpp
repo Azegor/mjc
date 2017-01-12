@@ -121,11 +121,11 @@ void AsmMethodPass::visitMul(ir_node *node) {
 
   // TODO cleanup and avoid code duplication in other visit Methods
   auto regMode = Asm::X86Reg::getRegMode(get_irn_mode(node));
-  auto leftOp = getNodeResAsInstOperand(get_Add_left(node));
+  auto leftOp = getNodeResAsInstOperand(get_Mul_left(node));
   Asm::X86Reg leftReg(Asm::X86Reg::Name::ax, regMode);
   auto leftRegInst = loadToReg(std::move(leftOp), leftReg);
   bb->addInstruction(std::move(leftRegInst));
-  auto rightOp = getNodeResAsInstOperand(get_Add_right(node));
+  auto rightOp = getNodeResAsInstOperand(get_Mul_right(node));
   Asm::X86Reg rightReg(Asm::X86Reg::Name::bx, regMode);
   auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
   bb->addInstruction(std::move(rightRegInst));
