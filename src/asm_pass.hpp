@@ -101,26 +101,6 @@ public:
     func->setARSize(ssm.getLocVarUsedSize());
   }
 
-  //void initBlock(ir_node *b) {
-    //blockNodesList.insert({b, std::vector<ir_node *>()}); // init empty vector
-    //enqueue(b);
-  //}
-
-#if 0
-  void visitBlock(ir_node *b) {
-    this->currentBB = func->newBB("Block " + std::to_string(get_irn_node_nr(b)));
-    std::cout << " --- visiting " << currentBB->getComment() << std::endl;
-
-    auto &blockNodes = blockNodesList.at(b);
-    for (auto n : blockNodes) {
-      assert(!is_Block(n));
-      visitNode(n);
-    }
-
-    this->currentBB = nullptr; // to be safe
-  }
-#endif
-
   void defaultVisitOp(ir_node *n) {
     ir_printf("  visiting node %n (%N)\n", n, n);
   }
@@ -151,6 +131,7 @@ public:
   void visitReturn(ir_node *node);
   void visitEnd(ir_node *node);
   void visitStore(ir_node *node);
+  void visitSub(ir_node *node);
 
   // Uninteresting nodes
   void visitProj(ir_node *node)    { (void)node; /* Silence */ }
