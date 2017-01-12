@@ -127,7 +127,7 @@ void AsmMethodPass::visitCall(ir_node *node) {
     int nParams = get_Call_n_params(node);
     assert(nParams == 1);
     ir_node *p = get_Call_param(node, 0);
-    ir_printf("call param: %n %N\n", p, p);
+    //ir_printf("call param: %n %N\n", p, p);
     bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(p),
                                      Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::di, Asm::X86Reg::Mode::R)));
 
@@ -136,7 +136,7 @@ void AsmMethodPass::visitCall(ir_node *node) {
     assert(nParams == 2);
     ir_node *n = get_Call_param(node, 0);
     ir_node *size = get_Call_param(node, 1);
-    ir_printf("Allocate params: %n %N, %n %N\n", n, n, size, size);
+    //ir_printf("Allocate params: %n %N, %n %N\n", n, n, size, size);
 
     // num in rdi
     bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(n),
@@ -236,14 +236,29 @@ void AsmMethodPass::visitLoad(ir_node *node) {
   ir_node *succ = getNthSucc(node, 1);
   assert(is_Proj(succ));
   assert(get_irn_mode(node) != mode_M); // ! Load nodes have 2 successor Proj nodes
+  // TODO: Do we need this on non-pointer nodes?
+  assert(get_irn_mode(pred) == mode_P);
 
-  bb->addComment("Load");
+  bb->addComment("Load from " + std::string(gdb_node_helper(pred)));
+  /*
+   * 1) Load contents of pred slot into temporary register. This now contains the address to read from
+   * 2) Write the value at that address into a second temporary register
+   * 3) Write that value to succ's slot
+   */
+
+  // 1)
   auto predOp = getNodeResAsInstOperand(pred);
   auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+  bb->emplaceInstruction<Asm::Mov>(std::move(predOp), std::move(tmpReg), "1)");
 
-  bb->emplaceInstruction<Asm::Mov>(std::move(predOp), std::move(tmpReg));
-  tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-  writeValue(std::move(tmpReg), succ);
+  // 2)
+  auto r15Op = std::make_unique<Asm::MemoryBase>(0, Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+  auto r14Op = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r14, Asm::X86Reg::Mode::R));
+  bb->emplaceInstruction<Asm::Mov>(std::move(r15Op), std::move(r14Op), "2)");
+
+  // 3)
+  auto val =  Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r14, Asm::X86Reg::Mode::R));
+  writeValue(std::move(val), succ, "3)");
 }
 
 void AsmMethodPass::visitReturn(ir_node *node) {
@@ -255,4 +270,15 @@ void AsmMethodPass::visitReturn(ir_node *node) {
   // return nodes should have exactly one successor, the end block.
 
   bb->emplaceJump(getBlockLabel(succ), ir_relation_true);
+}
+
+void AsmMethodPass::visitStore(ir_node *node) {
+  auto bb = getBB(node);
+  bb->addComment("Store");
+
+  ir_node *dest = get_Store_ptr(node);
+  ir_node *source = get_Store_value(node);
+  ir_printf("%n %N --> %n %N\n", source, source, dest, dest);
+
+
 }

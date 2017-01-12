@@ -130,7 +130,6 @@ struct MemoryBase : public MemoryOperand {
   void write(std::ostream &o) const override {
     // TODO: incorporate all values
     if (offset) {
-      //o << '-';
       o << offset;
     }
     o << '(' << base.getAsmName() << ')';

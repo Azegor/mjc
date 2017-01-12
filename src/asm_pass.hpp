@@ -118,14 +118,14 @@ public:
     ir_printf("  visiting node %n (%N)\n", n, n);
   }
 
-  void writeValue(Asm::OperandPtr reg, ir_node *node) {
+  void writeValue(Asm::OperandPtr reg, ir_node *node, const std::string comment = "") {
     auto bb = getBB(node);
 
     bb->emplaceInstruction<Asm::Mov>(std::move(reg),
      std::make_unique<Asm::MemoryBase>(
           ssm.getStackSlot(node, bb),
           Asm::X86Reg(Asm::X86Reg::Name::bp,
-                      Asm::X86Reg::getRegMode(get_irn_mode(node)))));
+                      Asm::X86Reg::getRegMode(get_irn_mode(node)))), std::move(comment));
   }
 
   Asm::BasicBlock* getBB(ir_node *n) {
@@ -141,6 +141,7 @@ public:
   void visitLoad(ir_node *node);
   void visitReturn(ir_node *node);
   void visitEnd(ir_node *node);
+  void visitStore(ir_node *node);
 
   // Uninteresting nodes
   void visitProj(ir_node *node)    { (void)node; /* Silence */ }
