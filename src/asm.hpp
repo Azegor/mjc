@@ -130,7 +130,7 @@ struct MemoryBase : public MemoryOperand {
   void write(std::ostream &o) const override {
     // TODO: incorporate all values
     if (offset) {
-      o << '-';
+      //o << '-';
       o << offset;
     }
     o << '(' << base.getAsmName() << ')';
@@ -501,9 +501,9 @@ public:
     return res;
   }
 
-  template <typename T, typename... Args>
+  template <typename... Args>
   void emplaceJump(Args &&... args) {
-    this->jumpInstruction = std::make_unique<T>(std::forward<Args>(args)...);
+    this->jumpInstruction = std::make_unique<Asm::Jmp>(std::forward<Args>(args)...);
   }
 
   void addComment(const std::string comment) {
@@ -547,6 +547,10 @@ public:
 
   BasicBlock *getBB(ir_node *node) {
     return &basicBlocks[node];
+  }
+
+  std::string getEpilogLabel() const {
+    return fnName.name + "_epilog";
   }
 
   void setARSize(int size) { ARsize = size; }

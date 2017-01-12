@@ -224,6 +224,38 @@ void AsmMethodPass::visitJmp(ir_node *node) {
   ir_node *jumpTarget = getNthSucc(node, 0);
   assert(is_Block(jumpTarget));
 
-  bb->emplaceJump<Asm::Jmp>(getBlockLabel(jumpTarget),
-                            ir_relation_true);
+  bb->emplaceJump(getBlockLabel(jumpTarget), ir_relation_true);
+}
+
+void AsmMethodPass::visitEnd(ir_node *node) {
+  auto bb = getBB(node);
+
+  bb->emplaceJump(func->getEpilogLabel(), ir_relation_true);
+}
+
+void AsmMethodPass::visitLoad(ir_node *node) {
+  auto bb = getBB(node);
+  ir_node *pred = get_Load_ptr(node);
+  ir_node *succ = getNthSucc(node, 1);
+  assert(is_Proj(succ));
+  assert(get_irn_mode(node) != mode_M); // ! Load nodes have 2 successor Proj nodes
+
+  bb->addComment("Load");
+  auto predOp = getNodeResAsInstOperand(pred);
+  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+
+  bb->emplaceInstruction<Asm::Mov>(std::move(predOp), std::move(tmpReg));
+  tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+  writeValue(std::move(tmpReg), succ);
+}
+
+void AsmMethodPass::visitReturn(ir_node *node) {
+  auto bb = getBB(node);
+
+  ir_node *succ = getNthSucc(node, 0);
+  assert(is_Block(succ));
+
+  // return nodes should have exactly one successor, the end block.
+
+  bb->emplaceJump(getBlockLabel(succ), ir_relation_true);
 }
