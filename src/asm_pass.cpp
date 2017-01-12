@@ -302,9 +302,17 @@ void AsmMethodPass::visitReturn(ir_node *node) {
   ir_node *succ = getNthSucc(node, 0);
   assert(is_Block(succ));
 
-  // TODO: Write return value into rax
-  // return nodes should have exactly one successor, the end block.
+  if (get_Return_n_ress(node) > 0) {
+    ir_node *opNode = get_Return_res(node, 0);
+    auto op = getNodeResAsInstOperand(opNode);
+    auto ax = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax,
+                                 Asm::X86Reg::getRegMode(opNode)));
 
+    bb->emplaceInstruction<Asm::Mov>(std::move(op), std::move(ax), "Return value");
+  }
+
+  // Jump to end block
+  // return nodes should have exactly one successor, the end block.
   bb->emplaceJump(getBlockLabel(succ), ir_relation_true);
 }
 
