@@ -258,7 +258,7 @@ namespace mnemonic {
 const char *const Nop  = "nop";
 const char *const Add  = "add";
 const char *const Sub  = "sub";
-const char *const Mul  = "mul";
+const char *const IMul = "imul";
 const char *const Div  = "div";
 const char *const Call = "call";
 const char *const Cmp  = "cmp";
@@ -403,7 +403,7 @@ struct Mul : public ArithInstr {
   Mul(OperandPtr s, WritableOperandPtr d, std::string c = ""s)
       : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
 
-  void write(std::ostream &o) const override { writeInstr(o, mnemonic::Mul); }
+  void write(std::ostream &o) const override { writeInstr(o, mnemonic::IMul); }
 };
 
 struct Div : public ArithInstr {

@@ -136,6 +136,7 @@ public:
   void visitConv(ir_node *node);
   void visitCall(ir_node *node);
   void visitAdd(ir_node *node);
+  void visitMul(ir_node *node);
   void visitCond(ir_node *node);
   void visitCmp(ir_node *node);
   void visitJmp(ir_node *node);
