@@ -283,7 +283,6 @@ void AsmMethodPass::visitStore(ir_node *node) {
   // dest is a pointer, so we need to save into the address of that pointer,
   // not into the register of that node.
   assert(get_irn_mode(dest) == mode_P);
-  assert(is_Proj(dest));
 
   /*
    * 1) Copy contents from DEST register into tmp register (will contain address)
