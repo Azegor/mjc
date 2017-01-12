@@ -28,8 +28,8 @@
 
 # Executables
 *.exe
-*.out
 *.app
+a.out
 
 # Others
 /build/
