@@ -113,14 +113,11 @@ void AsmMethodPass::visitAdd(ir_node *node) {
 void AsmMethodPass::visitCall(ir_node *node) {
   auto bb = getBB(node);
 
-  assert(bb != nullptr);
-
   ir_node *address = get_Call_ptr(node);
   ir_type *callType = get_Call_type(node);
   assert(is_Address(address));
   ir_entity *entity = get_Address_entity(address);
   const char *funcName = get_entity_name(entity);
-  std::cout << funcName << std::endl;
 
   // address nodes are always constant and belong to the start block
   //TODO Arguments
