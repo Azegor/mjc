@@ -256,8 +256,13 @@ void AsmMethodPass::visitEnd(ir_node *node) {
 void AsmMethodPass::visitLoad(ir_node *node) {
   auto bb = getBB(node);
   ir_node *pred = get_Load_ptr(node);
-  ir_node *succ = getNthSucc(node, 1);
-  assert(is_Proj(succ));
+  ir_node *succ = getSucc(node, iro_Proj, mode_Is);
+
+  if (succ == nullptr) {
+    // We load something but don't end up using it at all?
+    return;
+  }
+
   assert(get_irn_mode(node) != mode_M); // ! Load nodes have 2 successor Proj nodes
   // TODO: Do we need this on non-pointer nodes?
   assert(get_irn_mode(pred) == mode_P);
@@ -319,5 +324,5 @@ void AsmMethodPass::visitStore(ir_node *node) {
 
   auto r15Op = std::make_unique<Asm::MemoryBase>(0, Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
   auto sourceOp = getNodeResAsInstOperand(source);
-  bb->emplaceInstruction<Asm::Mov>(std::move(sourceOp), std::move(r15Op));
+  bb->emplaceInstruction<Asm::Mov>(std::move(sourceOp), std::move(r15Op), "2)");
 }
