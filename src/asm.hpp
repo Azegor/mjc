@@ -492,15 +492,22 @@ public:
   BasicBlock(BasicBlock &&bb) = default;
 
   void addInstruction(InstrPtr instr) { instructions.emplace_back(std::move(instr)); }
-  template <typename T, typename... Args> Instruction *emplaceInstruction(Args &&... args) {
+
+  template <typename T, typename... Args>
+  Instruction *emplaceInstruction(Args &&... args) {
     auto instr = std::make_unique<T>(std::forward<Args>(args)...);
     auto res = instr.get(); // save before move
     addInstruction(std::move(instr));
     return res;
   }
 
-template <typename T, typename... Args> void emplaceJump(Args &&... args) {
+  template <typename T, typename... Args>
+  void emplaceJump(Args &&... args) {
     this->jumpInstruction = std::make_unique<T>(std::forward<Args>(args)...);
+  }
+
+  void addComment(const std::string comment) {
+    this->emplaceInstruction<Asm::Comment>(std::move(comment));
   }
 
 

@@ -29,11 +29,13 @@ class StackSlotManager {
 public:
   StackSlotManager() {}
 
-  int32_t getStackSlot(ir_node *node) {
+  int32_t getStackSlot(ir_node *node, Asm::BasicBlock *bb) {
     auto pos = offsets.find(node);
     if (pos == offsets.end()) {
-      pos = offsets.insert({node, (currentOffset)}).first;
+      pos = offsets.insert({node, -currentOffset}).first;
       ir_printf("New Stack slot for node %n %N: %d\n", node, node, pos->second);
+      bb->addComment("New Stack Slot for node " + std::string(gdb_node_helper(node)) + ": "
+                      + std::to_string(pos->second));
       currentOffset += 8;
     }
     return pos->second;
@@ -121,7 +123,7 @@ public:
 
     bb->emplaceInstruction<Asm::Mov>(std::move(reg),
      std::make_unique<Asm::MemoryBase>(
-          ssm.getStackSlot(node),
+          ssm.getStackSlot(node, bb),
           Asm::X86Reg(Asm::X86Reg::Name::bp,
                       Asm::X86Reg::getRegMode(get_irn_mode(node)))));
   }
@@ -155,7 +157,7 @@ public:
     }
 
     return std::make_unique<Asm::MemoryBase>(
-        ssm.getStackSlot(node),
+        ssm.getStackSlot(node, getBB(node)),
         Asm::X86Reg(Asm::X86Reg::Name::bp,
                     Asm::X86Reg::getRegMode(get_irn_mode(node))));
 
@@ -170,7 +172,7 @@ public:
     return std::make_unique<Asm::Mov>(
         Asm::Register::get(reg),
         std::make_unique<Asm::MemoryBase>(
-            ssm.getStackSlot(node),
+            ssm.getStackSlot(node, getBB(node)),
             Asm::X86Reg(Asm::X86Reg::Name::bp,
                                 Asm::X86Reg::getRegMode(get_irn_mode(node)))),
         "store reg to stackslot");
