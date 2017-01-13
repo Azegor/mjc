@@ -187,7 +187,36 @@ void AsmMethodPass::visitDiv(ir_node *node) {
 
 void AsmMethodPass::visitMod(ir_node *node) {
   PRINT_ORDER;
-  // Generate div, remainder gets written to dx
+  // Do the exact same thing we do in visitDiv, but use the value in dx in the end,
+  // which contains the remainder.
+  auto bb = getBB(node);
+
+  auto regMode = Asm::X86Reg::getRegMode(node);
+  auto leftOp = getNodeResAsInstOperand(get_Mod_left(node));
+  auto rightOp = getNodeResAsInstOperand(get_Mod_right(node));
+
+  // Move left into rax
+  auto axOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::R));
+  bb->emplaceInstruction<Asm::Mov>(std::move(leftOp), std::move(axOp));
+
+  // Right into rcx
+  auto cxOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::R));
+  bb->emplaceInstruction<Asm::Mov>(std::move(rightOp), std::move(cxOp));
+
+  // "the instruction cqto is used to perform sign extension,
+  //  copying the sign bit of %rax into every bit of %rdx."
+  bb->emplaceInstruction<Asm::Cqto>();
+
+  // Div only takes one argument, divides rax by that and stores the result in rax
+  cxOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::R));
+  bb->emplaceInstruction<Asm::Div>(std::move(cxOp));
+
+
+  ir_node *succ = getSucc(node, iro_Proj, mode_Ls);
+  assert(is_Proj(succ));
+
+  auto dstReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::dx, regMode));
+  writeValue(std::move(dstReg), succ);
 }
 
 void AsmMethodPass::visitMul(ir_node *node) {
