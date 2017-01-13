@@ -116,7 +116,12 @@ public:
   }
 
   Asm::BasicBlock* getBB(ir_node *n) {
-    ir_node *block = get_nodes_block(n);
+    ir_node *block;
+    if (is_Block(n))
+      block = n;
+    else
+      block = get_nodes_block(n);
+
     return func->getBB(block);
   }
 
@@ -132,6 +137,7 @@ public:
   void visitEnd(ir_node *node);
   void visitStore(ir_node *node);
   void visitSub(ir_node *node);
+  void visitPhi(ir_node *node);
 
   // Uninteresting nodes
   void visitProj(ir_node *node)    { (void)node; /* Silence */ }

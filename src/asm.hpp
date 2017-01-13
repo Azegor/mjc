@@ -517,6 +517,7 @@ public:
 
   template <typename... Args>
   void emplaceJump(Args &&... args) {
+    assert(this->jumpInstruction == nullptr);
     this->jumpInstruction = std::make_unique<Asm::Jmp>(std::forward<Args>(args)...);
   }
 

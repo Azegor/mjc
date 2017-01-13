@@ -362,3 +362,29 @@ void AsmMethodPass::visitStore(ir_node *node) {
   auto sourceOp = getNodeResAsInstOperand(source);
   bb->emplaceInstruction<Asm::Mov>(std::move(sourceOp), std::move(r15Op), "2)");
 }
+
+void AsmMethodPass::visitPhi(ir_node *node) {
+  if (get_Phi_loop(node))
+    return; // ???
+
+  int nPreds = get_Phi_n_preds(node);
+
+  for (int i = 0; i < nPreds; i ++) {
+    ir_node *phiPred = get_Phi_pred(node, i);
+    ir_node *blockPredNode = get_Block_cfgpred(get_nodes_block(node), i);
+    ir_node *blockPred = get_nodes_block(blockPredNode);
+
+    ir_printf("blockPred %d: %n %N\n", i, blockPred, blockPred);
+
+    // Write this phiPred into the stack slot of the phi node
+    auto srcOp = getNodeResAsInstOperand(phiPred);
+    // This is basically writeValue but the basic block is not the one of the passed node!
+    auto bb = getBB(blockPred);
+    bb->emplaceInstruction<Asm::Mov>(std::move(srcOp),
+                                     std::make_unique<Asm::MemoryBase>(
+                                          ssm.getStackSlot(node, bb),
+                                          Asm::X86Reg(Asm::X86Reg::Name::bp,
+                                                      Asm::X86Reg::getRegMode(node))));
+
+  }
+}
