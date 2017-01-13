@@ -153,10 +153,12 @@ public:
       return std::make_unique<Asm::Immediate>(get_Const_tarval(get_Conv_op(node)));
     }
 
-    if (!ssm.hasSlot(node)) {
-      ir_printf("%n %N has no stack slot!\n", node, node);
-      assert(false);
-    }
+    /* This asssertion does not work for control flow/phi nodes, where we read first
+     * and later generate the write instructions */
+    //if (!ssm.hasSlot(node)) {
+      //ir_printf("%n %N has no stack slot!\n", node, node);
+      //assert(false);
+    //}
 
     return std::make_unique<Asm::MemoryBase>(
         ssm.getStackSlot(node, getBB(node)),
