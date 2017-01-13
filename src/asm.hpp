@@ -259,7 +259,7 @@ const char *const Nop  = "nop";
 const char *const Add  = "add";
 const char *const Sub  = "sub";
 const char *const IMul = "imul";
-const char *const Div  = "div";
+const char *const Div  = "idivq";
 const char *const Call = "call";
 const char *const Cmp  = "cmp";
 const char *const Je   = "je";
@@ -273,6 +273,8 @@ const char *const Jle  = "jle";
 const char *const Mov  = "mov";
 const char *const Movq = "movq";
 const char *const Movl = "movl";
+
+const char *const Cqto = "cqto";
 
 // GAS inferrs the operand type if not specified (b, s, w, l, q, t)
 }
@@ -371,6 +373,18 @@ struct Comment : public Instruction {
   bool isValid() const override { return true; }
 };
 
+struct Cqto : public Instruction {
+  Cqto(std::string comment = ""s) : Instruction(std::move(comment)) {}
+  void write(std::ostream &o) const override {
+    o << mnemonic::Cqto;
+  }
+  Operand *getDestOperand() const override {
+    assert(false);
+    return nullptr;
+  }
+  bool isValid() const override { return true; }
+};
+
 struct ArithInstr : public Instruction {
   const OperandPtr src;
   const WritableOperandPtr dest;
@@ -408,11 +422,16 @@ struct Mul : public ArithInstr {
   void write(std::ostream &o) const override { writeInstr(o, mnemonic::IMul); }
 };
 
-struct Div : public ArithInstr {
-  Div(OperandPtr s, WritableOperandPtr d, std::string c = ""s)
-      : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
+struct Div : public Instruction {
+  const OperandPtr src;
+  Div(OperandPtr s, std::string c = ""s)
+      : Instruction(std::move(c)), src(std::move(s)){}
 
-  void write(std::ostream &o) const override { writeInstr(o, mnemonic::Div); }
+  bool isValid() const override { return true; }
+  Operand *getDestOperand() const override { return nullptr; }
+  void write(std::ostream &o) const override {
+    o << mnemonic::Div << ' ' << *src;
+  }
 };
 
 //

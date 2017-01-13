@@ -138,6 +138,8 @@ public:
   void visitStore(ir_node *node);
   void visitSub(ir_node *node);
   void visitPhi(ir_node *node);
+  void visitMod(ir_node *node);
+  void visitDiv(ir_node *node);
 
   // Uninteresting nodes
   void visitProj(ir_node *node)    { (void)node; /* Silence */ }
