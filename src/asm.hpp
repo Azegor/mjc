@@ -498,6 +498,7 @@ class BasicBlock {
   const LocalLabel label;
   std::vector<InstrPtr> instructions;
   InstrPtr jumpInstruction;
+  std::vector<InstrPtr> phiInstructions;
 
 public:
   BasicBlock(std::string comment = ""s) : comment(std::move(comment)), label() {}
@@ -521,10 +522,15 @@ public:
     this->jumpInstruction = std::make_unique<Asm::Jmp>(std::forward<Args>(args)...);
   }
 
+  template<typename T, typename... Args>
+  void emplacePhiInstr(Args &&... args) {
+    auto p = std::make_unique<T>(std::forward<Args>(args)...);
+    phiInstructions.emplace_back(std::move(p));
+  }
+
   void addComment(const std::string comment) {
     this->emplaceInstruction<Asm::Comment>(std::move(comment));
   }
-
 
   void write(AsmWriter &writer) const {
     writer.writeLabel(label, comment);
@@ -532,9 +538,12 @@ public:
       writer.writeInstruction(*instr);
     }
 
+    for (auto &instr : phiInstructions) {
+      writer.writeInstruction(*instr);
+    }
+
     if (jumpInstruction != nullptr)
       writer.writeInstruction(*jumpInstruction);
-
   }
 
   const std::string &getComment() const { return comment; }

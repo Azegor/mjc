@@ -33,7 +33,7 @@ public:
     auto pos = offsets.find(node);
     if (pos == offsets.end()) {
       pos = offsets.insert({node, -currentOffset}).first;
-      ir_printf("New Stack slot for node %n %N: %d\n", node, node, pos->second);
+      //ir_printf("New Stack slot for node %n %N: %d\n", node, node, pos->second);
       bb->addComment("New Stack Slot for node " + std::string(gdb_node_helper(node)) + ": "
                       + std::to_string(pos->second));
       currentOffset += 8;

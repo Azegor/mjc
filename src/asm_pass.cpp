@@ -3,6 +3,15 @@
 #include <fstream>
 #include <cstring>
 
+#define ORDER
+
+
+#ifdef ORDER
+#define PRINT_ORDER ir_printf("%s: %n %N\n", __FUNCTION__, node, node);
+#else
+#define PRINT_ORDER ;
+#endif
+
 /* Return first Proj suceessor of @node */
 ir_node * getProjSucc(ir_node *node) {
   foreach_out_edge_safe(node, edge) {
@@ -88,6 +97,7 @@ void AsmPass::after() {
 }
 
 void AsmMethodPass::visitConv(ir_node *node) {
+  PRINT_ORDER;
   //auto bb = getBB(node);
   ir_node *pred = get_Conv_op(node);
   if (is_Const(pred)) {
@@ -102,6 +112,7 @@ void AsmMethodPass::visitConv(ir_node *node) {
 }
 
 void AsmMethodPass::visitAdd(ir_node *node) {
+  PRINT_ORDER;
   auto bb = getBB(node);
   // 1. get left and right predecessor of add node
   // 2. get values from predecessor. Either immediate or generated val (stack slot)
@@ -124,6 +135,7 @@ void AsmMethodPass::visitAdd(ir_node *node) {
 }
 
 void AsmMethodPass::visitSub(ir_node *node) {
+  PRINT_ORDER;
   auto bb = getBB(node);
 
   auto regMode = Asm::X86Reg::getRegMode(node);
@@ -143,6 +155,7 @@ void AsmMethodPass::visitSub(ir_node *node) {
 }
 
 void AsmMethodPass::visitMul(ir_node *node) {
+  PRINT_ORDER;
   auto bb = getBB(node);
 
   // TODO cleanup and avoid code duplication in other visit Methods
@@ -161,6 +174,7 @@ void AsmMethodPass::visitMul(ir_node *node) {
 }
 
 void AsmMethodPass::visitCall(ir_node *node) {
+  PRINT_ORDER;
   auto bb = getBB(node);
 
   ir_node *address = get_Call_ptr(node);
@@ -216,6 +230,7 @@ void AsmMethodPass::visitCall(ir_node *node) {
 }
 
 void AsmMethodPass::visitCmp(ir_node *node) {
+  PRINT_ORDER;
   auto bb = getBB(node);
   auto regMode = Asm::X86Reg::getRegMode(get_Cmp_right(node));
   auto leftOp = getNodeResAsInstOperand(get_Cmp_left(node));
@@ -234,6 +249,7 @@ void AsmMethodPass::visitCmp(ir_node *node) {
 }
 
 void AsmMethodPass::visitCond(ir_node *node) {
+  PRINT_ORDER;
   auto bb = getBB(node);
 
   ir_node *selector = get_Cond_selector(node);
@@ -266,6 +282,7 @@ void AsmMethodPass::visitCond(ir_node *node) {
 }
 
 void AsmMethodPass::visitJmp(ir_node *node) {
+  PRINT_ORDER;
   auto bb = getBB(node);
   ir_node *jumpTarget = getNthSucc(node, 0);
   assert(is_Block(jumpTarget));
@@ -274,12 +291,14 @@ void AsmMethodPass::visitJmp(ir_node *node) {
 }
 
 void AsmMethodPass::visitEnd(ir_node *node) {
+  PRINT_ORDER;
   auto bb = getBB(node);
 
   bb->emplaceJump(func->getEpilogLabel(), ir_relation_true);
 }
 
 void AsmMethodPass::visitLoad(ir_node *node) {
+  PRINT_ORDER;
   auto bb = getBB(node);
   ir_node *pred = get_Load_ptr(node);
   ir_node *succ = getSucc(node, iro_Proj, mode_Is);
@@ -336,6 +355,7 @@ void AsmMethodPass::visitReturn(ir_node *node) {
 }
 
 void AsmMethodPass::visitStore(ir_node *node) {
+  PRINT_ORDER;
   auto bb = getBB(node);
   ir_node *source = get_Store_value(node);
   ir_node *dest = get_Store_ptr(node);
@@ -364,7 +384,7 @@ void AsmMethodPass::visitStore(ir_node *node) {
 }
 
 void AsmMethodPass::visitPhi(ir_node *node) {
-  //ir_printf("%s: %n %N\n", __FUNCTION__, node, node);
+  PRINT_ORDER;
   if (get_Phi_loop(node))
     return; // ???
 
@@ -380,7 +400,7 @@ void AsmMethodPass::visitPhi(ir_node *node) {
     auto srcOp = getNodeResAsInstOperand(phiPred);
 
     auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    bb->emplaceInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg));
+    bb->emplacePhiInstr<Asm::Mov>(std::move(srcOp), std::move(tmpReg), "phi tmp");
 
     /*
      * TODO: All the special-casing for tmp registers seems stupid, we should
@@ -393,6 +413,6 @@ void AsmMethodPass::visitPhi(ir_node *node) {
                                                    Asm::X86Reg(Asm::X86Reg::Name::bp,
                                                                Asm::X86Reg::getRegMode(node)));
     tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    bb->emplaceInstruction<Asm::Mov>(std::move(tmpReg), std::move(dstOp), "phi dst");
+    bb->emplacePhiInstr<Asm::Mov>(std::move(tmpReg), std::move(dstOp), "phi dst");
   }
 }
