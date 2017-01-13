@@ -364,6 +364,7 @@ void AsmMethodPass::visitStore(ir_node *node) {
 }
 
 void AsmMethodPass::visitPhi(ir_node *node) {
+  //ir_printf("%s: %n %N\n", __FUNCTION__, node, node);
   if (get_Phi_loop(node))
     return; // ???
 
@@ -374,17 +375,24 @@ void AsmMethodPass::visitPhi(ir_node *node) {
     ir_node *blockPredNode = get_Block_cfgpred(get_nodes_block(node), i);
     ir_node *blockPred = get_nodes_block(blockPredNode);
 
-    ir_printf("blockPred %d: %n %N\n", i, blockPred, blockPred);
-
+    auto bb = getBB(blockPred);
     // Write this phiPred into the stack slot of the phi node
     auto srcOp = getNodeResAsInstOperand(phiPred);
-    // This is basically writeValue but the basic block is not the one of the passed node!
-    auto bb = getBB(blockPred);
-    bb->emplaceInstruction<Asm::Mov>(std::move(srcOp),
-                                     std::make_unique<Asm::MemoryBase>(
-                                          ssm.getStackSlot(node, bb),
-                                          Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                                      Asm::X86Reg::getRegMode(node))));
 
+    auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+    bb->emplaceInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg));
+
+    /*
+     * TODO: All the special-casing for tmp registers seems stupid, we should
+     *       instead have a helper that generates a tmp mov instruction in case
+     *       both source and dest are stack slots
+     */
+
+    // This is basically writeValue but the basic block is not the one of the passed node!
+    auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
+                                                   Asm::X86Reg(Asm::X86Reg::Name::bp,
+                                                               Asm::X86Reg::getRegMode(node)));
+    tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+    bb->emplaceInstruction<Asm::Mov>(std::move(tmpReg), std::move(dstOp), "phi dst");
   }
 }
