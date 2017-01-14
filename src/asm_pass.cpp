@@ -463,10 +463,9 @@ void AsmMethodPass::visitStore(ir_node *node) {
   std::cout << "Source Reg Mode: " << sourceRegMode << std::endl;
   std::cout << "Dest Reg Mode  : " << destRegMode << std::endl;
 
-  // TODO: Use the correct register modes here
   auto destOp = getNodeResAsInstOperand(dest);
-  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::dx, sourceRegMode));
-  bb->emplaceInstruction<Asm::Mov>(std::move(destOp), std::move(tmpReg), sourceRegMode, "1)");
+  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::dx, destRegMode));
+  bb->emplaceInstruction<Asm::Mov>(std::move(destOp), std::move(tmpReg), destRegMode, "1)");
   // r15 now contains the address to write to!
 
   // Load value to write to dest into tmp register
