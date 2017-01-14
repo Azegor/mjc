@@ -7,6 +7,16 @@
 #include "asm.hpp"
 #include "firm_pass.hpp"
 
+#define ORDER
+
+
+#ifdef ORDER
+#define PRINT_ORDER ir_printf("%s: %n %N\n", __FUNCTION__, node, node);
+#else
+#define PRINT_ORDER (void)node;
+#endif
+
+
 class AsmPass : public ProgramPass<AsmPass> {
   const std::string &outputFileName;
 
@@ -147,12 +157,12 @@ public:
   void visitMinus(ir_node *node);
 
   // Uninteresting nodes
-  void visitProj(ir_node *node)    { (void)node; /* Silence */ }
-  void visitBlock(ir_node *node)   { (void)node; /* Silence */ }
-  void visitStart(ir_node *node)   { (void)node; /* Silence */ }
-  void visitAddress(ir_node *node) { (void)node; /* Silence */ }
-  void visitConst(ir_node *node)   { (void)node; /* Silence */ }
-  void visitBad(ir_node *node)     { (void)node; /* Silence */ }
+  void visitProj(ir_node *node)    { PRINT_ORDER; }
+  void visitBlock(ir_node *node)   { PRINT_ORDER; }
+  void visitBad(ir_node *node)     { PRINT_ORDER; }
+  void visitStart(ir_node *node)   { PRINT_ORDER; }
+  void visitAddress(ir_node *node) { PRINT_ORDER; }
+  void visitConst(ir_node *node)   { PRINT_ORDER; }
 
   Asm::OperandPtr getNodeResAsInstOperand(ir_node *node) {
     if (is_Const(node))
