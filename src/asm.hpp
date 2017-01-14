@@ -265,6 +265,7 @@ const char *const IMul = "imul";
 const char *const Div  = "idivq";
 const char *const Call = "call";
 const char *const Cmp  = "cmp";
+const char *const Neg  = "neg";
 const char *const Je   = "je";
 const char *const Jne  = "jne";
 const char *const Jmp  = "jmp";
@@ -353,6 +354,17 @@ struct Jmp : public Instruction {
     }
     o << " ." << targetLabel;
   }
+  bool isValid() const override { return true; }
+};
+
+struct Neg : public Instruction {
+  const OperandPtr op;
+  Neg(OperandPtr op, std::string comment = ""s) : Instruction(std::move(comment)), op(std::move(op)) {}
+  Operand *getDestOperand() const override {
+    assert(false);
+    return nullptr;
+  }
+  void write(std::ostream &o) const override { o << mnemonic::Neg << ' ' << *op; }
   bool isValid() const override { return true; }
 };
 

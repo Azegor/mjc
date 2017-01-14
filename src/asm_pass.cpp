@@ -516,3 +516,22 @@ void AsmMethodPass::visitPhi(ir_node *node) {
                                   Asm::X86Reg::Mode::R, "phi dst");
   }
 }
+
+void AsmMethodPass::visitMinus(ir_node *node) {
+  PRINT_ORDER;
+  ir_node *sourceNode = get_Minus_op(node);
+  auto bb = getBB(node);
+  auto regMode = Asm::X86Reg::getRegMode(node);
+  bb->addComment("Negate " + nodeStr(sourceNode) + " into " + nodeStr(node));
+  auto sourceOp = getNodeResAsInstOperand(sourceNode);
+
+  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, regMode));
+  bb->emplaceInstruction<Asm::Mov>(std::move(sourceOp), std::move(tmpReg));
+
+  tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, regMode));
+  bb->emplaceInstruction<Asm::Neg>(std::move(tmpReg), "Negate " + nodeStr(sourceNode));
+
+  tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, regMode));
+  auto destOp = getNodeResAsInstOperand(node);
+  bb->emplaceInstruction<Asm::Mov>(std::move(tmpReg), std::move(destOp), regMode);
+}

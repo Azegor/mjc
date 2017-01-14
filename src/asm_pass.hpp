@@ -143,6 +143,7 @@ public:
   void visitPhi(ir_node *node);
   void visitMod(ir_node *node);
   void visitDiv(ir_node *node);
+  void visitMinus(ir_node *node);
 
   // Uninteresting nodes
   void visitProj(ir_node *node)    { (void)node; /* Silence */ }
