@@ -74,6 +74,17 @@ std::string getBlockLabel(ir_node *node) {
   return "L" + std::to_string(get_irn_node_nr(node));
 }
 
+std::string getProjLabel(ir_node *node) {
+  assert(is_Proj(node));
+  assert(get_irn_mode(node) == mode_X);
+  if (get_Proj_num(node) == pn_Cond_true)
+    return "true_" + std::to_string(get_irn_node_nr(node));
+  else if(get_Proj_num(node) == pn_Cond_false)
+    return "false_" + std::to_string(get_irn_node_nr(node));
+
+  assert(false);
+}
+
 std::string nodeStr(ir_node *node) {
   return std::string(gdb_node_helper(node)) + " " + std::to_string(get_irn_node_nr(node));
 }
@@ -348,12 +359,24 @@ void AsmMethodPass::visitCond(ir_node *node) {
   ir_node *trueBlock = getNthSucc(trueProj, 0);
   assert(is_Block(trueBlock));
 
-  bb->emplaceInstruction<Asm::Jmp>(getBlockLabel(trueBlock),
-                                   relation);
 
+  if (falseBlock == trueBlock) {
+    // Successor block is the same for both true and false case. This is a boolean comparison.
+    // We Jump to the labels of the true/false proj nodes, which don't exist yet but will
+    // later when the Phi node generates them.
+    bb->emplaceInstruction<Asm::Jmp>(getProjLabel(trueProj),
+                                     relation);
 
-  bb->emplaceInstruction<Asm::Jmp>(getBlockLabel(falseBlock),
-                                   getInverseRelation(relation));
+    bb->emplaceInstruction<Asm::Jmp>(getProjLabel(falseProj),
+                                     getInverseRelation(relation));
+  } else {
+    // Control flow comparison, jump to the appropriate basic block
+    bb->emplaceInstruction<Asm::Jmp>(getBlockLabel(trueBlock),
+                                     relation);
+
+    bb->emplaceInstruction<Asm::Jmp>(getBlockLabel(falseBlock),
+                                     getInverseRelation(relation));
+  }
 }
 
 void AsmMethodPass::visitJmp(ir_node *node) {
@@ -487,34 +510,68 @@ void AsmMethodPass::visitPhi(ir_node *node) {
     return; // ???
 
   int nPreds = get_Phi_n_preds(node);
+  assert(nPreds == 2);
+  std::string phiLabel = "phi_" + std::to_string(get_irn_node_nr(node));
 
+  bool needsLabels = get_nodes_block(get_Block_cfgpred(get_nodes_block(node), 0)) ==
+                     get_nodes_block(get_Block_cfgpred(get_nodes_block(node), 1));
+
+  auto bb = getBB(node);
+  bb->addComment("Phi: " + std::to_string(needsLabels));
   for (int i = 0; i < nPreds; i ++) {
     ir_node *phiPred = get_Phi_pred(node, i);
     ir_node *blockPredNode = get_Block_cfgpred(get_nodes_block(node), i);
     ir_node *blockPred = get_nodes_block(blockPredNode);
 
-    auto bb = getBB(blockPred);
-    // Write this phiPred into the stack slot of the phi node
-    auto srcOp = getNodeResAsInstOperand(phiPred);
+    ir_printf("%d Phi pred  : %n %N\n", i, phiPred, phiPred);
+    ir_printf("%d Block Pred NODE: %n %N\n", i, blockPredNode, blockPredNode);
+    ir_printf("%d Block Pred: %n %N\n", i, blockPred, blockPred);
 
-    auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    bb->emplacePhiInstr<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
-                                  Asm::X86Reg::Mode::R, "phi tmp");
 
-    /*
-     * TODO: All the special-casing for tmp registers seems stupid, we should
-     *       instead have a helper that generates a tmp mov instruction in case
-     *       both source and dest are stack slots
-     */
+    if (needsLabels) {
+      /* bool value phi. Create labels for true/false cases and a jump to the phi label below */
+      assert(is_Proj(blockPredNode));
+      assert(get_irn_mode(blockPredNode) == mode_X);
 
-    // This is basically writeValue but the basic block is not the one of the passed node!
-    auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
-                                                   Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                                               Asm::X86Reg::Mode::R));
-    tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    bb->emplacePhiInstr<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
-                                  Asm::X86Reg::Mode::R, "phi dst");
+      bb->emplaceInstruction<Asm::Label>(std::move(getProjLabel(blockPredNode)));
+      // Write this phiPred into the stack slot of the phi node
+      auto srcOp = getNodeResAsInstOperand(phiPred);
+
+      auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+      bb->emplaceInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
+                                    Asm::X86Reg::Mode::R, "phi tmp");
+
+      // This is basically writeValue but the basic block is not the one of the passed node!
+      auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
+                                                     Asm::X86Reg(Asm::X86Reg::Name::bp,
+                                                                 Asm::X86Reg::Mode::R));
+      tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+      bb->emplaceInstruction<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
+                                    Asm::X86Reg::Mode::R, "phi dst");
+
+      bb->emplaceInstruction<Asm::Jmp>(phiLabel, ir_relation_true);
+    } else {
+      bb = getBB(blockPred);
+      /* Control flow, generate phi instructions in the predecessor basic blocks */
+      // Write this phiPred into the stack slot of the phi node
+      auto srcOp = getNodeResAsInstOperand(phiPred);
+
+      auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+      bb->emplacePhiInstr<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
+                                    Asm::X86Reg::Mode::R, "phi tmp");
+
+      // This is basically writeValue but the basic block is not the one of the passed node!
+      auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
+                                                     Asm::X86Reg(Asm::X86Reg::Name::bp,
+                                                                 Asm::X86Reg::Mode::R));
+      tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+      bb->emplacePhiInstr<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
+                                    Asm::X86Reg::Mode::R, "phi dst");
+    }
   }
+
+  if (needsLabels)
+    bb->emplaceInstruction<Asm::Label>(phiLabel);
 }
 
 void AsmMethodPass::visitMinus(ir_node *node) {

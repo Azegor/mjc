@@ -253,6 +253,21 @@ struct StringInstructionBlock : public Instruction {
   }
 };
 
+struct Label : Instruction {
+  const std::string name;
+  Label(std::string name, std::string comment = ""s)
+    : Instruction(std::move(comment)), name(std::move(name)) {}
+
+  void write(std::ostream &o) const override {
+    o << '.' << name << ':';
+  }
+  Operand *getDestOperand() const override {
+    assert(0);
+    return nullptr;
+  }
+  bool isValid() const override { return true; }
+};
+
 using InstrPtr = std::unique_ptr<Instruction>;
 
 /// --- x86 instructions ---
@@ -523,9 +538,11 @@ public:
   void writeTextSection();
 
   void writeText(const std::string &text) { out << text << '\n'; }
-  void writeInstruction(const Instruction &instr) { out << '\t' << instr << '\n'; }
-  void writeInstruction(const std::string &instr, const std::string &comment = ""s) {
-    writeImpl('\t' + instr, comment);
+  void writeInstruction(const Instruction &instr) {
+    writeImpl(&instr, "");
+  }
+  void writeString(const std::string &str) {
+    out << '\t' << str << '\n';
   }
   void writeLabel(const LocalLabel &label, const std::string &comment = ""s) {
     writeLabelImpl(label, comment);
@@ -548,7 +565,11 @@ private:
   }
   template <typename T>
   void writeImpl(const T& content, const std::string &comment) {
-    out << content;
+    // Sorry.
+    if (dynamic_cast<const Asm::Label*>(content) == nullptr)
+      out << '\t';
+
+    out << *content;
     if (comment.length()) {
       out << " /* " << comment << " */";
     }

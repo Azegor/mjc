@@ -151,6 +151,7 @@ public:
   void visitStart(ir_node *node)   { (void)node; /* Silence */ }
   void visitAddress(ir_node *node) { (void)node; /* Silence */ }
   void visitConst(ir_node *node)   { (void)node; /* Silence */ }
+  void visitBad(ir_node *node)     { (void)node; /* Silence */ }
 
   Asm::OperandPtr getNodeResAsInstOperand(ir_node *node) {
     if (is_Const(node))
