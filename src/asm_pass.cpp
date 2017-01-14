@@ -125,16 +125,25 @@ void AsmMethodPass::visitAdd(ir_node *node) {
   // 3. create memory or immediate operands
   // 4. create instruction with operands
 
-  // TODO cleanup and avoid code duplication in other visit Methods
+  ir_node *leftNode  = get_Add_left(node);
+  ir_node *rightNode = get_Add_right(node);
+  // We want the constant to always be left
+  if (is_Const(rightNode)) {
+    std::swap(leftNode, rightNode);
+  }
+
+  // Generate the right node first so the (maybe) constant left one is directly
+  // before the Add instrudction (easier for optimizations)
   auto regMode = Asm::X86Reg::getRegMode(node);
-  auto leftOp = getNodeResAsInstOperand(get_Add_left(node));
-  Asm::X86Reg leftReg(Asm::X86Reg::Name::ax, regMode);
-  auto leftRegInst = loadToReg(std::move(leftOp), leftReg);
-  bb->addInstruction(std::move(leftRegInst));
-  auto rightOp = getNodeResAsInstOperand(get_Add_right(node));
+  auto rightOp = getNodeResAsInstOperand(rightNode);
   Asm::X86Reg rightReg(Asm::X86Reg::Name::bx, regMode);
   auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
   bb->addInstruction(std::move(rightRegInst));
+  auto leftOp = getNodeResAsInstOperand(leftNode);
+  Asm::X86Reg leftReg(Asm::X86Reg::Name::ax, regMode);
+  auto leftRegInst = loadToReg(std::move(leftOp), leftReg);
+  bb->addInstruction(std::move(leftRegInst));
+
   bb->emplaceInstruction<Asm::Add>(Asm::Register::get(leftReg), Asm::Register::get(rightReg),
                                    "Node " + std::to_string(get_irn_node_nr(node)));
   bb->addInstruction(writeResToStackSlot(rightReg, node));
