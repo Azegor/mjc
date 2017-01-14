@@ -17,6 +17,8 @@ public:
   void before();
   void visitMethod(ir_graph *graph);
 
+  Asm::Program *getProgram() { return &asmProgram; }
+
 private:
   Asm::Program asmProgram;
 };

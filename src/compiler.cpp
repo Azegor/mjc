@@ -39,6 +39,7 @@
 #include "semantic_visitor.hpp"
 #include "optimizer.hpp"
 #include "asm_pass.hpp"
+#include "asm_optimizer.hpp"
 
 #ifndef LIBSEARCHDIR
 #define LIBSEARCHDIR "."
@@ -235,7 +236,7 @@ bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs,
 
     // Run optimizations on ASM code
     if (options.optimize) {
-      AsmIncOptimizer opt1(program);
+      AsmSimpleOptimizer opt1(program);
       opt1.run();
     }
 

@@ -187,7 +187,6 @@ struct Immediate : public Operand {
 
   void write(std::ostream &o) const override {
     o << "$" << get_tarval_long(val);
-    //     o << "$0x" << std::hex << get_tarval_long(val);
   }
 };
 
@@ -288,6 +287,8 @@ const char *const Jg   = "jg";
 const char *const Jge  = "jge";
 const char *const Jl   = "jl";
 const char *const Jle  = "jle";
+const char *const Inc  = "inc";
+const char *const Xor  = "xor";
 
 const char *const Mov  = "mov";
 const char *const Movq = "movq";
@@ -418,7 +419,7 @@ struct Cqto : public Instruction {
 
 struct ArithInstr : public Instruction {
   const OperandPtr src;
-  const WritableOperandPtr dest;
+  WritableOperandPtr dest;
   ArithInstr(OperandPtr s, WritableOperandPtr d, std::string c = ""s)
       : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)) {}
   Operand *getDestOperand() const override { return dest.get(); }
@@ -465,11 +466,36 @@ struct Div : public Instruction {
   }
 };
 
+struct Inc : public Instruction {
+  const OperandPtr src;
+  Inc(OperandPtr s, std::string c = ""s)
+      : Instruction(std::move(c)), src(std::move(s)){}
+
+  bool isValid() const override { return true; }
+  Operand *getDestOperand() const override { return nullptr; }
+  void write(std::ostream &o) const override {
+    o << mnemonic::Inc << ' ' << *src;
+  }
+};
+
+// We only take one parameter here since we only use this for zero-ing registers(so far)
+struct Xor : public Instruction {
+  const OperandPtr src;
+  Xor(OperandPtr s, std::string c = ""s)
+      : Instruction(std::move(c)), src(std::move(s)){}
+
+  bool isValid() const override { return true; }
+  Operand *getDestOperand() const override { return nullptr; }
+  void write(std::ostream &o) const override {
+    o << mnemonic::Xor << ' ' << *src << ", " << *src;
+  }
+};
+
 //
 
 struct Mov : public Instruction {
   const OperandPtr src;
-  const OperandPtr dest;
+  OperandPtr dest;
   const X86Reg::Mode movMode;
 
   Mov(OperandPtr s, OperandPtr d,
@@ -580,11 +606,11 @@ private:
 class BasicBlock {
   std::string comment;
   const LocalLabel label;
-  std::vector<InstrPtr> instructions;
   InstrPtr jumpInstruction;
   std::vector<InstrPtr> phiInstructions;
 
 public:
+  std::vector<InstrPtr> instructions;
   BasicBlock(std::string comment = ""s) : comment(std::move(comment)), label() {}
   BasicBlock(int num, std::string comment = ""s) : comment(std::move(comment)), label(num) {}
   BasicBlock(LocalLabel l) : label(std::move(l)) {}
@@ -612,6 +638,12 @@ public:
     phiInstructions.emplace_back(std::move(p));
   }
 
+  template<typename T, typename... Args>
+  void replaceInstruction(size_t index, Args &&... args) {
+    auto p = std::make_unique<T>(std::forward<Args>(args)...);
+    instructions.at(index) = std::move(p);
+  }
+
   void addComment(const std::string comment) {
     this->emplaceInstruction<Asm::Comment>(std::move(comment));
   }
@@ -635,11 +667,12 @@ public:
 
 class Function {
   NamedLabel fnName;
-  std::unordered_map<ir_node *, BasicBlock> basicBlocks;
   int ARsize = 0;
   int startBlockId = -1;
 
 public:
+  std::unordered_map<ir_node *, BasicBlock> basicBlocks;
+
   Function(std::string name) : fnName(std::move(name)) {}
   Function(NamedLabel l) : fnName(std::move(l)) {}
   Function(Function &&) = default;
