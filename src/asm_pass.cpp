@@ -103,14 +103,6 @@ void AsmPass::visitMethod(ir_graph *graph) {
   asmProgram.addFunction(std::move(func));
 }
 
-void AsmPass::after() {
-  std::ofstream outputFile(outputFileName);
-  if (!outputFile.is_open()) {
-    throw std::runtime_error("could not open file '" + outputFileName + '\'');
-  }
-  outputFile << asmProgram << std::endl;
-}
-
 void AsmMethodPass::visitConv(ir_node *node) {
   PRINT_ORDER;
   ir_node *pred = get_Conv_op(node);

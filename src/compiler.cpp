@@ -223,7 +223,6 @@ bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs,
     assemblyName = "/proc/self/fd/" + std::to_string(fileno(f));
   }
   if (options.compileFirm) {
-    // XXX This only "works" on 64bit cpus
     be_parse_arg("isa=amd64");
     be_main(f, "test.java");
     fflush(f);
@@ -232,6 +231,20 @@ bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs,
     // but we won't write to it here so it's probably okay
     AsmPass asmPass(graphs, assemblyName);
     asmPass.run();
+    Asm::Program *program = asmPass.getProgram();
+
+    // Run optimizations on ASM code
+    if (options.optimize) {
+      AsmIncOptimizer opt1(program);
+      opt1.run();
+    }
+
+    // Actually write ASM output
+    std::ofstream outputFile(assemblyName);
+    if (!outputFile.is_open()) {
+      throw std::runtime_error("could not open file '" + assemblyName + '\'');
+    }
+    outputFile << *program << std::endl;
   }
 
   int res = 0;
