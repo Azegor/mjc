@@ -260,8 +260,10 @@ void AsmMethodPass::visitCall(ir_node *node) {
     int nParams = get_Call_n_params(node);
     assert(nParams == 1);
     ir_node *p = get_Call_param(node, 0);
-    bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(p),
-                                     Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::di, Asm::X86Reg::Mode::R)));
+    //auto di = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::di, Asm::X86Reg::getRegMode(p)));
+    auto di = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::di, Asm::X86Reg::Mode::R));
+
+    bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(p), std::move(di));
 
   } else if (strcmp(funcName, "allocate") == 0) {
     int nParams = get_Call_n_params(node);
@@ -269,15 +271,13 @@ void AsmMethodPass::visitCall(ir_node *node) {
     ir_node *n = get_Call_param(node, 0);
     ir_node *size = get_Call_param(node, 1);
     //ir_printf("Allocate params: %n %N, %n %N\n", n, n, size, size);
+    auto di = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::di, Asm::X86Reg::getRegMode(n)));
+    auto si = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::si, Asm::X86Reg::getRegMode(size)));
 
     // num in rdi
-    bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(n),
-                                     Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::di, Asm::X86Reg::Mode::R)));
+    bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(n), std::move(di));
     // size in rsi
-    bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(size),
-                                     Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::si, Asm::X86Reg::Mode::R)));
-
-
+    bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(size), std::move(si));
   }
 
   bb->emplaceInstruction<Asm::Call>(std::string(funcName));
@@ -292,7 +292,9 @@ void AsmMethodPass::visitCall(ir_node *node) {
 
       if (resultProj != nullptr) {
         auto reg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::R));
-        writeValue(std::move(reg), resultProj);
+        //auto reg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax,
+                                      //Asm::X86Reg::getRegMode(resultProj)));
+        writeValue(std::move(reg), resultProj, "Return value of " + std::string(funcName));
       }
     }
   }
@@ -301,20 +303,24 @@ void AsmMethodPass::visitCall(ir_node *node) {
 void AsmMethodPass::visitCmp(ir_node *node) {
   PRINT_ORDER;
   auto bb = getBB(node);
-  auto regMode = Asm::X86Reg::getRegMode(get_Cmp_right(node));
+
+  auto leftRegMode = Asm::X86Reg::getRegMode(get_Cmp_left(node));
+  auto rightRegMode = Asm::X86Reg::getRegMode(get_Cmp_right(node));
+
+  auto leftReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, leftRegMode));
+  auto rightReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, rightRegMode));
+
+  // Load left into ax, right into bx
   auto leftOp = getNodeResAsInstOperand(get_Cmp_left(node));
-  Asm::X86Reg leftReg(Asm::X86Reg::Name::ax, regMode);
-  auto leftRegInst = loadToReg(std::move(leftOp), leftReg);
-  bb->addInstruction(std::move(leftRegInst));
+  bb->emplaceInstruction<Asm::Mov>(std::move(leftOp), std::move(leftReg), leftRegMode);
 
   auto rightOp = getNodeResAsInstOperand(get_Cmp_right(node));
-  Asm::X86Reg rightReg(Asm::X86Reg::Name::bx, regMode);
-  auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
-  bb->addInstruction(std::move(rightRegInst));
+  bb->emplaceInstruction<Asm::Mov>(std::move(rightOp), std::move(rightReg), rightRegMode);
 
+  leftReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, leftRegMode));
+  rightReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, rightRegMode));
   /* left and right swapped! */
-  bb->emplaceInstruction<Asm::Cmp>(Asm::Register::get(rightReg),
-                                   Asm::Register::get(leftReg));
+  bb->emplaceInstruction<Asm::Cmp>(std::move(rightReg), std::move(leftReg));
 }
 
 void AsmMethodPass::visitCond(ir_node *node) {
@@ -366,6 +372,27 @@ void AsmMethodPass::visitEnd(ir_node *node) {
   bb->emplaceJump(func->getEpilogLabel(), ir_relation_true);
 }
 
+
+void AsmMethodPass::visitReturn(ir_node *node) {
+  auto bb = getBB(node);
+
+  ir_node *succ = getNthSucc(node, 0);
+  assert(is_Block(succ));
+
+  if (get_Return_n_ress(node) > 0) {
+    ir_node *opNode = get_Return_res(node, 0);
+    auto op = getNodeResAsInstOperand(opNode);
+    auto regMode = Asm::X86Reg::getRegMode(opNode);
+    auto ax = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, regMode));
+
+    bb->emplaceInstruction<Asm::Mov>(std::move(op), std::move(ax), regMode, "Return value");
+  }
+
+  // Jump to end block
+  // return nodes should have exactly one successor, the end block.
+  bb->emplaceJump(getBlockLabel(succ), ir_relation_true);
+}
+
 void AsmMethodPass::visitLoad(ir_node *node) {
   PRINT_ORDER;
   auto bb = getBB(node);
@@ -393,41 +420,26 @@ void AsmMethodPass::visitLoad(ir_node *node) {
    * 2) Write the value at that address into a second temporary register
    * 3) Write that value to succ's slot
    */
+  auto predRegMode = Asm::X86Reg::getRegMode(pred);
+  auto succRegMode = Asm::X86Reg::getRegMode(succ);
+  std::cout << "Pred Reg Mode: " << predRegMode << std::endl;
+  std::cout << "Succ Reg Mode  : " << succRegMode << std::endl;
 
   // 1)
   auto predOp = getNodeResAsInstOperand(pred);
-  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-  bb->emplaceInstruction<Asm::Mov>(std::move(predOp), std::move(tmpReg), "1)");
+  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, predRegMode));
+  bb->emplaceInstruction<Asm::Mov>(std::move(predOp), std::move(tmpReg), predRegMode, "1)");
 
   // 2)
-  auto r15Op = std::make_unique<Asm::MemoryBase>(0, Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-  auto r14Op = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r14, Asm::X86Reg::Mode::R));
-  bb->emplaceInstruction<Asm::Mov>(std::move(r15Op), std::move(r14Op), "2)");
+  auto cxOp = std::make_unique<Asm::MemoryBase>(0, Asm::X86Reg(Asm::X86Reg::Name::cx, predRegMode));
+  auto dxOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::dx, succRegMode));
+  bb->emplaceInstruction<Asm::Mov>(std::move(cxOp), std::move(dxOp), succRegMode, "2)");
 
   // 3)
-  auto val = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r14, Asm::X86Reg::Mode::R));
+  auto val = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::dx, Asm::X86Reg::Mode::R));
   writeValue(std::move(val), succ, "3)");
 }
 
-void AsmMethodPass::visitReturn(ir_node *node) {
-  auto bb = getBB(node);
-
-  ir_node *succ = getNthSucc(node, 0);
-  assert(is_Block(succ));
-
-  if (get_Return_n_ress(node) > 0) {
-    ir_node *opNode = get_Return_res(node, 0);
-    auto op = getNodeResAsInstOperand(opNode);
-    auto ax = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax,
-                                 Asm::X86Reg::getRegMode(opNode)));
-
-    bb->emplaceInstruction<Asm::Mov>(std::move(op), std::move(ax), "Return value");
-  }
-
-  // Jump to end block
-  // return nodes should have exactly one successor, the end block.
-  bb->emplaceJump(getBlockLabel(succ), ir_relation_true);
-}
 
 void AsmMethodPass::visitStore(ir_node *node) {
   PRINT_ORDER;
@@ -435,8 +447,7 @@ void AsmMethodPass::visitStore(ir_node *node) {
   ir_node *source = get_Store_value(node);
   ir_node *dest = get_Store_ptr(node);
 
-  bb->addComment("Store " + std::string(gdb_node_helper(source)) + " into " +
-                 std::string(gdb_node_helper(dest)));
+  bb->addComment("Store(" + nodeStr(node) + "): " + nodeStr(source) + " into " + nodeStr(dest));
 
   // dest is a pointer, so we need to save into the address of that pointer,
   // not into the register of that node.
@@ -447,15 +458,28 @@ void AsmMethodPass::visitStore(ir_node *node) {
    * 2) write SOURCE value into address in tmp register.
    */
 
+  auto sourceRegMode = Asm::X86Reg::getRegMode(source);
+  auto destRegMode = Asm::X86Reg::getRegMode(dest);
+  std::cout << "Source Reg Mode: " << sourceRegMode << std::endl;
+  std::cout << "Dest Reg Mode  : " << destRegMode << std::endl;
+
   // TODO: Use the correct register modes here
   auto destOp = getNodeResAsInstOperand(dest);
-  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-  bb->emplaceInstruction<Asm::Mov>(std::move(destOp), std::move(tmpReg), "1)");
+  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::dx, sourceRegMode));
+  bb->emplaceInstruction<Asm::Mov>(std::move(destOp), std::move(tmpReg), sourceRegMode, "1)");
   // r15 now contains the address to write to!
 
-  auto r15Op = std::make_unique<Asm::MemoryBase>(0, Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::L));
+  // Load value to write to dest into tmp register
+  auto r14Op = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, destRegMode));
   auto sourceOp = getNodeResAsInstOperand(source);
-  bb->emplaceInstruction<Asm::Mov>(std::move(sourceOp), std::move(r15Op), "2)");
+  bb->emplaceInstruction<Asm::Mov>(std::move(sourceOp), std::move(r14Op), destRegMode, "2)");
+
+  // Mov %cx into (%dx)
+   r14Op = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, sourceRegMode));
+  auto r15Op = std::make_unique<Asm::MemoryBase>(0, Asm::X86Reg(Asm::X86Reg::Name::dx,
+                                                 Asm::X86Reg::Mode::R)); // Pointer, force R
+  bb->emplaceInstruction<Asm::Mov>(std::move(r14Op), std::move(r15Op), sourceRegMode, "3)");
+
 }
 
 void AsmMethodPass::visitPhi(ir_node *node) {
@@ -475,7 +499,8 @@ void AsmMethodPass::visitPhi(ir_node *node) {
     auto srcOp = getNodeResAsInstOperand(phiPred);
 
     auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    bb->emplacePhiInstr<Asm::Mov>(std::move(srcOp), std::move(tmpReg), "phi tmp");
+    bb->emplacePhiInstr<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
+                                  Asm::X86Reg::Mode::R, "phi tmp");
 
     /*
      * TODO: All the special-casing for tmp registers seems stupid, we should
@@ -486,8 +511,9 @@ void AsmMethodPass::visitPhi(ir_node *node) {
     // This is basically writeValue but the basic block is not the one of the passed node!
     auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
                                                    Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                                               Asm::X86Reg::getRegMode(node)));
+                                                               Asm::X86Reg::Mode::R));
     tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    bb->emplacePhiInstr<Asm::Mov>(std::move(tmpReg), std::move(dstOp), "phi dst");
+    bb->emplacePhiInstr<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
+                                  Asm::X86Reg::Mode::R, "phi dst");
   }
 }

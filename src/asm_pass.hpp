@@ -112,7 +112,10 @@ public:
      std::make_unique<Asm::MemoryBase>(
           ssm.getStackSlot(node, bb),
           Asm::X86Reg(Asm::X86Reg::Name::bp,
-                      Asm::X86Reg::getRegMode(node))), std::move(comment));
+                      Asm::X86Reg::Mode::R)),
+     Asm::X86Reg::Mode::R,
+                      //Asm::X86Reg::getRegMode(node))),
+     std::move(comment));
   }
 
   Asm::BasicBlock* getBB(ir_node *n) {
@@ -155,7 +158,7 @@ public:
       return std::make_unique<Asm::Immediate>(get_Const_tarval(get_Conv_op(node)));
     }
 
-    /* This asssertion does not work for control flow/phi nodes, where we read first
+    /* This assertion does not work for control flow/phi nodes, where we read first
      * and later generate the write instructions */
     //if (!ssm.hasSlot(node)) {
       //ir_printf("%n %N has no stack slot!\n", node, node);
@@ -165,22 +168,23 @@ public:
     return std::make_unique<Asm::MemoryBase>(
         ssm.getStackSlot(node, getBB(node)),
         Asm::X86Reg(Asm::X86Reg::Name::bp,
-                    Asm::X86Reg::getRegMode(node)));
+                    Asm::X86Reg::Mode::R));
+                    //Asm::X86Reg::getRegMode(node)));
 
   }
 
   Asm::InstrPtr loadToReg(Asm::OperandPtr val, Asm::X86Reg reg) {
-    return std::make_unique<Asm::Mov>(std::move(val), Asm::Register::get(reg),
-                                      "load stackslot val to reg");
+    return std::make_unique<Asm::Mov>(std::move(val), Asm::Register::get(reg));
   }
 
   Asm::InstrPtr writeResToStackSlot(Asm::X86Reg reg, ir_node *node) {
     return std::make_unique<Asm::Mov>(
-        Asm::Register::get(reg),
+        Asm::Register::get(reg, Asm::X86Reg::Mode::R),
         std::make_unique<Asm::MemoryBase>(
             ssm.getStackSlot(node, getBB(node)),
             Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                Asm::X86Reg::getRegMode(node))),
+                        Asm::X86Reg::Mode::R)),
+        Asm::X86Reg::Mode::R,
         "store reg to stackslot");
   }
 

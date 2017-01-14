@@ -59,7 +59,7 @@ Asm::X86Reg::Mode X86Reg::getRegMode(ir_node *node) {
   ir_mode *mode = get_irn_mode(node);
 
   if (mode == mode_Is) {
-    return Mode::R;
+    return Mode::E;
   }
   if (mode == mode_P) {
     return Mode::R;
@@ -76,6 +76,20 @@ Asm::X86Reg::Mode X86Reg::getRegMode(ir_node *node) {
   ir_printf("Invalid node mode %m for node %n %N\n", mode, node, node);
   assert(0);
 }
+
+std::ostream &operator<<(std::ostream &o, const Asm::X86Reg::Mode mode) {
+  using Asm::X86Reg;
+  switch(mode) {
+    case X86Reg::Mode::None: o << "None"; break;
+    case X86Reg::Mode::R:    o << "R"; break;
+    case X86Reg::Mode::E:    o << "E"; break;
+    case X86Reg::Mode::_:    o << "_"; break;
+    case X86Reg::Mode::H:    o << "H"; break;
+    case X86Reg::Mode::L:    o << "L"; break;
+  }
+  return o;
+}
+
 
 void AsmWriter::writeTextSection() { writeText(".text"); }
 

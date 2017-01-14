@@ -63,6 +63,8 @@ private:
   X86Reg() : name(Name::none), mode(Mode::None) {}
 };
 
+std::ostream &operator<<(std::ostream &o, const Asm::X86Reg::Mode mode);
+
 // enum class OperandType : uint8_t {
 //   Reg,       // value from register
 //   Mem,       // value from constant memory adress
@@ -99,6 +101,9 @@ struct Register : public WritableOperand {
 
   static std::unique_ptr<Register> get(X86Reg::Name name, X86Reg::Mode mode) {
     return get(X86Reg(name, mode));
+  }
+  static std::unique_ptr<Register> get(X86Reg reg, X86Reg::Mode mode) {
+    return get(X86Reg(reg.name, mode));
   }
   static std::unique_ptr<Register> get(X86Reg reg) {
     return std::make_unique<Register>(reg);
@@ -439,31 +444,57 @@ struct Div : public Instruction {
 struct Mov : public Instruction {
   const OperandPtr src;
   const OperandPtr dest;
+  const X86Reg::Mode movMode;
 
-  Mov(OperandPtr s, OperandPtr d, std::string c = ""s)
-      : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)) {}
+  Mov(OperandPtr s, OperandPtr d,
+      X86Reg::Mode movMode = X86Reg::Mode::None, std::string c = ""s)
+      : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)), movMode(movMode) {}
 
   Operand *getDestOperand() const override { return dest.get(); }
   bool isValid() const override {
     return true; // TODO
-    //     return src->isOneOf<Immediate, WritableOperand>() && dest->isOneOf<WritableOperand>();
   }
 
   void write(std::ostream &o) const override {
-    // XXX Ehm this is a little ugly
-    if (auto d = dynamic_cast<Asm::Register*>(dest.get())) {
-      if (d->reg.mode == X86Reg::Mode::L)
+
+    if (movMode != X86Reg::Mode::None) {
+      // mov mode explicitly set
+      if (movMode == X86Reg::Mode::E)
         writeInstr(o, mnemonic::Movl, src.get(), dest.get());
       else
         writeInstr(o, mnemonic::Movq, src.get(), dest.get());
-    }else if (auto d = dynamic_cast<Asm::MemoryBase*>(dest.get())) {
-      if (d->base.mode == X86Reg::Mode::L)
-        writeInstr(o, mnemonic::Movl, src.get(), dest.get());
-      else
-        writeInstr(o, mnemonic::Movq, src.get(), dest.get());
-    }else {
-      writeInstr(o, mnemonic::Mov, src.get(), dest.get());
+    } else {
+      // No explicit mov mode set, try to figure it out by looking at the dest operand
+      // XXX Ehm this is a little ugly
+      if (auto d = dynamic_cast<Asm::Register*>(dest.get())) {
+        if (d->reg.mode == X86Reg::Mode::E)
+          writeInstr(o, mnemonic::Movl, src.get(), dest.get());
+        else
+          writeInstr(o, mnemonic::Movq, src.get(), dest.get());
+      } else if (auto d = dynamic_cast<Asm::MemoryBase*>(dest.get())) {
+        if (d->base.mode == X86Reg::Mode::E)
+          writeInstr(o, mnemonic::Movl, src.get(), dest.get());
+        else
+          writeInstr(o, mnemonic::Movq, src.get(), dest.get());
+      } else {
+        writeInstr(o, mnemonic::Mov, src.get(), dest.get());
+      }
     }
+  }
+};
+
+struct Movl : public Instruction {
+  const OperandPtr src;
+  const OperandPtr dest;
+
+  Movl(OperandPtr s, OperandPtr d, std::string c = ""s)
+      : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)) {}
+
+  Operand *getDestOperand() const override { return dest.get(); }
+  bool isValid() const override { return true; }
+
+  void write(std::ostream &o) const override {
+    writeInstr(o, mnemonic::Movl, src.get(), dest.get());
   }
 };
 
