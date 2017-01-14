@@ -18,8 +18,6 @@ namespace Asm {
 
 using namespace std::string_literals;
 
-// TODO: everything
-
 struct X86Reg {
   enum class Name : uint8_t {
     none,
@@ -278,6 +276,7 @@ const char *const Jle  = "jle";
 const char *const Mov  = "mov";
 const char *const Movq = "movq";
 const char *const Movl = "movl";
+const char *const Movb = "movb";
 
 const char *const Cqto = "cqto";
 
@@ -461,6 +460,8 @@ struct Mov : public Instruction {
       // mov mode explicitly set
       if (movMode == X86Reg::Mode::E)
         writeInstr(o, mnemonic::Movl, src.get(), dest.get());
+      else if (movMode == X86Reg::Mode::L)
+        writeInstr(o, mnemonic::Movb, src.get(), dest.get());
       else
         writeInstr(o, mnemonic::Movq, src.get(), dest.get());
     } else {

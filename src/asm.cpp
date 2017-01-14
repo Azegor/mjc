@@ -27,8 +27,7 @@ const char *X86Reg::getAsmName() const {
     case Name::r15: return "%r15";
     }
   }
-  case Mode::E:
-  case Mode::L: {
+  case Mode::E: {
     switch(name) {
     case Name::none: assert(false);
     case Name::ax : return "%eax";
@@ -39,14 +38,35 @@ const char *X86Reg::getAsmName() const {
     case Name::sp : return "%esp";
     case Name::si : return "%esi";
     case Name::di : return "%edi";
-    case Name::r8 : return "%e8";
-    case Name::r9 : return "%e9";
-    case Name::r10: return "%e10";
-    case Name::r11: return "%e11";
-    case Name::r12: return "%e12";
-    case Name::r13: return "%e13";
-    case Name::r14: return "%e14";
-    case Name::r15: return "%r15";
+    case Name::r8 : return "%r8d";
+    case Name::r9 : return "%r9d";
+    case Name::r10: return "%r10d";
+    case Name::r11: return "%r11d";
+    case Name::r12: return "%r12d";
+    case Name::r13: return "%r13d";
+    case Name::r14: return "%r14d";
+    case Name::r15: return "%r15d";
+    }
+  }
+  case Mode::L: {
+    switch(name) {
+    case Name::none: assert(false);
+    case Name::ax : return "%al";
+    case Name::bx : return "%bl";
+    case Name::cx : return "%cl";
+    case Name::dx : return "%dl";
+    case Name::bp :
+    case Name::sp :
+    case Name::si :
+    case Name::di : assert(false);
+    case Name::r8 : return "%r8l";
+    case Name::r9 : return "%r9l";
+    case Name::r10: return "%r10l";
+    case Name::r11: return "%r11l";
+    case Name::r12: return "%r12l";
+    case Name::r13: return "%r13l";
+    case Name::r14: return "%r14l";
+    case Name::r15: return "%r15l";
     }
   }
   default:
@@ -65,7 +85,7 @@ Asm::X86Reg::Mode X86Reg::getRegMode(ir_node *node) {
     return Mode::R;
   }
   if (mode == mode_Bu) {
-    return Mode::E; // TODO: what to use here? maybe use L?
+    return Mode::L;
   }
   if (mode == mode_T) {
     return Mode::R;
