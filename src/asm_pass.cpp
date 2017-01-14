@@ -74,6 +74,10 @@ std::string getBlockLabel(ir_node *node) {
   return "L" + std::to_string(get_irn_node_nr(node));
 }
 
+std::string nodeStr(ir_node *node) {
+  return std::string(gdb_node_helper(node)) + " " + std::to_string(get_irn_node_nr(node));
+}
+
 
 void AsmPass::before() {
   // writer.writeTextSection();
@@ -366,18 +370,24 @@ void AsmMethodPass::visitLoad(ir_node *node) {
   PRINT_ORDER;
   auto bb = getBB(node);
   ir_node *pred = get_Load_ptr(node);
-  ir_node *succ = getSucc(node, iro_Proj, mode_Is);
+  ir_node *succ;
+
+  // Load nodes have 2 successors, one Proj M and another one, which we want.
+  succ = getNthSucc(node, 0);
+  if (get_irn_mode(succ) == mode_M)
+    succ =getNthSucc(node, 1);
 
   if (succ == nullptr) {
+    std::cout << nodeStr(node) << " has no successor" << std::endl;
     // We load something but don't end up using it at all?
     return;
   }
 
-  assert(get_irn_mode(node) != mode_M); // ! Load nodes have 2 successor Proj nodes
+  assert(get_irn_mode(succ) != mode_M); // ! Load nodes have 2 successor Proj nodes
   // TODO: Do we need this on non-pointer nodes?
   assert(get_irn_mode(pred) == mode_P);
 
-  bb->addComment("Load from " + std::string(gdb_node_helper(pred)));
+  bb->addComment("Load from " + nodeStr(pred));
   /*
    * 1) Load contents of pred slot into temporary register. This now contains the address to read from
    * 2) Write the value at that address into a second temporary register
@@ -395,7 +405,7 @@ void AsmMethodPass::visitLoad(ir_node *node) {
   bb->emplaceInstruction<Asm::Mov>(std::move(r15Op), std::move(r14Op), "2)");
 
   // 3)
-  auto val =  Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r14, Asm::X86Reg::Mode::R));
+  auto val = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r14, Asm::X86Reg::Mode::R));
   writeValue(std::move(val), succ, "3)");
 }
 
