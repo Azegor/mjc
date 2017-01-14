@@ -320,8 +320,8 @@ struct Cmp : public Instruction {
   const OperandPtr left;
   const OperandPtr right;
 
-  Cmp(OperandPtr left, OperandPtr right) :
-    Instruction("cmp"), left(std::move(left)), right(std::move(right)) {}
+  Cmp(OperandPtr left, OperandPtr right, std::string comment = ""s) :
+    Instruction(std::move(comment)), left(std::move(left)), right(std::move(right)) {}
   bool isValid() const override { return true; }
   Operand *getDestOperand() const override {
     assert(false);
