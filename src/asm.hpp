@@ -607,6 +607,7 @@ class BasicBlock {
   std::string comment;
   const LocalLabel label;
   InstrPtr jumpInstruction;
+  std::vector<InstrPtr> startPhiInstructions;
   std::vector<InstrPtr> phiInstructions;
 
 public:
@@ -639,6 +640,12 @@ public:
   }
 
   template<typename T, typename... Args>
+  void emplaceStartPhiInstruction(Args &&... args) {
+    auto p = std::make_unique<T>(std::forward<Args>(args)...);
+    startPhiInstructions.emplace_back(std::move(p));
+  }
+
+  template<typename T, typename... Args>
   void replaceInstruction(size_t index, Args &&... args) {
     auto p = std::make_unique<T>(std::forward<Args>(args)...);
     instructions.at(index) = std::move(p);
@@ -650,6 +657,11 @@ public:
 
   void write(AsmWriter &writer) const {
     writer.writeLabel(label, comment);
+
+    for (auto &instr : startPhiInstructions) {
+      writer.writeInstruction(*instr);
+    }
+
     for (auto &instr : instructions) {
       writer.writeInstruction(*instr);
     }

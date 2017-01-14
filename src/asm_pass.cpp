@@ -332,7 +332,7 @@ void AsmMethodPass::visitCmp(ir_node *node) {
   leftReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, leftRegMode));
   rightReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, rightRegMode));
   /* left and right swapped! */
-  bb->emplaceInstruction<Asm::Cmp>(std::move(rightReg), std::move(leftReg));
+  bb->emplaceInstruction<Asm::Cmp>(std::move(rightReg), std::move(leftReg), nodeStr(node));
 }
 
 void AsmMethodPass::visitCond(ir_node *node) {
@@ -534,12 +534,12 @@ void AsmMethodPass::visitPhi(ir_node *node) {
       assert(is_Proj(blockPredNode));
       assert(get_irn_mode(blockPredNode) == mode_X);
 
-      bb->emplaceInstruction<Asm::Label>(std::move(getProjLabel(blockPredNode)));
+      bb->emplaceStartPhiInstruction<Asm::Label>(std::move(getProjLabel(blockPredNode)));
       // Write this phiPred into the stack slot of the phi node
       auto srcOp = getNodeResAsInstOperand(phiPred);
 
       auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-      bb->emplaceInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
+      bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
                                     Asm::X86Reg::Mode::R, "phi tmp");
 
       // This is basically writeValue but the basic block is not the one of the passed node!
@@ -547,10 +547,10 @@ void AsmMethodPass::visitPhi(ir_node *node) {
                                                      Asm::X86Reg(Asm::X86Reg::Name::bp,
                                                                  Asm::X86Reg::Mode::R));
       tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-      bb->emplaceInstruction<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
+      bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
                                     Asm::X86Reg::Mode::R, "phi dst");
 
-      bb->emplaceInstruction<Asm::Jmp>(phiLabel, ir_relation_true);
+      bb->emplaceStartPhiInstruction<Asm::Jmp>(phiLabel, ir_relation_true);
     } else {
       bb = getBB(blockPred);
       /* Control flow, generate phi instructions in the predecessor basic blocks */
@@ -572,7 +572,7 @@ void AsmMethodPass::visitPhi(ir_node *node) {
   }
 
   if (needsLabels)
-    bb->emplaceInstruction<Asm::Label>(phiLabel);
+    bb->emplaceStartPhiInstruction<Asm::Label>(phiLabel);
 }
 
 void AsmMethodPass::visitMinus(ir_node *node) {
