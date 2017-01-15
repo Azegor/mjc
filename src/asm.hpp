@@ -305,7 +305,8 @@ using WritableOperandPtr = std::unique_ptr<WritableOperand>;
 
 struct Call : public Instruction {
   std::string functionName;
-  Call(std::string functionName) : Instruction("call"), functionName(functionName) {}
+  Call(std::string functionName, std::string comment = ""s)
+    : Instruction(std::move(comment)), functionName(functionName) {}
   void write(std::ostream &o) const override {
     o << mnemonic::Call << " " << functionName;
   }
