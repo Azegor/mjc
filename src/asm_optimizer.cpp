@@ -17,7 +17,7 @@ void AsmSimpleOptimizer::optimizeBlock(Asm::BasicBlock &block) {
 
     if (auto add = dynamic_cast<Asm::Add*>(instr)) {
       if (auto c = dynamic_cast<Asm::Immediate*>(add->src.get())) {
-        if (get_tarval_long(c->val) == 1) {
+        if (c->getValue() == 1) {
           block.replaceInstruction<Asm::Inc>(i, std::move(add->dest));
           continue;
         }
@@ -26,7 +26,7 @@ void AsmSimpleOptimizer::optimizeBlock(Asm::BasicBlock &block) {
       // It's unclear to me whether this is actually faster, but this way we can check
       // that the code to replace instructions actualy works. Also, it's what firm does.
       if (auto c = dynamic_cast<Asm::Immediate*>(mov->src.get())) {
-        if (get_tarval_long(c->val) == 0) {
+        if (c->getValue() == 0) {
           block.replaceInstruction<Asm::Xor>(i, std::move(mov->dest));
           continue;
         }

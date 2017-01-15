@@ -187,6 +187,13 @@ struct Immediate : public Operand {
   Immediate(ir_tarval *val) : val(val) {}
   Immediate(int ival) : ival(ival) {}
 
+  int getValue() const {
+    if (val != nullptr)
+      return get_tarval_long(val);
+    else
+      return ival;
+  }
+
   void write(std::ostream &o) const override {
     o << '$';
     if (val != nullptr)
