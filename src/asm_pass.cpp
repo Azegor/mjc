@@ -94,7 +94,7 @@ void AsmPass::visitMethod(ir_graph *graph) {
 
 void AsmMethodPass::before() {
   // Callee side of a function call
-  std::cout << "### visiting function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl;
+  //std::cout << "### visiting function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl;
   ir_type *method_type = get_entity_type(get_irg_entity(graph));
   assert(is_Method_type(method_type));
   ir_node *argProj = get_irg_args(graph);
@@ -420,10 +420,8 @@ void AsmMethodPass::visitCond(ir_node *node) {
     bb->emplaceInstruction<Asm::Jmp>(getBlockLabel(trueBlock), ir_relation_true);
   } else {
     // Control flow comparison, jump to the appropriate basic block
-    bb->emplaceInstruction<Asm::Jmp>(getBlockLabel(trueBlock),
-                                     relation);
-    bb->emplaceInstruction<Asm::Jmp>(getBlockLabel(falseBlock),
-                                     getInverseRelation(relation));
+    bb->emplaceJump(getBlockLabel(trueBlock), relation);
+    bb->emplaceJump(getBlockLabel(falseBlock), getInverseRelation(relation));
   }
 }
 
@@ -663,8 +661,10 @@ void AsmMethodPass::visitPhi(ir_node *node) {
       ir_node *blockPred = get_nodes_block(blockPredNode);
 
       auto predBB = getBB(blockPred);
+      assert(predBB != bb);
       /* Control flow, generate phi instructions in the predecessor basic blocks */
       // Write this phiPred into the stack slot of the phi node
+      predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node) + " for pred " + nodeStr(phiPred));
       auto srcOp = getNodeResAsInstOperand(phiPred);
 
       auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));

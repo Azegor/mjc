@@ -117,9 +117,9 @@ public:
 
   void before();
   void after() {
-    std::cout << "### finished function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl;
+    //std::cout << "### finished function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl;
     //std::cout << "AR Slots: " << func->ARSlots << std::endl;
-    std::cout << "AR size: " << ssm.getLocVarUsedSize() << std::endl;
+    //std::cout << "AR size: " << ssm.getLocVarUsedSize() << std::endl;
     func->setARSize(ssm.getLocVarUsedSize());
   }
 
