@@ -11,7 +11,7 @@ output_file="${2}.out"
 
 out_name=$(mktemp --tmpdir=. -u)
 
-compiler_out=$("${compiler}" -O "${in_file}" -o $out_name 2>&1)
+compiler_out=$("${compiler}" "${in_file}" -o $out_name 2>&1)
 compiler_retval=$?
 
 
