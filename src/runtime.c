@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 #include <assert.h>
+#include <errno.h>
+#include <string.h>
 
 void print_int(int val) {
   printf("%d\n", val);
@@ -36,10 +38,14 @@ int read_int() {
   return c;
 }
 
-void write_int(int val) {
-  printf("%d", val);
+void write_int(int32_t val) {
+  const int octet = (int) (((unsigned) val) & 0xffU );
+  if (fputc (octet , stdout ) < 0) {
+    fprintf(stderr , "error: write: %s\n", strerror(errno));
+    abort();
+  }
 }
 
 void flush_int() {
-   // *shrug*
+ fflush(stdout);
 }
