@@ -66,17 +66,6 @@ std::string getBlockLabel(ir_node *node) {
   return "L" + std::to_string(get_irn_node_nr(node));
 }
 
-std::string getProjLabel(ir_node *node) {
-  assert(is_Proj(node));
-  assert(get_irn_mode(node) == mode_X);
-  if (get_Proj_num(node) == pn_Cond_true)
-    return "true_" + std::to_string(get_irn_node_nr(node));
-  else if(get_Proj_num(node) == pn_Cond_false)
-    return "false_" + std::to_string(get_irn_node_nr(node));
-
-  assert(false);
-}
-
 std::string nodeStr(ir_node *node) {
   return std::string(gdb_node_helper(node)) + " " + std::to_string(get_irn_node_nr(node));
 }
