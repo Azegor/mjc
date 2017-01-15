@@ -124,6 +124,11 @@ void AsmMethodPass::visitConv(ir_node *node) {
     return;
   }
 
+  if (is_Unknown(pred)) {
+    // Uninitialized memory
+    return;
+  }
+
   // Just use pred's stack slot for this Conv node as well.
   ssm.copySlot(pred, node);
   // TODO: Depending on the conversion, this might actually promote a

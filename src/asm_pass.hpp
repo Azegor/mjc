@@ -45,8 +45,9 @@ public:
     if (pos == offsets.end()) {
       pos = offsets.insert({node, -currentOffset}).first;
       //ir_printf("New Stack slot for node %n %N: %d\n", node, node, pos->second);
-      bb->addComment("New Stack Slot for node " + std::string(gdb_node_helper(node)) + ": "
-                      + std::to_string(pos->second));
+      if (bb)
+        bb->addComment("New Stack Slot for node " + std::string(gdb_node_helper(node)) + ": "
+                        + std::to_string(pos->second));
       currentOffset += 8;
     }
     return pos->second;
@@ -57,10 +58,15 @@ public:
   }
 
   void copySlot(ir_node *from, ir_node *to) {
-    assert(hasSlot(from));
     assert(!hasSlot(to));
+    int offset;
+    if (!hasSlot(from)) {
+      offset = getStackSlot(from, nullptr);
+    } else {
+      offset = offsets[from];
+    }
 
-    offsets.insert({to, offsets[from]});
+    offsets.insert({to, offset});
   }
 
   // For parameters
