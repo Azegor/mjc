@@ -15,9 +15,9 @@ compiler_out=$("${compiler}" -O "${in_file}" -o $out_name 2>&1)
 compiler_retval=$?
 
 
-echo $out_name
-echo $input_file
-echo $output_file
+#echo $out_name
+#echo $input_file
+#echo $output_file
 
 if [[ ${compiler_retval} -ne 0 ]]; then
   echo "ERROR: Compiler returned ${compiler_retval}"
