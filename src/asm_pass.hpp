@@ -34,7 +34,7 @@ private:
 };
 
 class StackSlotManager {
-  int32_t currentOffset = 0;
+  int32_t currentOffset = 8;
   std::unordered_map<ir_node *, int32_t> offsets;
 
 public:
