@@ -69,16 +69,15 @@ ir_relation getInverseRelation(ir_relation relation) {
   }
 }
 
+std::string nodeStr(ir_node *node) {
+  return std::string(gdb_node_helper(node)) + " " + std::to_string(get_irn_node_nr(node));
+}
+
 std::string getBlockLabel(ir_node *node) {
   assert(is_Block(node));
 
   return "L" + std::to_string(get_irn_node_nr(node));
 }
-
-std::string nodeStr(ir_node *node) {
-  return std::string(gdb_node_helper(node)) + " " + std::to_string(get_irn_node_nr(node));
-}
-
 
 void AsmPass::before() {
   // writer.writeTextSection();
@@ -412,7 +411,6 @@ void AsmMethodPass::visitCond(ir_node *node) {
     // Control flow comparison, jump to the appropriate basic block
     bb->emplaceInstruction<Asm::Jmp>(getBlockLabel(trueBlock),
                                      relation);
-
     bb->emplaceInstruction<Asm::Jmp>(getBlockLabel(falseBlock),
                                      getInverseRelation(relation));
   }
@@ -431,12 +429,20 @@ void AsmMethodPass::visitEnd(ir_node *node) {
   PRINT_ORDER;
   auto bb = getBB(node);
 
+  if (bb == nullptr)
+    return; // Unreachable
+
   bb->emplaceJump(func->getEpilogLabel(), ir_relation_true);
 }
 
 
 void AsmMethodPass::visitReturn(ir_node *node) {
   auto bb = getBB(node);
+
+  if (bb == nullptr) {
+    // Happens for unreachable stataments
+    return;
+  }
 
   ir_node *succ = getNthSucc(node, 0);
   assert(is_Block(succ));

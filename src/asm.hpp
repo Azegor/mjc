@@ -609,9 +609,8 @@ class BasicBlock {
 
 public:
   std::vector<InstrPtr> instructions;
-  BasicBlock(std::string comment = ""s) : comment(std::move(comment)), label() {}
+  //BasicBlock(std::string comment = ""s) : comment(std::move(comment)), label() {}
   BasicBlock(int num, std::string comment = ""s) : comment(std::move(comment)), label(num) {}
-  BasicBlock(LocalLabel l) : label(std::move(l)) {}
   BasicBlock(BasicBlock &&bb) = default;
 
   void addInstruction(InstrPtr instr) { instructions.emplace_back(std::move(instr)); }
@@ -690,13 +689,18 @@ public:
     basicBlocks.emplace(std::piecewise_construct,
                         std::make_tuple(node),
                         std::make_tuple(get_irn_node_nr(node), std::move(comment)));
-    return &basicBlocks[node];
+    return &basicBlocks.at(node);
   }
 
   void setStartBlockId(int id) { startBlockId = id; }
 
   BasicBlock *getBB(ir_node *node) {
-    return &basicBlocks[node];
+    assert(is_Block(node));
+
+    if (basicBlocks.find(node) != basicBlocks.end()) {
+      return &basicBlocks.at(node);
+    }
+    return nullptr;
   }
 
   std::string getEpilogLabel() const {
