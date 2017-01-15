@@ -41,6 +41,15 @@ ir_node *getNthSucc(ir_node *node, int k) {
   return nullptr;
 }
 
+int getNumSuccessors(ir_node *node) {
+  int i = 0;
+  foreach_out_edge_safe(node, edge) {
+    i ++;
+  }
+
+  return i;
+}
+
 ir_relation getInverseRelation(ir_relation relation) {
   switch(relation) {
     case ir_relation_equal:
@@ -82,6 +91,30 @@ void AsmPass::visitMethod(ir_graph *graph) {
   AsmMethodPass methodPass(graph, &func);
   methodPass.run();
   asmProgram.addFunction(std::move(func));
+}
+
+void AsmMethodPass::before() {
+  // Callee side of a function call
+  std::cout << "### visiting function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl;
+  ir_type *method_type = get_entity_type(get_irg_entity(graph));
+  assert(is_Method_type(method_type));
+  ir_node *argProj = get_irg_args(graph);
+  assert(is_Proj(argProj));
+
+  int nSuccessors = getNumSuccessors(argProj);
+  //std::cout << "Successors: " << nSuccessors << std::endl;
+  assert(is_Anchor(getNthSucc(argProj, 0))); // We skip the first successor
+  //int paramStackSize = get_method_n_params(method_type) * 8;
+  //std::cout << "paramStackSize: " << paramStackSize << std::endl;
+
+  for (int i = 1; i < nSuccessors; i ++) {
+    ir_node *succ = getNthSucc(argProj, i); //O(n²)!
+    // get_Proj_num gives us the argument index, regardless of whether they are actually being used
+    //int slot = 8 + paramStackSize - (get_Proj_num(succ) * 8);
+    int slot = 16 + (get_Proj_num(succ) * 8);
+    //ir_printf ("Succ %d: %n %N, num: %d, slot: %d\n", i, succ, succ, get_Proj_num(succ), slot);
+    ssm.setSlot(succ, slot);
+  }
 }
 
 void AsmMethodPass::visitConv(ir_node *node) {
@@ -244,13 +277,11 @@ void AsmMethodPass::visitCall(ir_node *node) {
   assert(is_Address(address));
   ir_entity *entity = get_Address_entity(address);
   const char *funcName = get_entity_name(entity);
-
-  // address nodes are always constant and belong to the start block
-  //TODO Arguments
+  int nParams = get_Call_n_params(node);
+  int addSize = 0;
 
   if (strcmp(funcName, "print_int") == 0 ||
       strcmp(funcName, "write_int") == 0) {
-    int nParams = get_Call_n_params(node);
     assert(nParams == 1);
     ir_node *p = get_Call_param(node, 0);
     //auto di = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::di, Asm::X86Reg::getRegMode(p)));
@@ -259,7 +290,6 @@ void AsmMethodPass::visitCall(ir_node *node) {
     bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(p), std::move(di));
 
   } else if (strcmp(funcName, "allocate") == 0) {
-    int nParams = get_Call_n_params(node);
     assert(nParams == 2);
     ir_node *n = get_Call_param(node, 0);
     ir_node *size = get_Call_param(node, 1);
@@ -271,9 +301,36 @@ void AsmMethodPass::visitCall(ir_node *node) {
     bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(n), std::move(di));
     // size in rsi
     bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(size), std::move(si));
+  } else {
+    // Normal MiniJava functions
+    addSize = nParams * 8;
+
+    bb->emplaceInstruction<Asm::Sub>(std::make_unique<Asm::Immediate>(addSize),
+                                     Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::sp,
+                                                                    Asm::X86Reg::Mode::R)));
+    bb->addComment(std::string(funcName) + " Parameters");
+    int offset = 0;
+    for (int i = 0; i < nParams; i ++) {
+      // TODO: This first mov is unnecessary for constants and normal registers
+      auto paramOp = getNodeResAsInstOperand(get_Call_param(node, i));
+
+      auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx,
+                                                   Asm::X86Reg::Mode::R));
+      bb->emplaceInstruction<Asm::Mov>(std::move(paramOp), std::move(tmpReg));
+
+      auto memOp = std::make_unique<Asm::MemoryBase>(offset,
+                                                     Asm::X86Reg(Asm::X86Reg::Name::sp,
+                                                                 Asm::X86Reg::Mode::R));
+      tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx,
+                                              Asm::X86Reg::Mode::R));
+      bb->emplaceInstruction<Asm::Mov>(std::move(tmpReg), std::move(memOp));
+
+      offset += 8;
+    }
   }
 
   bb->emplaceInstruction<Asm::Call>(std::string(funcName));
+
 
   // Write result of function call into stack slot of call->proj->proj node
   if (get_method_n_ress(callType) > 0) {
@@ -285,11 +342,15 @@ void AsmMethodPass::visitCall(ir_node *node) {
 
       if (resultProj != nullptr) {
         auto reg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::R));
-        //auto reg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax,
-                                      //Asm::X86Reg::getRegMode(resultProj)));
         writeValue(std::move(reg), resultProj, "Return value of " + std::string(funcName));
       }
     }
+  }
+
+  if (addSize > 0) {
+    bb->emplaceInstruction<Asm::Add>(std::make_unique<Asm::Immediate>(addSize),
+                                     Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::sp,
+                                                                    Asm::X86Reg::Mode::R)));
   }
 }
 
@@ -423,8 +484,8 @@ void AsmMethodPass::visitLoad(ir_node *node) {
    */
   auto predRegMode = Asm::X86Reg::getRegMode(pred);
   auto succRegMode = Asm::X86Reg::getRegMode(succ);
-  std::cout << "Pred Reg Mode: " << predRegMode << std::endl;
-  std::cout << "Succ Reg Mode  : " << succRegMode << std::endl;
+  //std::cout << "Pred Reg Mode: " << predRegMode << std::endl;
+  //std::cout << "Succ Reg Mode  : " << succRegMode << std::endl;
 
   // 1)
   auto predOp = getNodeResAsInstOperand(pred);
@@ -495,7 +556,7 @@ void AsmMethodPass::visitPhi(ir_node *node) {
   auto bb = getBB(node);
   bb->addComment("Phi: " + nodeStr(node));
 
-  std::cout << nodeStr(node) << std::endl;
+  //std::cout << nodeStr(node) << std::endl;
 
   if (needsLabels) {
     ir_node *truePred = get_Phi_pred(node, 0);

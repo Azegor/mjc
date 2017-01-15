@@ -182,11 +182,17 @@ struct MemoryBaseIndex : public MemoryOperand {
 };
 
 struct Immediate : public Operand {
-  ir_tarval *val;
+  ir_tarval *val = nullptr;
+  int ival;
   Immediate(ir_tarval *val) : val(val) {}
+  Immediate(int ival) : ival(ival) {}
 
   void write(std::ostream &o) const override {
-    o << "$" << get_tarval_long(val);
+    o << '$';
+    if (val != nullptr)
+      o << get_tarval_long(val);
+    else
+      o << ival;
   }
 };
 
@@ -491,8 +497,6 @@ struct Xor : public Instruction {
     o << mnemonic::Xor << ' ' << *src << ", " << *src;
   }
 };
-
-//
 
 struct Mov : public Instruction {
   const OperandPtr src;

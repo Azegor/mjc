@@ -63,6 +63,13 @@ public:
     offsets.insert({to, offsets[from]});
   }
 
+  // For parameters
+  void setSlot(ir_node *node, int32_t offset) {
+    assert(!hasSlot(node));
+
+    offsets.insert({node, offset});
+  }
+
   int32_t getLocVarUsedSize() const { return currentOffset; }
 };
 
@@ -102,9 +109,7 @@ public:
 
   }
 
-  void before() {
-    std::cout << "### visiting function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl;
-  }
+  void before();
   void after() {
     std::cout << "### finished function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl;
     //std::cout << "AR Slots: " << func->ARSlots << std::endl;
