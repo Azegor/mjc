@@ -538,21 +538,6 @@ struct Mov : public Instruction {
   }
 };
 
-struct Movl : public Instruction {
-  const OperandPtr src;
-  const OperandPtr dest;
-
-  Movl(OperandPtr s, OperandPtr d, std::string c = ""s)
-      : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)) {}
-
-  Operand *getDestOperand() const override { return dest.get(); }
-  bool isValid() const override { return true; }
-
-  void write(std::ostream &o) const override {
-    writeInstr(o, mnemonic::Movl, src.get(), dest.get());
-  }
-};
-
 // compound types:
 
 class AsmWriter {
