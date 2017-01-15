@@ -270,6 +270,8 @@ void AsmMethodPass::visitMul(ir_node *node) {
 void AsmMethodPass::visitCall(ir_node *node) {
   PRINT_ORDER;
   auto bb = getBB(node);
+  if (bb == nullptr)
+    return;
 
   ir_node *address = get_Call_ptr(node);
   ir_type *callType = get_Call_type(node);
@@ -356,6 +358,8 @@ void AsmMethodPass::visitCall(ir_node *node) {
 void AsmMethodPass::visitCmp(ir_node *node) {
   PRINT_ORDER;
   auto bb = getBB(node);
+  if (bb == nullptr)
+    return;
 
   auto leftRegMode = Asm::X86Reg::getRegMode(get_Cmp_left(node));
   auto rightRegMode = Asm::X86Reg::getRegMode(get_Cmp_right(node));
@@ -379,6 +383,8 @@ void AsmMethodPass::visitCmp(ir_node *node) {
 void AsmMethodPass::visitCond(ir_node *node) {
   PRINT_ORDER;
   auto bb = getBB(node);
+  if (bb == nullptr)
+    return;
 
   ir_node *selector = get_Cond_selector(node);
   ir_relation relation = get_Cmp_relation(selector);
@@ -419,6 +425,10 @@ void AsmMethodPass::visitCond(ir_node *node) {
 void AsmMethodPass::visitJmp(ir_node *node) {
   PRINT_ORDER;
   auto bb = getBB(node);
+
+  if (bb == nullptr)
+    return;
+
   ir_node *jumpTarget = getNthSucc(node, 0);
   assert(is_Block(jumpTarget));
 
@@ -464,6 +474,9 @@ void AsmMethodPass::visitReturn(ir_node *node) {
 void AsmMethodPass::visitLoad(ir_node *node) {
   PRINT_ORDER;
   auto bb = getBB(node);
+  if (bb == nullptr)
+    return;
+
   ir_node *pred = get_Load_ptr(node);
   ir_node *succ;
 
@@ -512,6 +525,9 @@ void AsmMethodPass::visitLoad(ir_node *node) {
 void AsmMethodPass::visitStore(ir_node *node) {
   PRINT_ORDER;
   auto bb = getBB(node);
+  if (bb == nullptr)
+    return;
+
   ir_node *source = get_Store_value(node);
   ir_node *dest = get_Store_ptr(node);
 
@@ -554,12 +570,15 @@ void AsmMethodPass::visitPhi(ir_node *node) {
   if (get_Phi_loop(node))
     return; // ???
 
+  auto bb = getBB(node);
+  if (bb == nullptr)
+    return;
+
   int nPreds = get_Phi_n_preds(node);
   assert(nPreds == 2);
   bool needsLabels = get_nodes_block(get_Block_cfgpred(get_nodes_block(node), 0)) ==
                      get_nodes_block(get_Block_cfgpred(get_nodes_block(node), 1));
 
-  auto bb = getBB(node);
   bb->addComment("Phi: " + nodeStr(node));
 
   //std::cout << nodeStr(node) << std::endl;

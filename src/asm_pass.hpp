@@ -7,7 +7,7 @@
 #include "asm.hpp"
 #include "firm_pass.hpp"
 
-#define ORDER
+//#define ORDER
 
 
 #ifdef ORDER
