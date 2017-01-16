@@ -230,7 +230,7 @@ bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs,
   } else {
     // XXX This is a bit of a hack as we opened the tmpfile already...
     // but we won't write to it here so it's probably okay
-    AsmPass asmPass(graphs, assemblyName);
+    AsmPass asmPass(graphs);
     asmPass.run();
     Asm::Program *program = asmPass.getProgram();
 

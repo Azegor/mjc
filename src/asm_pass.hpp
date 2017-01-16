@@ -18,11 +18,10 @@
 
 
 class AsmPass : public ProgramPass<AsmPass> {
-  const std::string &outputFileName;
 
 public:
-  AsmPass(std::vector<ir_graph *> &graphs, const std::string &outputFileName)
-      : ProgramPass(graphs), outputFileName(outputFileName) {}
+  AsmPass(std::vector<ir_graph *> &graphs)
+      : ProgramPass(graphs) {}
 
   void before();
   void visitMethod(ir_graph *graph);
