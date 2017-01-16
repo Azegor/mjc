@@ -23,6 +23,8 @@ else()
     )
 endif()
 
+add_dependencies(check mjc)
+
 add_test(NAME echo
          COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/echo_test.sh" $<TARGET_FILE:mjc>)
 add_test(NAME lextest
