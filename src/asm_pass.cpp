@@ -195,13 +195,31 @@ void AsmMethodPass::visitDiv(ir_node *node) {
   auto leftOp = getNodeResAsInstOperand(get_Div_left(node));
   auto rightOp = getNodeResAsInstOperand(get_Div_right(node));
 
-  // Move left into rax
   auto axOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::R));
-  bb->emplaceInstruction<Asm::Mov>(std::move(leftOp), std::move(axOp));
+  // Move left into rax
+  if (dynamic_cast<Asm::Immediate*>(leftOp.get())) {
+    bb->emplaceInstruction<Asm::Mov>(std::move(leftOp), std::move(axOp));
 
-  // Right into rcx
+    axOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::E));
+    auto axOp2 = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::R));
+    bb->emplaceInstruction<Asm::Movslq>(std::move(axOp), std::move(axOp2));
+
+  } else {
+    bb->emplaceInstruction<Asm::Movslq>(std::move(leftOp), std::move(axOp));
+  }
+
   auto cxOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::R));
-  bb->emplaceInstruction<Asm::Mov>(std::move(rightOp), std::move(cxOp));
+  // Right into rcx
+  if (dynamic_cast<Asm::Immediate*>(rightOp.get())) {
+    bb->emplaceInstruction<Asm::Mov>(std::move(rightOp), std::move(cxOp));
+
+    cxOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::E));
+    auto cxOp2 = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::R));
+    bb->emplaceInstruction<Asm::Movslq>(std::move(cxOp), std::move(cxOp2));
+
+  } else {
+    bb->emplaceInstruction<Asm::Movslq>(std::move(rightOp), std::move(cxOp));
+  }
 
   // "the instruction cqto is used to perform sign extension,
   //  copying the sign bit of %rax into every bit of %rdx."
@@ -229,13 +247,32 @@ void AsmMethodPass::visitMod(ir_node *node) {
   auto leftOp = getNodeResAsInstOperand(get_Mod_left(node));
   auto rightOp = getNodeResAsInstOperand(get_Mod_right(node));
 
-  // Move left into rax
+  // TODO: visitDiv and visitMod are largely the same, fix duplication!
   auto axOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::R));
-  bb->emplaceInstruction<Asm::Mov>(std::move(leftOp), std::move(axOp));
+  // Move left into rax
+  if (dynamic_cast<Asm::Immediate*>(leftOp.get())) {
+    bb->emplaceInstruction<Asm::Mov>(std::move(leftOp), std::move(axOp));
 
-  // Right into rcx
+    axOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::E));
+    auto axOp2 = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::R));
+    bb->emplaceInstruction<Asm::Movslq>(std::move(axOp), std::move(axOp2));
+
+  } else {
+    bb->emplaceInstruction<Asm::Movslq>(std::move(leftOp), std::move(axOp));
+  }
+
   auto cxOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::R));
-  bb->emplaceInstruction<Asm::Mov>(std::move(rightOp), std::move(cxOp));
+  // Right into rcx
+  if (dynamic_cast<Asm::Immediate*>(rightOp.get())) {
+    bb->emplaceInstruction<Asm::Mov>(std::move(rightOp), std::move(cxOp));
+
+    cxOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::E));
+    auto cxOp2 = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::R));
+    bb->emplaceInstruction<Asm::Movslq>(std::move(cxOp), std::move(cxOp2));
+
+  } else {
+    bb->emplaceInstruction<Asm::Movslq>(std::move(rightOp), std::move(cxOp));
+  }
 
   // "the instruction cqto is used to perform sign extension,
   //  copying the sign bit of %rax into every bit of %rdx."

@@ -307,6 +307,7 @@ const char *const Mov  = "mov";
 const char *const Movq = "movq";
 const char *const Movl = "movl";
 const char *const Movb = "movb";
+const char *const Movslq = "movslq";
 
 const char *const Cqto = "cqto";
 
@@ -502,6 +503,25 @@ struct Xor : public Instruction {
   Operand *getDestOperand() const override { return nullptr; }
   void write(std::ostream &o) const override {
     o << mnemonic::Xor << ' ' << *src << ", " << *src;
+  }
+};
+
+struct Movslq : public Instruction {
+  const OperandPtr src;
+  OperandPtr dest;
+  const X86Reg::Mode movMode;
+
+  Movslq(OperandPtr s, OperandPtr d,
+      X86Reg::Mode movMode = X86Reg::Mode::None, std::string c = ""s)
+      : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)), movMode(movMode) {}
+
+  Operand *getDestOperand() const override { return dest.get(); }
+  bool isValid() const override {
+    return true; // TODO
+  }
+
+  void write(std::ostream &o) const override {
+    writeInstr(o, mnemonic::Movslq, src.get(), dest.get());
   }
 };
 
