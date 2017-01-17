@@ -54,9 +54,9 @@ struct CompilerOptions {
   bool printFirmGraph = false;
   bool compileFirm = false;
   bool noVerify = false;
-  bool optimize = false;
-
   bool outputAssembly = false;
+
+  bool optimize = true;
   // ...
 };
 
