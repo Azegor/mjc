@@ -154,11 +154,11 @@ void AsmMethodPass::visitAdd(ir_node *node) {
   // before the Add instrudction (easier for optimizations)
   auto regMode = Asm::X86Reg::getRegMode(node);
   auto rightOp = getNodeResAsInstOperand(rightNode);
-  Asm::X86Reg rightReg(Asm::X86Reg::Name::bx, regMode);
+  Asm::X86Reg rightReg(Asm::X86Reg::Name::cx, regMode);
   auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
   bb->addInstruction(std::move(rightRegInst));
   auto leftOp = getNodeResAsInstOperand(leftNode);
-  Asm::X86Reg leftReg(Asm::X86Reg::Name::ax, regMode);
+  Asm::X86Reg leftReg(Asm::X86Reg::Name::bx, regMode);
   auto leftRegInst = loadToReg(std::move(leftOp), leftReg);
   bb->addInstruction(std::move(leftRegInst));
 
@@ -173,11 +173,11 @@ void AsmMethodPass::visitSub(ir_node *node) {
 
   auto regMode = Asm::X86Reg::getRegMode(node);
   auto leftOp = getNodeResAsInstOperand(get_Sub_left(node));
-  Asm::X86Reg leftReg(Asm::X86Reg::Name::ax, regMode);
+  Asm::X86Reg leftReg(Asm::X86Reg::Name::bx, regMode);
   auto leftRegInst = loadToReg(std::move(leftOp), leftReg);
   bb->addInstruction(std::move(leftRegInst));
   auto rightOp = getNodeResAsInstOperand(get_Sub_right(node));
-  Asm::X86Reg rightReg(Asm::X86Reg::Name::bx, regMode);
+  Asm::X86Reg rightReg(Asm::X86Reg::Name::cx, regMode);
   auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
   bb->addInstruction(std::move(rightRegInst));
 
@@ -260,11 +260,11 @@ void AsmMethodPass::visitMul(ir_node *node) {
   // TODO cleanup and avoid code duplication in other visit Methods
   auto regMode = Asm::X86Reg::getRegMode(node);
   auto leftOp = getNodeResAsInstOperand(get_Mul_left(node));
-  Asm::X86Reg leftReg(Asm::X86Reg::Name::ax, regMode);
+  Asm::X86Reg leftReg(Asm::X86Reg::Name::bx, regMode);
   auto leftRegInst = loadToReg(std::move(leftOp), leftReg);
   bb->addInstruction(std::move(leftRegInst));
   auto rightOp = getNodeResAsInstOperand(get_Mul_right(node));
-  Asm::X86Reg rightReg(Asm::X86Reg::Name::bx, regMode);
+  Asm::X86Reg rightReg(Asm::X86Reg::Name::cx, regMode);
   auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
   bb->addInstruction(std::move(rightRegInst));
   bb->emplaceInstruction<Asm::Mul>(Asm::Register::get(leftReg), Asm::Register::get(rightReg),
@@ -369,20 +369,20 @@ void AsmMethodPass::visitCmp(ir_node *node) {
   auto leftRegMode = Asm::X86Reg::getRegMode(get_Cmp_left(node));
   auto rightRegMode = Asm::X86Reg::getRegMode(get_Cmp_right(node));
 
-  auto leftReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, leftRegMode));
-  auto rightReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, rightRegMode));
+  auto leftReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, leftRegMode));
+  auto rightReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, rightRegMode));
 
-  // Load left into ax, right into bx
+  // Load left into bx, right into cx
   auto leftOp = getNodeResAsInstOperand(get_Cmp_left(node));
-  bb->emplaceInstruction<Asm::Mov>(std::move(leftOp), std::move(leftReg), leftRegMode);
+  bb->emplaceJump2<Asm::Mov>(std::move(leftOp), std::move(leftReg), leftRegMode);
 
   auto rightOp = getNodeResAsInstOperand(get_Cmp_right(node));
-  bb->emplaceInstruction<Asm::Mov>(std::move(rightOp), std::move(rightReg), rightRegMode);
+  bb->emplaceJump2<Asm::Mov>(std::move(rightOp), std::move(rightReg), rightRegMode);
 
-  leftReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, leftRegMode));
+  leftReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, leftRegMode));
   rightReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, rightRegMode));
-  /* left and right swapped! */
-  bb->emplaceInstruction<Asm::Cmp>(std::move(rightReg), std::move(leftReg), nodeStr(node));
+
+  bb->emplaceJump2<Asm::Cmp>(std::move(leftReg), std::move(rightReg), nodeStr(node));
 }
 
 void AsmMethodPass::visitCond(ir_node *node) {
@@ -417,7 +417,7 @@ void AsmMethodPass::visitCond(ir_node *node) {
     // Successor block is the same for both true and false case. This is a boolean comparison.
     // Just jump to that block, and the Phi node (if it exists) will do the je/jne instructions
 
-    bb->emplaceInstruction<Asm::Jmp>(getBlockLabel(trueBlock), ir_relation_true);
+    bb->emplaceJump(getBlockLabel(trueBlock), ir_relation_true);
   } else {
     // Control flow comparison, jump to the appropriate basic block
     bb->emplaceJump(getBlockLabel(trueBlock), relation);

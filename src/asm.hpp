@@ -630,6 +630,13 @@ public:
   }
 
   template<typename T, typename... Args>
+  void emplaceJump2(Args &&... args) {
+    auto p = std::make_unique<T>(std::forward<Args>(args)...);
+    jumpInstructions.emplace_back(std::move(p));
+  }
+
+
+  template<typename T, typename... Args>
   void emplacePhiInstr(Args &&... args) {
     auto p = std::make_unique<T>(std::forward<Args>(args)...);
     phiInstructions.emplace_back(std::move(p));
