@@ -201,6 +201,8 @@ int Compiler::compile() {
 bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs, bool verifyGraphs, bool outputAssembly, const std::string &outFileName) {
   int graphErrors = 0;
   for (auto g : graphs) {
+    remove_unreachable_code(g);
+    remove_bads(g);
     lower_highlevel_graph(g);
 
     if (printGraphs) {
