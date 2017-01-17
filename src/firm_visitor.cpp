@@ -39,8 +39,6 @@ static void booleanToControlFlow(ir_node *boolean, ir_node *trueBlock, ir_node *
 
 
 FirmVisitor::FirmVisitor(bool print){
-  ir_init();
-
   // disable libfirm optimizations
   // they can fuck things up by changing things we just added, e.g.
   //     node = new_Cmp

@@ -29,6 +29,7 @@
 
 #include <iostream>
 #include <string>
+#include <libfirm/firm.h>
 
 #include "ast.hpp"
 #include "color_ostream.hpp"
@@ -92,6 +93,10 @@ public:
     if (!sanityChecks()) {
       exit(EXIT_FAILURE);
     }
+    ir_init();
+  }
+  ~Compiler() {
+    ir_finish();
   }
   int run();
 };

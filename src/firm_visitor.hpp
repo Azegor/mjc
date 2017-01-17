@@ -339,11 +339,9 @@ public:
     for (auto& e : methods) {
       delete[] e.second.params;
     }
-    free_type(boolType);
-    free_type(sizeType);
-    free_type(intType);
-
-    ir_finish();
+    //free_type(boolType);
+    //free_type(sizeType);
+    //free_type(intType);
   };
 
   std::vector<ir_graph*> &getFirmGraphs() { return firmGraphs; }
