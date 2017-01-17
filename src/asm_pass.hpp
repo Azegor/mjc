@@ -8,6 +8,7 @@
 #include "firm_pass.hpp"
 
 //#define ORDER
+//#define STACK_SLOTS
 
 
 #ifdef ORDER
@@ -16,6 +17,7 @@
 #define PRINT_ORDER (void)node;
 #endif
 
+std::string nodeStr(ir_node *node);
 
 class AsmPass : public ProgramPass<AsmPass> {
 
@@ -40,13 +42,18 @@ public:
   StackSlotManager() {}
 
   int32_t getStackSlot(ir_node *node, Asm::BasicBlock *bb) {
+    assert(!is_Block(node));
+
     auto pos = offsets.find(node);
     if (pos == offsets.end()) {
       pos = offsets.insert({node, -currentOffset}).first;
-      //ir_printf("New Stack slot for node %n %N: %d\n", node, node, pos->second);
+#ifdef STACK_SLOTS
+      ir_printf("New Stack slot for node %n %N: %d\n", node, node, pos->second);
+#endif
       if (bb)
         bb->addComment("New Stack Slot for node " + std::string(gdb_node_helper(node)) + ": "
                         + std::to_string(pos->second));
+
       currentOffset += 8;
     }
     return pos->second;
@@ -65,12 +72,21 @@ public:
       offset = offsets[from];
     }
 
+#ifdef STACK_SLOTS
+    std::cout << "New stack slot for " << nodeStr(to) << ": "
+              << offset << " (copied from " << nodeStr(from) << ")" << std::endl;
+#endif
+
     offsets.insert({to, offset});
   }
 
   // For parameters
   void setSlot(ir_node *node, int32_t offset) {
     assert(!hasSlot(node));
+
+#ifdef STACK_SLOTS
+    std::cout << "New stack slot for " << nodeStr(node) << ": " << offset << std::endl;
+#endif
 
     offsets.insert({node, offset});
   }
@@ -192,8 +208,6 @@ public:
         ssm.getStackSlot(node, getBB(node)),
         Asm::X86Reg(Asm::X86Reg::Name::bp,
                     Asm::X86Reg::Mode::R));
-                    //Asm::X86Reg::getRegMode(node)));
-
   }
 
   Asm::InstrPtr loadToReg(Asm::OperandPtr val, Asm::X86Reg reg) {

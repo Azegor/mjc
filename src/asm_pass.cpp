@@ -5,7 +5,7 @@
 
 
 /* Return first Proj suceessor of @node */
-ir_node * getProjSucc(ir_node *node) {
+static ir_node * getProjSucc(ir_node *node) {
   foreach_out_edge_safe(node, edge) {
     ir_node *src = get_edge_src_irn(edge);
     if (is_Proj(src))
@@ -15,7 +15,7 @@ ir_node * getProjSucc(ir_node *node) {
 }
 
 /* Return first successor node with the given opcode and the given mode */
-ir_node *getSucc(ir_node *node, unsigned opcode, ir_mode *mode) {
+static ir_node *getSucc(ir_node *node, unsigned opcode, ir_mode *mode) {
   foreach_out_edge_safe(node, edge) {
     ir_node *src = get_edge_src_irn(edge);
 
@@ -27,7 +27,7 @@ ir_node *getSucc(ir_node *node, unsigned opcode, ir_mode *mode) {
   return nullptr;
 }
 
-ir_node *getNthSucc(ir_node *node, int k) {
+static ir_node *getNthSucc(ir_node *node, int k) {
   int i = 0;
   foreach_out_edge_safe(node, edge) {
     if (i < k) {
@@ -619,10 +619,6 @@ void AsmMethodPass::visitPhi(ir_node *node) {
   bool needsLabels = get_nodes_block(get_Block_cfgpred(get_nodes_block(node), 0)) ==
                      get_nodes_block(get_Block_cfgpred(get_nodes_block(node), 1));
 
-  bb->addComment("Phi: " + nodeStr(node));
-
-  //std::cout << nodeStr(node) << std::endl;
-
   if (needsLabels) {
     ir_node *truePred = get_Phi_pred(node, 0);
     ir_node *trueProj = get_Block_cfgpred(get_nodes_block(node), 0);
@@ -695,9 +691,12 @@ void AsmMethodPass::visitPhi(ir_node *node) {
     for (int i = 0; i < nPreds; i ++) {
       ir_node *phiPred = get_Phi_pred(node, i);
       ir_node *blockPredNode = get_Block_cfgpred(get_nodes_block(node), i);
-      ir_node *blockPred = get_nodes_block(blockPredNode);
 
-      auto predBB = getBB(blockPred);
+
+      std::cout << nodeStr(node) << " PRED " << nodeStr(phiPred) << std::endl;
+
+      auto predBB = getBB(blockPredNode);
+      //predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node));
       assert(predBB != bb);
       /* Control flow, generate phi instructions in the predecessor basic blocks */
       // Write this phiPred into the stack slot of the phi node
@@ -714,7 +713,7 @@ void AsmMethodPass::visitPhi(ir_node *node) {
                                                                  Asm::X86Reg::Mode::R));
       tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
       predBB->emplacePhiInstr<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
-                                    Asm::X86Reg::Mode::R, "phi dst");
+                                    Asm::X86Reg::Mode::R, "phi dst: " + nodeStr(blockPredNode));
     }
   }
 }
