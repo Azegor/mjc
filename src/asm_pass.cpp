@@ -614,108 +614,161 @@ void AsmMethodPass::visitPhi(ir_node *node) {
   if (bb == nullptr)
     return;
 
+  std::cout << nodeStr(node) << ": " << std::endl;
+
+  bool isSwap = false;
+  for (int i = 0; i < get_Phi_n_preds(node); i ++) {
+    ir_node *pred = get_Phi_pred(node, i);
+    std::cout << "   " << nodeStr(pred) << std::endl;
+    if (is_Phi(pred)) {
+      for (int x = 0; x < get_Phi_n_preds(pred); x ++) {
+        if (get_Phi_pred(pred, x) == node &&
+            get_nodes_block(node) == get_nodes_block(pred)) {
+          isSwap = true;
+          goto swapCheck;
+        }
+      }
+    }
+  }
+swapCheck:
+
+  if (isSwap) {
+    std::cout << "OMG " << nodeStr(node) << " IS PART OF A SWAP!" << std::endl;
+  }
+
+
   int nPreds = get_Phi_n_preds(node);
   assert(nPreds == 2);
   bool needsLabels = get_nodes_block(get_Block_cfgpred(get_nodes_block(node), 0)) ==
                      get_nodes_block(get_Block_cfgpred(get_nodes_block(node), 1));
 
   if (needsLabels) {
-    ir_node *truePred = get_Phi_pred(node, 0);
-    ir_node *trueProj = get_Block_cfgpred(get_nodes_block(node), 0);
-    ir_node *falsePred = get_Phi_pred(node, 1);
-    ir_node *falseProj = get_Block_cfgpred(get_nodes_block(node), 1);
-
-    if (get_Proj_num(falseProj) != pn_Cond_false) {
-      assert(get_Proj_num(trueProj) == pn_Cond_false);
-      std::swap(falseProj, trueProj);
-      std::swap(falsePred, truePred);
-    }
-    assert(get_Proj_num(trueProj) == pn_Cond_true);
-    assert(get_Proj_num(falseProj) == pn_Cond_false);
-    ir_node *condNode = get_Proj_pred(trueProj);
-    assert(is_Cond(condNode));
-    ir_node *selector = get_Cond_selector(condNode);
-    assert(is_Cmp(selector));
-    ir_relation relation = get_Cmp_relation(selector);
-    std::string falseLabel = "false_" + std::to_string(get_irn_node_nr(node));
-    std::string phiLabel = "phi_" + std::to_string(get_irn_node_nr(node));
-    //std::cout << "trueProj: " << nodeStr(trueProj) << std::endl;
-    //std::cout << "falseProj: " << nodeStr(falseProj) << std::endl;
-
-    // TODO: The code duplication here isn't exactly nice
-    bb->emplaceStartPhiInstruction<Asm::Jmp>(falseLabel,
-                                             getInverseRelation(relation));
-    // The cmp instruction was already written by visitCmp!
-    //bb->addComment("Fallthrough to true case");
-    {
-      // Write this phiPred into the stack slot of the phi node
-      auto srcOp = getNodeResAsInstOperand(truePred);
-
-      auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-      bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
-                                    Asm::X86Reg::Mode::R, "phi tmp");
-
-      // This is basically writeValue but the basic block is not the one of the passed node!
-      auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
-                                                     Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                                                 Asm::X86Reg::Mode::R));
-      tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-      bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
-                                    Asm::X86Reg::Mode::R, "phi dst");
-      // end of true case, jump to phi label
-      bb->emplaceStartPhiInstruction<Asm::Jmp>(phiLabel, ir_relation_true);
-    }
-
-    // False case
-    {
-      bb->emplaceStartPhiInstruction<Asm::Label>(falseLabel);
-      auto srcOp = getNodeResAsInstOperand(falsePred);
-
-      auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-      bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
-                                    Asm::X86Reg::Mode::R, "phi tmp");
-
-      // This is basically writeValue but the basic block is not the one of the passed node!
-      auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
-                                                     Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                                                 Asm::X86Reg::Mode::R));
-      tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-      bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
-                                    Asm::X86Reg::Mode::R, "phi dst");
-      //bb->addComment("Fallthrough from fall case to phi Label");
-    }
-
-    // end phi
-    bb->emplaceStartPhiInstruction<Asm::Label>(phiLabel);
+    generateBoolPhi(node);
   } else {
-    for (int i = 0; i < nPreds; i ++) {
-      ir_node *phiPred = get_Phi_pred(node, i);
-      ir_node *blockPredNode = get_Block_cfgpred(get_nodes_block(node), i);
-
-
-      std::cout << nodeStr(node) << " PRED " << nodeStr(phiPred) << std::endl;
-
-      auto predBB = getBB(blockPredNode);
-      //predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node));
-      assert(predBB != bb);
-      /* Control flow, generate phi instructions in the predecessor basic blocks */
-      // Write this phiPred into the stack slot of the phi node
-      predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node) + " for pred " + nodeStr(phiPred));
-      auto srcOp = getNodeResAsInstOperand(phiPred);
-
-      auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-      predBB->emplacePhiInstr<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
-                                    Asm::X86Reg::Mode::R, "phi tmp");
-
-      // This is basically writeValue but the basic block is not the one of the passed node!
-      auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, predBB),
-                                                     Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                                                 Asm::X86Reg::Mode::R));
-      tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-      predBB->emplacePhiInstr<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
-                                    Asm::X86Reg::Mode::R, "phi dst: " + nodeStr(blockPredNode));
-    }
+    generateNormalPhi(node);
   }
+}
+
+void AsmMethodPass::generateBoolPhi(ir_node *node) {
+  if (get_Phi_loop(node))
+    return; // ???
+
+  auto bb = getBB(node);
+  if (bb == nullptr)
+    return;
+
+  int nPreds = get_Phi_n_preds(node);
+  assert(nPreds == 2);
+
+
+  // Phi node used for bool values, with both preds in the same block.
+  ir_node *truePred = get_Phi_pred(node, 0);
+  ir_node *trueProj = get_Block_cfgpred(get_nodes_block(node), 0);
+  ir_node *falsePred = get_Phi_pred(node, 1);
+  ir_node *falseProj = get_Block_cfgpred(get_nodes_block(node), 1);
+
+  if (get_Proj_num(falseProj) != pn_Cond_false) {
+    assert(get_Proj_num(trueProj) == pn_Cond_false);
+    std::swap(falseProj, trueProj);
+    std::swap(falsePred, truePred);
+  }
+  assert(get_Proj_num(trueProj) == pn_Cond_true);
+  assert(get_Proj_num(falseProj) == pn_Cond_false);
+  ir_node *condNode = get_Proj_pred(trueProj);
+  assert(is_Cond(condNode));
+  ir_node *selector = get_Cond_selector(condNode);
+  assert(is_Cmp(selector));
+  ir_relation relation = get_Cmp_relation(selector);
+  std::string falseLabel = "false_" + std::to_string(get_irn_node_nr(node));
+  std::string phiLabel = "phi_" + std::to_string(get_irn_node_nr(node));
+
+  // TODO: The code duplication here isn't exactly nice
+  bb->emplaceStartPhiInstruction<Asm::Jmp>(falseLabel,
+                                           getInverseRelation(relation));
+  // The cmp instruction was already written by visitCmp!
+  //bb->addComment("Fallthrough to true case");
+  {
+    // Write this phiPred into the stack slot of the phi node
+    auto srcOp = getNodeResAsInstOperand(truePred);
+
+    auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+    bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
+                                  Asm::X86Reg::Mode::R, "phi tmp");
+
+    // This is basically writeValue but the basic block is not the one of the passed node!
+    auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
+                                                   Asm::X86Reg(Asm::X86Reg::Name::bp,
+                                                               Asm::X86Reg::Mode::R));
+    tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+    bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
+                                  Asm::X86Reg::Mode::R, "phi dst");
+    // end of true case, jump to phi label
+    bb->emplaceStartPhiInstruction<Asm::Jmp>(phiLabel, ir_relation_true);
+  }
+
+  // False case
+  {
+    bb->emplaceStartPhiInstruction<Asm::Label>(falseLabel);
+    auto srcOp = getNodeResAsInstOperand(falsePred);
+
+    auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+    bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
+                                  Asm::X86Reg::Mode::R, "phi tmp");
+
+    // This is basically writeValue but the basic block is not the one of the passed node!
+    auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
+                                                   Asm::X86Reg(Asm::X86Reg::Name::bp,
+                                                               Asm::X86Reg::Mode::R));
+    tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+    bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
+                                  Asm::X86Reg::Mode::R, "phi dst");
+    //bb->addComment("Fallthrough from fall case to phi Label");
+  }
+
+  // end phi
+  bb->emplaceStartPhiInstruction<Asm::Label>(phiLabel);
+
+}
+
+void AsmMethodPass::generateNormalPhi(ir_node *node) {
+  if (get_Phi_loop(node))
+    return; // ???
+
+  auto bb = getBB(node);
+  if (bb == nullptr)
+    return;
+
+  int nPreds = get_Phi_n_preds(node);
+  assert(nPreds == 2);
+
+  for (int i = 0; i < nPreds; i ++) {
+    ir_node *phiPred = get_Phi_pred(node, i);
+    ir_node *blockPredNode = get_Block_cfgpred(get_nodes_block(node), i);
+
+
+    std::cout << nodeStr(node) << " PRED " << nodeStr(phiPred) << std::endl;
+
+    auto predBB = getBB(blockPredNode);
+    //predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node));
+    assert(predBB != bb);
+    /* Control flow, generate phi instructions in the predecessor basic blocks */
+    // Write this phiPred into the stack slot of the phi node
+    predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node) + " for pred " + nodeStr(phiPred));
+    auto srcOp = getNodeResAsInstOperand(phiPred);
+
+    auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+    predBB->emplacePhiInstr<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
+                                  Asm::X86Reg::Mode::R, "phi tmp");
+
+    // This is basically writeValue but the basic block is not the one of the passed node!
+    auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, predBB),
+                                                   Asm::X86Reg(Asm::X86Reg::Name::bp,
+                                                               Asm::X86Reg::Mode::R));
+    tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+    predBB->emplacePhiInstr<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
+                                  Asm::X86Reg::Mode::R, "phi dst: " + nodeStr(blockPredNode));
+  }
+
 }
 
 void AsmMethodPass::visitMinus(ir_node *node) {

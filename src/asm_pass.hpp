@@ -91,6 +91,12 @@ public:
     offsets.insert({node, offset});
   }
 
+
+  // Used to resolve swaps with phi nodes
+  void getTmpSlot(ir_node *forNode) {
+
+  }
+
   int32_t getLocVarUsedSize() const { return currentOffset; }
 };
 
@@ -227,6 +233,9 @@ public:
 
 private:
   Asm::Function *func;
+
+  void generateNormalPhi(ir_node *node);
+  void generateBoolPhi(ir_node *node);
 };
 
 #endif
