@@ -55,7 +55,7 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
       // disable verification
       ("no-verify", "disable verification when building firm graph")
       // optimize
-      ("no-optimize,O0", "don't optimize program")
+      ("optimize,O", bpo::value<int>()->default_value(2), "optimization level (default: 2)")
       // output file
       ("output,o", bpo::value<std::string>(&compilerOptions.outputFileName),
        "output file name");
@@ -125,8 +125,10 @@ CompilerOptions parseArguments(int argc, char *argv[]) {
     if (var_map.count("no-verify")) {
       compilerOptions.noVerify = true;
     }
-    if (var_map.count("no-optimize") || var_map.count("O0")) {
-      compilerOptions.optimize = false;
+    if (var_map.count("optimize")) {
+      if (var_map["optimize"].as<int>() == 0) {
+        compilerOptions.optimize = false;
+      }
     }
   } catch (bpo::required_option &e) {
     cl_cerr << co::mode(co::bold) << co::color(co::red)
