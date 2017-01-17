@@ -94,6 +94,8 @@ public:
 
   // Used to resolve swaps with phi nodes
   void getTmpSlot(ir_node *forNode) {
+    // silence warning temporarily
+    (void)forNode;
 
   }
 
