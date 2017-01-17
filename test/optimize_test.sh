@@ -5,7 +5,7 @@ in_file=${2}
 
 out_name=$(mktemp --tmpdir=. -u)
 
-compiler_out=$("${compiler}" --compile-firm -O "${in_file}" -o $out_name 2>&1)
+compiler_out=$("${compiler}" --compile-firm -O2 "${in_file}" -o $out_name 2>&1)
 compiler_retval=$?
 
 
