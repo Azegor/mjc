@@ -8,7 +8,7 @@
 #include "firm_pass.hpp"
 
 //#define ORDER
-//#define STACK_SLOTS
+#define STACK_SLOTS
 
 
 #ifdef ORDER
@@ -37,6 +37,7 @@ private:
 class StackSlotManager {
   int32_t currentOffset = 8;
   std::unordered_map<ir_node *, int32_t> offsets;
+  std::unordered_map<ir_node *, int32_t> tmpSlots;
 
 public:
   StackSlotManager() {}
@@ -93,10 +94,19 @@ public:
 
 
   // Used to resolve swaps with phi nodes
-  void getTmpSlot(ir_node *forNode) {
-    // silence warning temporarily
-    (void)forNode;
+  int getTmpSlot(ir_node *node) {
+    assert(is_Phi(node));
 
+    auto pos = tmpSlots.find(node);
+    if (pos == tmpSlots.end()) {
+      pos = tmpSlots.insert({node, -currentOffset}).first;
+#ifdef STACK_SLOTS
+      ir_printf("New TMP slot for node %n %N: %d\n", node, node, pos->second);
+#endif
+      currentOffset += 8;
+    }
+
+    return pos->second;
   }
 
   int32_t getLocVarUsedSize() const { return currentOffset; }
@@ -238,6 +248,7 @@ private:
 
   void generateNormalPhi(ir_node *node);
   void generateBoolPhi(ir_node *node);
+  void generateSwapPhi(ir_node *node);
 };
 
 #endif

@@ -625,6 +625,7 @@ class BasicBlock {
   const LocalLabel label;
   std::vector<InstrPtr> jumpInstructions;
   std::vector<InstrPtr> startPhiInstructions;
+  std::vector<InstrPtr> swapPhiInstructions;
   std::vector<InstrPtr> phiInstructions;
 
 public:
@@ -669,6 +670,12 @@ public:
   }
 
   template<typename T, typename... Args>
+  void emplaceSwapPhiInstruction(Args &&... args) {
+    auto p = std::make_unique<T>(std::forward<Args>(args)...);
+    swapPhiInstructions.emplace_back(std::move(p));
+  }
+
+  template<typename T, typename... Args>
   void replaceInstruction(size_t index, Args &&... args) {
     auto p = std::make_unique<T>(std::forward<Args>(args)...);
     instructions.at(index) = std::move(p);
@@ -681,18 +688,27 @@ public:
   void write(AsmWriter &writer) const {
     writer.writeLabel(label, comment);
 
+    writer.writeComment("------- StartPhiInstructions --------");
     for (auto &instr : startPhiInstructions) {
       writer.writeInstruction(*instr);
     }
 
+    writer.writeComment("------- SwapPhiInstructions --------");
+    for (auto &instr : swapPhiInstructions) {
+      writer.writeInstruction(*instr);
+    }
+
+    writer.writeComment("------- Normal Instructions --------");
     for (auto &instr : instructions) {
       writer.writeInstruction(*instr);
     }
 
+    writer.writeComment("------- PhiInstructions --------");
     for (auto &instr : phiInstructions) {
       writer.writeInstruction(*instr);
     }
 
+    writer.writeComment("------- JumpInstructions --------");
     for (auto &instr : jumpInstructions) {
       writer.writeInstruction(*instr);
     }
