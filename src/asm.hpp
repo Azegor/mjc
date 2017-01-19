@@ -670,12 +670,6 @@ public:
   }
 
   template<typename T, typename... Args>
-  void emplaceSwapPhiInstruction(Args &&... args) {
-    auto p = std::make_unique<T>(std::forward<Args>(args)...);
-    swapPhiInstructions.emplace_back(std::move(p));
-  }
-
-  template<typename T, typename... Args>
   void replaceInstruction(size_t index, Args &&... args) {
     auto p = std::make_unique<T>(std::forward<Args>(args)...);
     instructions.at(index) = std::move(p);
@@ -691,13 +685,6 @@ public:
     if (startPhiInstructions.size() > 0) {
       writer.writeComment("------- StartPhiInstructions --------");
       for (auto &instr : startPhiInstructions) {
-        writer.writeInstruction(*instr);
-      }
-    }
-
-    if (swapPhiInstructions.size() > 0) {
-      writer.writeComment("------- SwapPhiInstructions --------");
-      for (auto &instr : swapPhiInstructions) {
         writer.writeInstruction(*instr);
       }
     }

@@ -755,30 +755,6 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
                                              "swap phi old val " + nodeStr(node));
   }
 
-  // Commit this node's value from its tmp slot into its actual stack slot
-#if 0
-  {
-    auto srcOp =  std::make_unique<Asm::MemoryBase>(ssm.getTmpSlot(node),
-                                                    Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                                                Asm::X86Reg::Mode::R));
-
-    // tmp register
-    auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    bb->emplaceSwapPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg));
-
-    // No from tmp register into our stack slot
-    tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    auto destOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
-                                                    Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                                                Asm::X86Reg::Mode::R));
-    bb->emplaceSwapPhiInstruction<Asm::Mov>(std::move(tmpReg),
-                                            std::move(destOp),
-                                            Asm::X86Reg::Mode::R,
-                                            nodeStr(node) + " commit");
-  }
-#endif
-
-
   ir_node *phiPred = get_Phi_pred(node, 0);
   ir_node *phiProj = get_Block_cfgpred(get_nodes_block(node), 0);
   ir_node *otherPred = get_Phi_pred(node, 1);
@@ -847,17 +823,6 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
     predBB->emplacePhiInstr<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
                                       Asm::X86Reg::Mode::R,
                                       nodeStr(node) + "commit");
-
-#if 0
-    auto tmpSlotOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, predBB),
-                                                       Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                                                   Asm::X86Reg::Mode::R));
-
-    tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    predBB->emplacePhiInstr<Asm::Mov>(std::move(tmpReg), std::move(tmpSlotOp),
-                                                Asm::X86Reg::Mode::R,
-                                                nodeStr(node) + " commit");
-#endif
   }
 }
 
