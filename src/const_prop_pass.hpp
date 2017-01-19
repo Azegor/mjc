@@ -148,6 +148,8 @@ public:
     ir_node *endNode = get_irg_end(graph);
     substNodesWalk(endNode);
 
+    // needs to happen in this order to correctly remove all bads that we insert ourselves
+    remove_bads(graph);
     remove_unreachable_code(graph);
     remove_bads(graph);
   }
