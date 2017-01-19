@@ -801,7 +801,7 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
     //auto predBB = getBB(pget_nodes_block(get_Block_cfgpred(get_nodes_block(node), i))
 
     assert(getBB(phiPred) == getBB(node));
-    predBB->emplaceSwapPhiInstruction<Asm::Comment>(nodeStr(node) + " for pred " + nodeStr(phiPred));
+    predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node) + " for pred " + nodeStr(phiPred));
     // tmp slot of predecessor phi
     auto srcOp =  std::make_unique<Asm::MemoryBase>(ssm.getTmpSlot(phiPred),
                                                     Asm::X86Reg(Asm::X86Reg::Name::bp,
@@ -809,7 +809,7 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
 
     // tmp register
     auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    predBB->emplaceSwapPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg));
+    predBB->emplacePhiInstr<Asm::Mov>(std::move(srcOp), std::move(tmpReg));
 
     // No from tmp register into our stack slot
     tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
@@ -817,7 +817,7 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
     auto destOp =  std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
                                                      Asm::X86Reg(Asm::X86Reg::Name::bp,
                                                                  Asm::X86Reg::Mode::R));
-    predBB->emplaceSwapPhiInstruction<Asm::Mov>(std::move(tmpReg), std::move(destOp),
+    predBB->emplacePhiInstr<Asm::Mov>(std::move(tmpReg), std::move(destOp),
                                              Asm::X86Reg::Mode::R,
                                              "phiPred read from tmp of " + nodeStr(phiPred));
   }
