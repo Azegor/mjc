@@ -688,29 +688,39 @@ public:
   void write(AsmWriter &writer) const {
     writer.writeLabel(label, comment);
 
-    writer.writeComment("------- StartPhiInstructions --------");
-    for (auto &instr : startPhiInstructions) {
-      writer.writeInstruction(*instr);
+    if (startPhiInstructions.size() > 0) {
+      writer.writeComment("------- StartPhiInstructions --------");
+      for (auto &instr : startPhiInstructions) {
+        writer.writeInstruction(*instr);
+      }
     }
 
-    writer.writeComment("------- SwapPhiInstructions --------");
-    for (auto &instr : swapPhiInstructions) {
-      writer.writeInstruction(*instr);
+    if (swapPhiInstructions.size() > 0) {
+      writer.writeComment("------- SwapPhiInstructions --------");
+      for (auto &instr : swapPhiInstructions) {
+        writer.writeInstruction(*instr);
+      }
     }
 
-    writer.writeComment("------- Normal Instructions --------");
-    for (auto &instr : instructions) {
-      writer.writeInstruction(*instr);
+    if (instructions.size() > 0) {
+      writer.writeComment("------- Normal Instructions --------");
+      for (auto &instr : instructions) {
+        writer.writeInstruction(*instr);
+      }
     }
 
-    writer.writeComment("------- PhiInstructions --------");
-    for (auto &instr : phiInstructions) {
-      writer.writeInstruction(*instr);
+    if (phiInstructions.size() > 0) {
+      writer.writeComment("------- PhiInstructions --------");
+      for (auto &instr : phiInstructions) {
+        writer.writeInstruction(*instr);
+      }
     }
 
-    writer.writeComment("------- JumpInstructions --------");
-    for (auto &instr : jumpInstructions) {
-      writer.writeInstruction(*instr);
+    if (jumpInstructions.size() > 0) {
+      writer.writeComment("------- JumpInstructions --------");
+      for (auto &instr : jumpInstructions) {
+        writer.writeInstruction(*instr);
+      }
     }
   }
 

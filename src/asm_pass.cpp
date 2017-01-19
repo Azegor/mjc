@@ -584,8 +584,6 @@ void AsmMethodPass::visitStore(ir_node *node) {
 
   auto sourceRegMode = Asm::X86Reg::getRegMode(source);
   auto destRegMode = Asm::X86Reg::getRegMode(dest);
-  //std::cout << "Source Reg Mode: " << sourceRegMode << std::endl;
-  //std::cout << "Dest Reg Mode  : " << destRegMode << std::endl;
 
   auto destOp = getNodeResAsInstOperand(dest);
   auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::dx, destRegMode));
@@ -614,8 +612,6 @@ void AsmMethodPass::visitPhi(ir_node *node) {
   if (bb == nullptr)
     return;
 
-  //std::cout << nodeStr(node) << ": " << std::endl;
-
   bool isSwap = false;
   for (int i = 0; i < get_Phi_n_preds(node); i ++) {
     ir_node *pred = get_Phi_pred(node, i);
@@ -632,24 +628,35 @@ void AsmMethodPass::visitPhi(ir_node *node) {
   }
   swapCheck:
 
-  //if (isSwap) {
-    //std::cout << "OMG " << nodeStr(node) << " IS PART OF A SWAP!" << std::endl;
-  //}
-
   int nPreds = get_Phi_n_preds(node);
   assert(nPreds == 2);
   bool needsLabels = get_nodes_block(get_Block_cfgpred(get_nodes_block(node), 0)) ==
                      get_nodes_block(get_Block_cfgpred(get_nodes_block(node), 1));
 
   if (isSwap) {
+    std::cout << "SwapPhi: " << nodeStr(node) << std::endl;
     generateSwapPhi(node);
   } else {
     if (needsLabels) {
+      std::cout << "NeedsLabels: " << nodeStr(node) << std::endl;
       generateBoolPhi(node);
     } else {
+      std::cout << "Normal: " << nodeStr(node) << std::endl;
       generateNormalPhi(node);
     }
   }
+
+#if 0
+  std::cout << nodeStr(node) << " in block " << nodeStr(get_nodes_block(node)) << ":" << std::endl;
+  for (int i = 0; i < get_Phi_n_preds(node); i ++) {
+    ir_node *pred = get_Phi_pred(node, i);
+    //ir_node *cfgPred = get_Block_cfgpred(get_nodes_block(node), i);
+    std::cout << "    Pred: " << nodeStr(pred) << ", Block: " << nodeStr(get_nodes_block(pred))
+              << ", PhiPredBlock: " << nodeStr(get_nodes_block(get_Block_cfgpred(get_nodes_block(node), i)))
+              << std::endl;
+
+  }
+#endif
 }
 
 void AsmMethodPass::generateBoolPhi(ir_node *node) {
@@ -773,23 +780,28 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
 
 
   ir_node *phiPred = get_Phi_pred(node, 0);
+  ir_node *phiProj = get_Block_cfgpred(get_nodes_block(node), 0);
   ir_node *otherPred = get_Phi_pred(node, 1);
+  ir_node *otherProj = get_Block_cfgpred(get_nodes_block(node), 1);
+
+  //std::cout << "phiProj: " << nodeStr(phiProj) << std::endl;
+  //std::cout << "otherProj: " << nodeStr(otherProj) << std::endl;
 
   if (!is_Phi(phiPred)) {
     std::swap(phiPred, otherPred);
+    std::swap(phiProj, otherProj);
   }
   assert(is_Phi(phiPred));
   assert(!is_Phi(otherPred));
 
-  //std::cout << "Swap Phi " << nodeStr(node) << std::endl;
-  //std::cout << "phiPred  : " << nodeStr(phiPred) << std::endl;
-  //std::cout << "otherPred: " << nodeStr(otherPred) << std::endl;
-
   // Phi pred. Read from its tmp slot to get the value before the phi evaluation,
   // write into the stack slot of this node
   {
+    auto predBB = getBB(phiProj);
+    //auto predBB = getBB(pget_nodes_block(get_Block_cfgpred(get_nodes_block(node), i))
+
     assert(getBB(phiPred) == getBB(node));
-    bb->emplaceSwapPhiInstruction<Asm::Comment>(nodeStr(node) + " for pred " + nodeStr(phiPred));
+    predBB->emplaceSwapPhiInstruction<Asm::Comment>(nodeStr(node) + " for pred " + nodeStr(phiPred));
     // tmp slot of predecessor phi
     auto srcOp =  std::make_unique<Asm::MemoryBase>(ssm.getTmpSlot(phiPred),
                                                     Asm::X86Reg(Asm::X86Reg::Name::bp,
@@ -797,7 +809,7 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
 
     // tmp register
     auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    bb->emplaceSwapPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg));
+    predBB->emplaceSwapPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg));
 
     // No from tmp register into our stack slot
     tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
@@ -805,7 +817,7 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
     auto destOp =  std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
                                                      Asm::X86Reg(Asm::X86Reg::Name::bp,
                                                                  Asm::X86Reg::Mode::R));
-    bb->emplaceSwapPhiInstruction<Asm::Mov>(std::move(tmpReg), std::move(destOp),
+    predBB->emplaceSwapPhiInstruction<Asm::Mov>(std::move(tmpReg), std::move(destOp),
                                              Asm::X86Reg::Mode::R,
                                              "phiPred read from tmp of " + nodeStr(phiPred));
   }

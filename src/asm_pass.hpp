@@ -8,7 +8,7 @@
 #include "firm_pass.hpp"
 
 //#define ORDER
-#define STACK_SLOTS
+//#define STACK_SLOTS
 
 
 #ifdef ORDER
@@ -51,9 +51,7 @@ public:
 #ifdef STACK_SLOTS
       ir_printf("New Stack slot for node %n %N: %d\n", node, node, pos->second);
 #endif
-      if (bb)
-        bb->addComment("New Stack Slot for node " + std::string(gdb_node_helper(node)) + ": "
-                        + std::to_string(pos->second));
+      (void)bb; // TODO: Remove bb param
 
       currentOffset += 8;
     }
@@ -240,7 +238,7 @@ public:
             Asm::X86Reg(Asm::X86Reg::Name::bp,
                         Asm::X86Reg::Mode::R)),
         Asm::X86Reg::Mode::R,
-        "store reg to stackslot");
+        "stack slot of " + nodeStr(node));
   }
 
 private:
