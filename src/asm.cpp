@@ -155,8 +155,8 @@ void Function::write(AsmWriter &writer) const {
 
   // write function content (BBs)
 
-  for (auto &bb : basicBlocks) {
-    bb.second.write(writer);
+  for (auto &bb: orderedBasicBlocks) {
+    bb->write(writer);
   }
 
   writeEpilog(writer);

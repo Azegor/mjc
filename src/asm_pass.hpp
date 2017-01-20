@@ -112,7 +112,6 @@ public:
 
 class AsmMethodPass : public FunctionPass<AsmMethodPass, Asm::Instruction> {
   StackSlotManager ssm;
-  std::vector<ir_node *> blockSchedule;
 
 public:
   AsmMethodPass(ir_graph *graph, Asm::Function *func) : FunctionPass(graph), func(func) {
@@ -123,8 +122,6 @@ public:
     std::queue<ir_node *> blockStack;
     blockStack.push(block);
 
-    std::vector<ir_node *> blockList;
-
     while (!blockStack.empty()) {
       ir_node *curBlock = blockStack.front();
       blockStack.pop();
@@ -132,9 +129,8 @@ public:
       if (irn_visited(curBlock))
         continue;
 
-      blockList.push_back(curBlock);
-      func->newBB(curBlock, "Block " + std::to_string(get_irn_node_nr(curBlock)));
-      //std::cout << "EnList " << get_irn_node_nr(curBlock) << " " << get_irn_opname(curBlock) << std::endl;
+      func->newBB(curBlock);
+      //std::cout << "Enlist " << nodeStr(curBlock) << std::endl;
 
       set_irn_visited(curBlock, get_irg_visited(this->graph));
 

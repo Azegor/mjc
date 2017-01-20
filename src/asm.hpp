@@ -720,17 +720,22 @@ class Function {
   int startBlockId = -1;
 
 public:
-  std::unordered_map<ir_node *, BasicBlock> basicBlocks;
+  std::vector<BasicBlock *> orderedBasicBlocks;
+  std::unordered_map<ir_node *, BasicBlock *> basicBlocks;
 
   Function(std::string name) : fnName(std::move(name)) {}
   Function(NamedLabel l) : fnName(std::move(l)) {}
   Function(Function &&) = default;
 
-  BasicBlock *newBB(ir_node *node, std::string comment = ""s) {
-    basicBlocks.emplace(std::piecewise_construct,
-                        std::make_tuple(node),
-                        std::make_tuple(get_irn_node_nr(node), std::move(comment)));
-    return &basicBlocks.at(node);
+  ~Function () {
+    for(auto bb : orderedBasicBlocks)
+      delete bb;
+  }
+
+  void newBB(ir_node *node, std::string comment = ""s) {
+    auto bb = new BasicBlock(get_irn_node_nr(node), comment);
+    basicBlocks.insert({node, bb});
+    orderedBasicBlocks.push_back(bb);
   }
 
   void setStartBlockId(int id) { startBlockId = id; }
@@ -739,7 +744,7 @@ public:
     assert(is_Block(node));
 
     if (basicBlocks.find(node) != basicBlocks.end()) {
-      return &basicBlocks.at(node);
+      return basicBlocks.at(node);
     }
     return nullptr;
   }

@@ -11,14 +11,14 @@ void AsmOptimizer::run() {
 }
 
 // ====================================================================
-void AsmSimpleOptimizer::optimizeBlock(Asm::BasicBlock &block) {
-  for (size_t i = 0; i < block.instructions.size(); i ++) {
-    auto instr = block.instructions.at(i).get();
+void AsmSimpleOptimizer::optimizeBlock(Asm::BasicBlock *block) {
+  for (size_t i = 0; i < block->instructions.size(); i ++) {
+    auto instr = block->instructions.at(i).get();
 
     if (auto add = dynamic_cast<Asm::Add*>(instr)) {
       if (auto c = dynamic_cast<Asm::Immediate*>(add->src.get())) {
         if (c->getValue() == 1) {
-          block.replaceInstruction<Asm::Inc>(i, std::move(add->dest));
+          block->replaceInstruction<Asm::Inc>(i, std::move(add->dest));
           continue;
         }
       }
@@ -27,7 +27,7 @@ void AsmSimpleOptimizer::optimizeBlock(Asm::BasicBlock &block) {
       // that the code to replace instructions actualy works. Also, it's what firm does.
       if (auto c = dynamic_cast<Asm::Immediate*>(mov->src.get())) {
         if (!dynamic_cast<Asm::MemoryBase*>(mov->dest.get()) && c->getValue() == 0) {
-          block.replaceInstruction<Asm::Xor>(i, std::move(mov->dest));
+          block->replaceInstruction<Asm::Xor>(i, std::move(mov->dest));
           continue;
         }
       }
