@@ -181,6 +181,11 @@ int Compiler::compile() {
     analyzeAstSemantic(ast.get(), parser.getLexer());
     FirmVisitor firmVisitor{options.printFirmGraph};
     ast->accept(&firmVisitor);
+
+    for (auto g : firmVisitor.getFirmGraphs()) {
+      lower_highlevel_graph(g);
+    }
+
     if (options.optimize) {
       Optimizer opt(firmVisitor.getFirmGraphs(), options.printFirmGraph, !options.noVerify);
       if (!opt.run()) {
@@ -205,8 +210,6 @@ bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs,
     remove_bads(g);
     remove_unreachable_code(g);
     remove_bads(g);
-
-    lower_highlevel_graph(g);
 
     if (printGraphs) {
       dump_ir_graph(g, "lowered");
