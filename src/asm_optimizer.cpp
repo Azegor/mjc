@@ -63,6 +63,11 @@ void AsmSimpleOptimizer::optimizeBlock(Asm::BasicBlock *block) {
           block->replaceInstruction<Asm::Inc>(i, std::move(add->dest));
           this->optimizations ++;
           continue;
+        } else if (c->getValue() == 0) {
+          block->instructions.erase(block->instructions.begin() + i);
+          this->optimizations ++;
+          i --;
+          continue;
         }
       }
     } else if (auto sub = dynamic_cast<Asm::Sub*>(instr)) {
