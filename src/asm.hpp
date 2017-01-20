@@ -78,20 +78,13 @@ struct Operand {
   virtual ~Operand() {}
   virtual void write(std::ostream &o) const = 0;
 
-  template <typename T> bool isOneOf() const { return dynamic_cast<const T *>(this) != nullptr; }
-  template <typename T1, typename T2, typename... Args> bool isOneOf() const {
-    return isOneOf<T1>() || isOneOf<T2, Args...>();
-  }
-
   friend std::ostream &operator<<(std::ostream &o, const Operand &op) {
     op.write(o);
     return o;
   }
 };
 
-struct WritableOperand : public Operand {};
-
-struct Register : public WritableOperand {
+struct Register : public Operand {
   X86Reg reg;
   Register(X86Reg r) : reg(r) {}
 
@@ -108,7 +101,7 @@ struct Register : public WritableOperand {
   }
 };
 
-struct MemoryOperand : public WritableOperand {};
+struct MemoryOperand : public Operand {};
 /// Memory is adressed the following way:
 /// segment-override:signed-offset(base,index,scale)
 /// variations: (be carefull wich are missing!)
@@ -308,7 +301,7 @@ const char *const Cqto = "cqto";
 }
 
 using OperandPtr = std::unique_ptr<Operand>;
-using WritableOperandPtr = std::unique_ptr<WritableOperand>;
+using OperandPtr = std::unique_ptr<Operand>;
 
 struct Call : public Instruction {
   std::string functionName;
@@ -392,8 +385,8 @@ struct Cqto : public Instruction {
 
 struct ArithInstr : public Instruction {
   const OperandPtr src;
-  WritableOperandPtr dest;
-  ArithInstr(OperandPtr s, WritableOperandPtr d, std::string c = ""s)
+  OperandPtr dest;
+  ArithInstr(OperandPtr s, OperandPtr d, std::string c = ""s)
       : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)) {}
 
   void writeInstr(std::ostream &o, const std::string &mnemonic) const {
@@ -402,21 +395,21 @@ struct ArithInstr : public Instruction {
 };
 
 struct Add : public ArithInstr {
-  Add(OperandPtr s, WritableOperandPtr d, std::string c = ""s)
+  Add(OperandPtr s, OperandPtr d, std::string c = ""s)
       : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
 
   void write(std::ostream &o) const override { writeInstr(o, mnemonic::Add); }
 };
 
 struct Sub : public ArithInstr {
-  Sub(OperandPtr s, WritableOperandPtr d, std::string c = ""s)
+  Sub(OperandPtr s, OperandPtr d, std::string c = ""s)
       : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
 
   void write(std::ostream &o) const override { writeInstr(o, mnemonic::Sub); }
 };
 
 struct Mul : public ArithInstr {
-  Mul(OperandPtr s, WritableOperandPtr d, std::string c = ""s)
+  Mul(OperandPtr s, OperandPtr d, std::string c = ""s)
       : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
 
   void write(std::ostream &o) const override { writeInstr(o, mnemonic::IMul); }
