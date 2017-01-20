@@ -348,9 +348,12 @@ void AsmMethodPass::visitCall(ir_node *node) {
     // Normal MiniJava functions
     addSize = nParams * 8;
 
-    bb->emplaceInstruction<Asm::Sub>(std::make_unique<Asm::Immediate>(addSize),
-                                     Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::sp,
-                                                                    Asm::X86Reg::Mode::R)));
+    if (addSize > 0) {
+      bb->emplaceInstruction<Asm::Sub>(std::make_unique<Asm::Immediate>(addSize),
+                                       Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::sp,
+                                                                      Asm::X86Reg::Mode::R)));
+    }
+
     bb->addComment(std::string(funcName) + " Parameters");
     int offset = 0;
     for (int i = 0; i < nParams; i ++) {
