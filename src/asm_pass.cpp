@@ -845,18 +845,20 @@ void AsmMethodPass::generateNormalPhi(ir_node *node) {
     /* Control flow, generate phi instructions in the predecessor basic blocks */
     // Write this phiPred into the stack slot of the phi node
     predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node) + " for pred " + nodeStr(phiPred));
-    auto srcOp = getNodeResAsInstOperand(phiPred);
 
-    auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    predBB->emplacePhiInstr<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
-                                  Asm::X86Reg::Mode::R, "phi tmp 1");
+    auto srcOp = getNodeResAsInstOperand(phiPred);
+    if (!dynamic_cast<Asm::Immediate*>(srcOp.get())) {
+      auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+      predBB->emplacePhiInstr<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
+                                    Asm::X86Reg::Mode::R, "phi tmp 1");
+      srcOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+    }
 
     // This is basically writeValue but the basic block is not the one of the passed node!
     auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, predBB),
                                                    Asm::X86Reg(Asm::X86Reg::Name::bp,
                                                                Asm::X86Reg::Mode::R));
-    tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    predBB->emplacePhiInstr<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
+    predBB->emplacePhiInstr<Asm::Mov>(std::move(srcOp), std::move(dstOp),
                                   Asm::X86Reg::Mode::R, "phi dst: " + nodeStr(blockPredNode));
   }
 
