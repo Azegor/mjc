@@ -31,6 +31,16 @@ void AsmJumpOptimizer::optimizeFunction(Asm::Function *func) {
         bb->jumpInstructions.pop_back();
         //std::cout << "Removing jump to " << lastJmp->targetLabel << std::endl;
         continue;
+      } else if (bb->jumpInstructions.size() >= 2) {
+        // A basic block should contain either one jmp instruction or 2 jne/je/etc.
+        // instructions. In the latter case, we can remove one of them if they just
+        // jump to the next block anyway.
+        auto secondToLast = &bb->jumpInstructions.at(bb->jumpInstructions.size() - 2);
+        auto secondToLastJmp = dynamic_cast<Asm::Jmp*>(secondToLast->get());
+        if (secondToLastJmp && secondToLastJmp->targetLabel == nextBB->getLabelStr()) {
+          bb->jumpInstructions.erase(bb->jumpInstructions.end() - 2);
+          continue;
+        }
       }
     }
   }
