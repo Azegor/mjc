@@ -396,23 +396,34 @@ void AsmMethodPass::visitCmp(ir_node *node) {
   if (bb == nullptr)
     return;
 
-  auto leftRegMode = Asm::X86Reg::getRegMode(get_Cmp_left(node));
-  auto rightRegMode = Asm::X86Reg::getRegMode(get_Cmp_right(node));
+  ir_node *leftNode = get_Cmp_left(node);
+  ir_node *rightNode = get_Cmp_right(node);
 
-  auto leftReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, leftRegMode));
-  auto rightReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, rightRegMode));
+  Asm::OperandPtr leftOp;
+  Asm::OperandPtr rightOp;
 
-  // Load left into bx, right into cx
-  auto leftOp = getNodeResAsInstOperand(get_Cmp_left(node));
-  bb->emplaceJump2<Asm::Mov>(std::move(leftOp), std::move(leftReg), leftRegMode);
+  // For simplicity, we ignore the case where the left node is a constant.
 
-  auto rightOp = getNodeResAsInstOperand(get_Cmp_right(node));
-  bb->emplaceJump2<Asm::Mov>(std::move(rightOp), std::move(rightReg), rightRegMode);
+  // Load stack slot into register
+  auto leftRegMode = Asm::X86Reg::getRegMode(leftNode);
+  auto op = getNodeResAsInstOperand(leftNode);
+  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, leftRegMode));
+  bb->emplaceJump2<Asm::Mov>(std::move(op), std::move(tmpReg), leftRegMode);
+  leftOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, leftRegMode));
 
-  leftReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, leftRegMode));
-  rightReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, rightRegMode));
+  if (is_Const(rightNode)) {
+    rightOp = getNodeResAsInstOperand(rightNode);
+  } else {
+    auto rightRegMode = Asm::X86Reg::getRegMode(rightNode);
+    // Load stack slot into register
+    auto op = getNodeResAsInstOperand(rightNode);
+    auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, rightRegMode));
+    bb->emplaceJump2<Asm::Mov>(std::move(op), std::move(tmpReg), rightRegMode);
+    rightOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, rightRegMode));
+  }
 
-  bb->emplaceJump2<Asm::Cmp>(std::move(leftReg), std::move(rightReg), nodeStr(node));
+  // left and right swapped!
+  bb->emplaceJump2<Asm::Cmp>(std::move(rightOp), std::move(leftOp), nodeStr(node));
 }
 
 void AsmMethodPass::visitCond(ir_node *node) {
@@ -630,14 +641,14 @@ void AsmMethodPass::visitPhi(ir_node *node) {
                      get_nodes_block(get_Block_cfgpred(get_nodes_block(node), 1));
 
   if (isSwap) {
-    std::cout << "SwapPhi: " << nodeStr(node) << std::endl;
+    //std::cout << "SwapPhi: " << nodeStr(node) << std::endl;
     generateSwapPhi(node);
   } else {
     if (needsLabels) {
-      std::cout << "NeedsLabels: " << nodeStr(node) << std::endl;
+      //std::cout << "NeedsLabels: " << nodeStr(node) << std::endl;
       generateBoolPhi(node);
     } else {
-      std::cout << "Normal: " << nodeStr(node) << std::endl;
+      //std::cout << "Normal: " << nodeStr(node) << std::endl;
       generateNormalPhi(node);
     }
   }
