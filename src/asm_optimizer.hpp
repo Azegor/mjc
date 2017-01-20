@@ -1,18 +1,19 @@
 #include "asm.hpp"
 
-class AsmOptimizer {
+class AsmBlockOptimizer {
   Asm::Program *program;
 public:
-  AsmOptimizer(Asm::Program *program) : program(program) {}
+  AsmBlockOptimizer(Asm::Program *program) : program(program) {}
 
   void run();
 
   virtual void optimizeBlock(Asm::BasicBlock *block){ (void) block;}
 };
 
+// ====================================================================
 // Exchanges single slower instructions for single faster ones
-class AsmSimpleOptimizer : public AsmOptimizer {
+class AsmSimpleOptimizer : public AsmBlockOptimizer {
 public:
-  AsmSimpleOptimizer(Asm::Program *program) : AsmOptimizer(program) {}
+  AsmSimpleOptimizer(Asm::Program *program) : AsmBlockOptimizer(program) {}
   void optimizeBlock(Asm::BasicBlock *block) override;
 };

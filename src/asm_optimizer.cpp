@@ -2,7 +2,7 @@
 
 #include "asm_optimizer.hpp"
 
-void AsmOptimizer::run() {
+void AsmBlockOptimizer::run() {
   for (auto &f : program->functions) {
     for (auto &b : f.basicBlocks) {
       this->optimizeBlock(b.second);
