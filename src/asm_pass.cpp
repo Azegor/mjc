@@ -480,8 +480,6 @@ void AsmMethodPass::visitEnd(ir_node *node) {
 
   if (bb == nullptr)
     return; // Unreachable
-
-  bb->emplaceJump(func->getEpilogLabel(), ir_relation_true);
 }
 
 

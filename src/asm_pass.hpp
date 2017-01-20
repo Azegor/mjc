@@ -140,14 +140,26 @@ public:
       }
     }
 
+    // Reorder the blocks a bit. The start block is always the first one in the
+    // topologic walk, but the end block isn't always the last so just move it there.
+    for (size_t i = 0; i < func->orderedBasicBlocks.size(); i ++) {
+      auto bb = func->orderedBasicBlocks.at(i);
+      if (get_irg_end_block (graph) == bb->getNode()) {
+        func->orderedBasicBlocks.erase(func->orderedBasicBlocks.begin() + i);
+        func->orderedBasicBlocks.push_back(bb);
+        break;
+      }
+    }
+
   }
 
   void before();
   void after() {
-    //std::cout << "### finished function " << get_entity_ld_name(get_irg_entity(graph)) << std::endl;
-    //std::cout << "AR Slots: " << func->ARSlots << std::endl;
-    //std::cout << "AR size: " << ssm.getLocVarUsedSize() << std::endl;
     func->setARSize(ssm.getLocVarUsedSize());
+    // Sanity check
+    assert(func->orderedBasicBlocks[0]->getNode() == get_irg_start_block(graph));
+    // We can't assert the same thing for the end block since we have to allow
+    // dead code.
   }
 
   void defaultVisitOp(ir_node *n) {

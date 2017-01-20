@@ -122,7 +122,6 @@ void Function::writeProlog(AsmWriter &writer) const {
   if (ARsize > 0)
     writer.writeString("subq $" + std::to_string(ARsize) + ", %rsp");
   writer.writeLabel('.' + fnName.name + "_body");
-  writer.writeString("jmp .L" + std::to_string(startBlockId));
 }
 void Function::writeEpilog(AsmWriter &writer) const {
   writer.writeLabel('.' + this->getEpilogLabel());

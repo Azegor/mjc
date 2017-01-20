@@ -623,6 +623,7 @@ private:
 class BasicBlock {
   std::string comment;
   const LocalLabel label;
+  ir_node *node;
   std::vector<InstrPtr> jumpInstructions;
   std::vector<InstrPtr> startPhiInstructions;
   std::vector<InstrPtr> swapPhiInstructions;
@@ -631,7 +632,8 @@ class BasicBlock {
 public:
   std::vector<InstrPtr> instructions;
   //BasicBlock(std::string comment = ""s) : comment(std::move(comment)), label() {}
-  BasicBlock(int num, std::string comment = ""s) : comment(std::move(comment)), label(num) {}
+  BasicBlock(ir_node *node, std::string comment = ""s)
+    : comment(std::move(comment)), label(get_irn_node_nr(node)), node(node) {}
   BasicBlock(BasicBlock &&bb) = default;
 
   void addInstruction(InstrPtr instr) { instructions.emplace_back(std::move(instr)); }
@@ -712,6 +714,7 @@ public:
   }
 
   const std::string &getComment() const { return comment; }
+  ir_node *getNode() { return node; }
 };
 
 class Function {
@@ -733,7 +736,7 @@ public:
   }
 
   void newBB(ir_node *node, std::string comment = ""s) {
-    auto bb = new BasicBlock(get_irn_node_nr(node), comment);
+    auto bb = new BasicBlock(node, comment);
     basicBlocks.insert({node, bb});
     orderedBasicBlocks.push_back(bb);
   }
