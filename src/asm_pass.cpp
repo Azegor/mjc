@@ -350,16 +350,18 @@ void AsmMethodPass::visitCall(ir_node *node) {
       // TODO: This first mov is unnecessary for constants and normal registers
       auto paramOp = getNodeResAsInstOperand(get_Call_param(node, i));
 
-      auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx,
-                                                   Asm::X86Reg::Mode::R));
-      bb->emplaceInstruction<Asm::Mov>(std::move(paramOp), std::move(tmpReg));
+      if (!dynamic_cast<Asm::Immediate*>(paramOp.get())) {
+        auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx,
+                                                     Asm::X86Reg::Mode::R));
+        bb->emplaceInstruction<Asm::Mov>(std::move(paramOp), std::move(tmpReg));
+        paramOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx,
+                                                 Asm::X86Reg::Mode::R));
+      }
 
       auto memOp = std::make_unique<Asm::MemoryBase>(offset,
                                                      Asm::X86Reg(Asm::X86Reg::Name::sp,
                                                                  Asm::X86Reg::Mode::R));
-      tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx,
-                                              Asm::X86Reg::Mode::R));
-      bb->emplaceInstruction<Asm::Mov>(std::move(tmpReg), std::move(memOp));
+      bb->emplaceInstruction<Asm::Mov>(std::move(paramOp), std::move(memOp));
 
       offset += 8;
     }
