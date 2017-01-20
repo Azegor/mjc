@@ -411,16 +411,7 @@ void AsmMethodPass::visitCmp(ir_node *node) {
   bb->emplaceJump2<Asm::Mov>(std::move(op), std::move(tmpReg), leftRegMode);
   leftOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, leftRegMode));
 
-  if (is_Const(rightNode)) {
-    rightOp = getNodeResAsInstOperand(rightNode);
-  } else {
-    auto rightRegMode = Asm::X86Reg::getRegMode(rightNode);
-    // Load stack slot into register
-    auto op = getNodeResAsInstOperand(rightNode);
-    auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, rightRegMode));
-    bb->emplaceJump2<Asm::Mov>(std::move(op), std::move(tmpReg), rightRegMode);
-    rightOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, rightRegMode));
-  }
+  rightOp = getNodeResAsInstOperand(rightNode);
 
   // left and right swapped!
   bb->emplaceJump2<Asm::Cmp>(std::move(rightOp), std::move(leftOp), nodeStr(node));
