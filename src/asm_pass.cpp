@@ -157,13 +157,11 @@ void AsmMethodPass::visitAdd(ir_node *node) {
   Asm::X86Reg rightReg(Asm::X86Reg::Name::cx, regMode);
   auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
   bb->addInstruction(std::move(rightRegInst));
-  auto leftOp = getNodeResAsInstOperand(leftNode);
-  Asm::X86Reg leftReg(Asm::X86Reg::Name::bx, regMode);
-  auto leftRegInst = loadToReg(std::move(leftOp), leftReg);
-  bb->addInstruction(std::move(leftRegInst));
 
-  bb->emplaceInstruction<Asm::Add>(Asm::Register::get(leftReg), Asm::Register::get(rightReg),
-                                   "Node " + std::to_string(get_irn_node_nr(node)));
+  auto leftOp = getNodeResAsInstOperand(leftNode);
+
+  bb->emplaceInstruction<Asm::Add>(std::move(leftOp), Asm::Register::get(rightReg),
+                                   nodeStr(node));
   bb->addInstruction(writeResToStackSlot(rightReg, node));
 }
 
@@ -176,13 +174,13 @@ void AsmMethodPass::visitSub(ir_node *node) {
   Asm::X86Reg leftReg(Asm::X86Reg::Name::bx, regMode);
   auto leftRegInst = loadToReg(std::move(leftOp), leftReg);
   bb->addInstruction(std::move(leftRegInst));
+
+  // Here we should have the Constant on the right side
+  // (and none on the left ever, because of constant propagation)
   auto rightOp = getNodeResAsInstOperand(get_Sub_right(node));
-  Asm::X86Reg rightReg(Asm::X86Reg::Name::cx, regMode);
-  auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
-  bb->addInstruction(std::move(rightRegInst));
 
   // Left and right swapped!
-  bb->emplaceInstruction<Asm::Sub>(Asm::Register::get(rightReg), Asm::Register::get(leftReg),
+  bb->emplaceInstruction<Asm::Sub>(std::move(rightOp), Asm::Register::get(leftReg),
                                    "Node " + std::to_string(get_irn_node_nr(node)));
   bb->addInstruction(writeResToStackSlot(leftReg, node));
 }
