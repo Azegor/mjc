@@ -292,18 +292,16 @@ void AsmMethodPass::visitMul(ir_node *node) {
   PRINT_ORDER;
   auto bb = getBB(node);
 
-  // TODO cleanup and avoid code duplication in other visit Methods
   auto regMode = Asm::X86Reg::getRegMode(node);
+
   auto leftOp = getNodeResAsInstOperand(get_Mul_left(node));
-  Asm::X86Reg leftReg(Asm::X86Reg::Name::bx, regMode);
-  auto leftRegInst = loadToReg(std::move(leftOp), leftReg);
-  bb->addInstruction(std::move(leftRegInst));
+
   auto rightOp = getNodeResAsInstOperand(get_Mul_right(node));
   Asm::X86Reg rightReg(Asm::X86Reg::Name::cx, regMode);
   auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
   bb->addInstruction(std::move(rightRegInst));
-  bb->emplaceInstruction<Asm::Mul>(Asm::Register::get(leftReg), Asm::Register::get(rightReg),
-                                   "Node " + std::to_string(get_irn_node_nr(node)));
+  bb->emplaceInstruction<Asm::Mul>(std::move(leftOp), Asm::Register::get(rightReg),
+                                   nodeStr(node));
   bb->addInstruction(writeResToStackSlot(rightReg, node));
 }
 
