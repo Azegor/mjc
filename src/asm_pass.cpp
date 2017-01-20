@@ -371,6 +371,12 @@ void AsmMethodPass::visitCall(ir_node *node) {
   bb->emplaceInstruction<Asm::Call>(std::string(funcName));
 
 
+  if (addSize > 0) {
+    bb->emplaceInstruction<Asm::Add>(std::make_unique<Asm::Immediate>(addSize),
+                                     Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::sp,
+                                                                    Asm::X86Reg::Mode::R)));
+  }
+
   // Write result of function call into stack slot of call->proj->proj node
   if (get_method_n_ress(callType) > 0) {
     assert(get_method_n_ress(callType) == 1);
@@ -386,11 +392,7 @@ void AsmMethodPass::visitCall(ir_node *node) {
     }
   }
 
-  if (addSize > 0) {
-    bb->emplaceInstruction<Asm::Add>(std::make_unique<Asm::Immediate>(addSize),
-                                     Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::sp,
-                                                                    Asm::X86Reg::Mode::R)));
-  }
+
 }
 
 void AsmMethodPass::visitCmp(ir_node *node) {
@@ -519,7 +521,7 @@ void AsmMethodPass::visitLoad(ir_node *node) {
   // Load nodes have 2 successors, one Proj M and another one, which we want.
   succ = getNthSucc(node, 0);
   if (get_irn_mode(succ) == mode_M)
-    succ =getNthSucc(node, 1);
+    succ = getNthSucc(node, 1);
 
   if (succ == nullptr) {
     std::cout << nodeStr(node) << " has no successor" << std::endl;
@@ -528,8 +530,6 @@ void AsmMethodPass::visitLoad(ir_node *node) {
   }
 
   assert(get_irn_mode(succ) != mode_M); // ! Load nodes have 2 successor Proj nodes
-  // TODO: Do we need this on non-pointer nodes?
-  assert(get_irn_mode(pred) == mode_P);
 
   if (!optimize)
     bb->addComment("Load from " + nodeStr(pred));
@@ -540,8 +540,6 @@ void AsmMethodPass::visitLoad(ir_node *node) {
    */
   auto predRegMode = Asm::X86Reg::getRegMode(pred);
   auto succRegMode = Asm::X86Reg::getRegMode(succ);
-  //std::cout << "Pred Reg Mode: " << predRegMode << std::endl;
-  //std::cout << "Succ Reg Mode  : " << succRegMode << std::endl;
 
   // 1)
   auto predOp = getNodeResAsInstOperand(pred);
@@ -584,7 +582,7 @@ void AsmMethodPass::visitStore(ir_node *node) {
   auto destRegMode = Asm::X86Reg::getRegMode(dest);
 
   auto destOp = getNodeResAsInstOperand(dest);
-  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::dx, destRegMode));
+  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, destRegMode));
   bb->emplaceInstruction<Asm::Mov>(std::move(destOp), std::move(tmpReg), destRegMode, "1)");
   // r15 now contains the address to write to!
 
@@ -599,8 +597,8 @@ void AsmMethodPass::visitStore(ir_node *node) {
     tmpOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, sourceRegMode));
   }
 
-  // Mov tmpOp into (%dx)
-  auto r15Op = std::make_unique<Asm::MemoryBase>(0, Asm::X86Reg(Asm::X86Reg::Name::dx,
+  // Mov tmpOp into (%bx)
+  auto r15Op = std::make_unique<Asm::MemoryBase>(0, Asm::X86Reg(Asm::X86Reg::Name::bx,
                                                  Asm::X86Reg::Mode::R)); // Pointer, force R
   bb->emplaceInstruction<Asm::Mov>(std::move(tmpOp), std::move(r15Op), sourceRegMode, "3)");
 
