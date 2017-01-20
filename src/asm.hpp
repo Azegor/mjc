@@ -556,17 +556,20 @@ private:
   }
 };
 
+std::string getBlockLabel(ir_node *node);
+
 class BasicBlock {
   std::string comment;
   const LocalLabel label;
   ir_node *node;
-  std::vector<InstrPtr> jumpInstructions;
   std::vector<InstrPtr> startPhiInstructions;
   std::vector<InstrPtr> swapPhiInstructions;
   std::vector<InstrPtr> phiInstructions;
 
 public:
   std::vector<InstrPtr> instructions;
+  std::vector<InstrPtr> jumpInstructions;
+
   //BasicBlock(std::string comment = ""s) : comment(std::move(comment)), label() {}
   BasicBlock(ir_node *node, std::string comment = ""s)
     : comment(std::move(comment)), label(get_irn_node_nr(node)), node(node) {}
@@ -651,6 +654,7 @@ public:
 
   const std::string &getComment() const { return comment; }
   ir_node *getNode() { return node; }
+  std::string getLabelStr() { return getBlockLabel(this->node); }
 };
 
 class Function {

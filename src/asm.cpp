@@ -110,6 +110,12 @@ std::ostream &operator<<(std::ostream &o, const Asm::X86Reg::Mode mode) {
   return o;
 }
 
+std::string getBlockLabel(ir_node *node) {
+  assert(is_Block(node));
+
+  return "L" + std::to_string(get_irn_node_nr(node));
+}
+
 
 void AsmWriter::writeTextSection() { writeText(".text"); }
 

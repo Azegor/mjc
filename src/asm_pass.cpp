@@ -73,12 +73,6 @@ std::string nodeStr(ir_node *node) {
   return std::string(gdb_node_helper(node)) + " " + std::to_string(get_irn_node_nr(node));
 }
 
-std::string getBlockLabel(ir_node *node) {
-  assert(is_Block(node));
-
-  return "L" + std::to_string(get_irn_node_nr(node));
-}
-
 void AsmPass::before() {
   // writer.writeTextSection();
 }
@@ -453,11 +447,11 @@ void AsmMethodPass::visitCond(ir_node *node) {
     // Successor block is the same for both true and false case. This is a boolean comparison.
     // Just jump to that block, and the Phi node (if it exists) will do the je/jne instructions
 
-    bb->emplaceJump(getBlockLabel(trueBlock), ir_relation_true);
+    bb->emplaceJump(Asm::getBlockLabel(trueBlock), ir_relation_true);
   } else {
     // Control flow comparison, jump to the appropriate basic block
-    bb->emplaceJump(getBlockLabel(trueBlock), relation);
-    bb->emplaceJump(getBlockLabel(falseBlock), getInverseRelation(relation));
+    bb->emplaceJump(Asm::getBlockLabel(trueBlock), relation);
+    bb->emplaceJump(Asm::getBlockLabel(falseBlock), getInverseRelation(relation));
   }
 }
 
@@ -471,7 +465,7 @@ void AsmMethodPass::visitJmp(ir_node *node) {
   ir_node *jumpTarget = getNthSucc(node, 0);
   assert(is_Block(jumpTarget));
 
-  bb->emplaceJump(getBlockLabel(jumpTarget), ir_relation_true);
+  bb->emplaceJump(Asm::getBlockLabel(jumpTarget), ir_relation_true);
 }
 
 void AsmMethodPass::visitEnd(ir_node *node) {
@@ -505,7 +499,7 @@ void AsmMethodPass::visitReturn(ir_node *node) {
 
   // Jump to end block
   // return nodes should have exactly one successor, the end block.
-  bb->emplaceJump(getBlockLabel(succ), ir_relation_true);
+  bb->emplaceJump(Asm::getBlockLabel(succ), ir_relation_true);
 }
 
 void AsmMethodPass::visitLoad(ir_node *node) {

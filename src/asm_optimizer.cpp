@@ -10,6 +10,32 @@ void AsmBlockOptimizer::run() {
   }
 }
 
+void AsmFunctionOptimizer::run() {
+  for (auto &f : program->functions) {
+    this->optimizeFunction(&f);
+  }
+}
+
+
+// ====================================================================
+// Simply removes redundant jumps
+void AsmJumpOptimizer::optimizeFunction(Asm::Function *func) {
+  for (size_t i = 0; i < func->orderedBasicBlocks.size() - 1; i ++) {
+    auto bb = func->orderedBasicBlocks.at(i);
+    auto nextBB = func->orderedBasicBlocks.at(i + 1);
+    if (bb->jumpInstructions.size() > 0) {
+      auto lastJmp = dynamic_cast<Asm::Jmp*>(bb->jumpInstructions.back().get());
+      //std::cout << lastJmp->targetLabel <<  "/" << nextBB->getLabelStr() << std::endl;
+      if (lastJmp->targetLabel == nextBB->getLabelStr()) {
+        // Just remove jump
+        bb->jumpInstructions.pop_back();
+        //std::cout << "Removing jump to " << lastJmp->targetLabel << std::endl;
+        continue;
+      }
+    }
+  }
+}
+
 // ====================================================================
 void AsmSimpleOptimizer::optimizeBlock(Asm::BasicBlock *block) {
   for (size_t i = 0; i < block->instructions.size(); i ++) {

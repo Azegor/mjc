@@ -244,8 +244,11 @@ bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs,
 
     // Run optimizations on ASM code
     if (options.optimize) {
-      AsmSimpleOptimizer opt1(program);
+      AsmJumpOptimizer opt1(program);
       opt1.run();
+
+      AsmSimpleOptimizer opt2(program);
+      opt2.run();
     }
 
     // Actually write ASM output
