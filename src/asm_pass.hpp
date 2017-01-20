@@ -20,10 +20,11 @@
 std::string nodeStr(ir_node *node);
 
 class AsmPass : public ProgramPass<AsmPass> {
+  bool optimize;
 
 public:
-  AsmPass(std::vector<ir_graph *> &graphs)
-      : ProgramPass(graphs) {}
+  AsmPass(std::vector<ir_graph *> &graphs, bool optimize)
+      : ProgramPass(graphs), optimize(optimize) {}
 
   void before();
   void visitMethod(ir_graph *graph);
@@ -112,12 +113,15 @@ public:
 
 class AsmMethodPass : public FunctionPass<AsmMethodPass, Asm::Instruction> {
   StackSlotManager ssm;
+  bool optimize;
 
 public:
-  AsmMethodPass(ir_graph *graph, Asm::Function *func) : FunctionPass(graph), func(func) {
+  AsmMethodPass(ir_graph *graph, Asm::Function *func, bool optimize)
+                        : FunctionPass(graph), func(func) {
     edges_activate(this->graph);
     inc_irg_visited(this->graph);
     ir_node *block = get_irg_start_block(this->graph);
+    this->optimize = optimize;
 
     std::queue<ir_node *> blockStack;
     blockStack.push(block);

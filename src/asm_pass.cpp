@@ -81,7 +81,7 @@ void AsmPass::visitMethod(ir_graph *graph) {
   const char *functionName = get_entity_ld_name(get_irg_entity(graph));
   Asm::Function func(functionName);
   func.setStartBlockId(get_irn_node_nr(get_irg_start_block(graph)));
-  AsmMethodPass methodPass(graph, &func);
+  AsmMethodPass methodPass(graph, &func, this->optimize);
   methodPass.run();
   asmProgram.addFunction(std::move(func));
 }
@@ -344,7 +344,8 @@ void AsmMethodPass::visitCall(ir_node *node) {
                                                                       Asm::X86Reg::Mode::R)));
     }
 
-    bb->addComment(std::string(funcName) + " Parameters");
+    if (!optimize)
+      bb->addComment(std::string(funcName) + " Parameters");
     int offset = 0;
     for (int i = 0; i < nParams; i ++) {
       // TODO: This first mov is unnecessary for constants and normal registers
@@ -530,7 +531,8 @@ void AsmMethodPass::visitLoad(ir_node *node) {
   // TODO: Do we need this on non-pointer nodes?
   assert(get_irn_mode(pred) == mode_P);
 
-  bb->addComment("Load from " + nodeStr(pred));
+  if (!optimize)
+    bb->addComment("Load from " + nodeStr(pred));
   /*
    * 1) Load contents of pred slot into temporary register. This now contains the address to read from
    * 2) Write the value at that address into a second temporary register
@@ -543,16 +545,16 @@ void AsmMethodPass::visitLoad(ir_node *node) {
 
   // 1)
   auto predOp = getNodeResAsInstOperand(pred);
-  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, predRegMode));
+  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, predRegMode));
   bb->emplaceInstruction<Asm::Mov>(std::move(predOp), std::move(tmpReg), predRegMode, "1)");
 
   // 2)
-  auto cxOp = std::make_unique<Asm::MemoryBase>(0, Asm::X86Reg(Asm::X86Reg::Name::cx, predRegMode));
-  auto dxOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::dx, succRegMode));
-  bb->emplaceInstruction<Asm::Mov>(std::move(cxOp), std::move(dxOp), succRegMode, "2)");
+  auto bxOp = std::make_unique<Asm::MemoryBase>(0, Asm::X86Reg(Asm::X86Reg::Name::bx, predRegMode));
+  auto cxOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, succRegMode));
+  bb->emplaceInstruction<Asm::Mov>(std::move(bxOp), std::move(cxOp), succRegMode, "2)");
 
   // 3)
-  auto val = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::dx, Asm::X86Reg::Mode::R));
+  auto val = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::R));
   writeValue(std::move(val), succ, "3)");
 }
 
@@ -566,7 +568,8 @@ void AsmMethodPass::visitStore(ir_node *node) {
   ir_node *source = get_Store_value(node);
   ir_node *dest = get_Store_ptr(node);
 
-  bb->addComment(nodeStr(node) + ": " + nodeStr(source) + " into " + nodeStr(dest));
+  if (!optimize)
+    bb->addComment(nodeStr(node) + ": " + nodeStr(source) + " into " + nodeStr(dest));
 
   // dest is a pointer, so we need to save into the address of that pointer,
   // not into the register of that node.
@@ -689,7 +692,6 @@ void AsmMethodPass::generateBoolPhi(ir_node *node) {
   bb->emplaceStartPhiInstruction<Asm::Jmp>(falseLabel,
                                            getInverseRelation(relation));
   // The cmp instruction was already written by visitCmp!
-  //bb->addComment("Fallthrough to true case");
   {
     // Write this phiPred into the stack slot of the phi node
     auto srcOp = getNodeResAsInstOperand(truePred);
@@ -729,7 +731,6 @@ void AsmMethodPass::generateBoolPhi(ir_node *node) {
                                                                Asm::X86Reg::Mode::R));
     bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(dstOp),
                                   Asm::X86Reg::Mode::R, "phi dst");
-    //bb->addComment("Fallthrough from fall case to phi Label");
   }
 
   // end phi
@@ -781,7 +782,8 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
     //auto predBB = getBB(pget_nodes_block(get_Block_cfgpred(get_nodes_block(node), i))
 
     assert(getBB(phiPred) == getBB(node));
-    predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node) + " for pred " + nodeStr(phiPred));
+    if (!optimize)
+      predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node) + " for pred " + nodeStr(phiPred));
     // tmp slot of predecessor phi
     auto srcOp =  std::make_unique<Asm::MemoryBase>(ssm.getTmpSlot(phiPred),
                                                     Asm::X86Reg(Asm::X86Reg::Name::bp,
@@ -811,7 +813,8 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
     assert(predBB != bb);
     /* Control flow, generate phi instructions in the predecessor basic blocks */
     // Write this phiPred into the stack slot of the phi node
-    predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node) + " for pred " + nodeStr(otherPred));
+    if (!optimize)
+      predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node) + " for pred " + nodeStr(otherPred));
     auto srcOp = getNodeResAsInstOperand(otherPred);
 
     auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
@@ -846,7 +849,8 @@ void AsmMethodPass::generateNormalPhi(ir_node *node) {
     assert(predBB != bb);
     /* Control flow, generate phi instructions in the predecessor basic blocks */
     // Write this phiPred into the stack slot of the phi node
-    predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node) + " for pred " + nodeStr(phiPred));
+    if (!optimize)
+      predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node) + " for pred " + nodeStr(phiPred));
 
     auto srcOp = getNodeResAsInstOperand(phiPred);
     if (!dynamic_cast<Asm::Immediate*>(srcOp.get())) {
@@ -871,7 +875,8 @@ void AsmMethodPass::visitMinus(ir_node *node) {
   ir_node *sourceNode = get_Minus_op(node);
   auto bb = getBB(node);
   auto regMode = Asm::X86Reg::getRegMode(node);
-  bb->addComment("Negate " + nodeStr(sourceNode) + " into " + nodeStr(node));
+  if (!optimize)
+    bb->addComment("Negate " + nodeStr(sourceNode) + " into " + nodeStr(node));
   auto sourceOp = getNodeResAsInstOperand(sourceNode);
 
   auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, regMode));
