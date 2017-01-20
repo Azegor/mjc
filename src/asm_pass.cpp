@@ -692,16 +692,18 @@ void AsmMethodPass::generateBoolPhi(ir_node *node) {
     // Write this phiPred into the stack slot of the phi node
     auto srcOp = getNodeResAsInstOperand(truePred);
 
-    auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
-                                  Asm::X86Reg::Mode::R, "phi tmp 3");
+    if (!dynamic_cast<Asm::Immediate*>(srcOp.get())) {
+      auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+      bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
+                                    Asm::X86Reg::Mode::R, "phi tmp 3");
+      srcOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+    }
 
     // This is basically writeValue but the basic block is not the one of the passed node!
     auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
                                                    Asm::X86Reg(Asm::X86Reg::Name::bp,
                                                                Asm::X86Reg::Mode::R));
-    tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
+    bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(dstOp),
                                   Asm::X86Reg::Mode::R, "phi dst");
     // end of true case, jump to phi label
     bb->emplaceStartPhiInstruction<Asm::Jmp>(phiLabel, ir_relation_true);
@@ -712,16 +714,18 @@ void AsmMethodPass::generateBoolPhi(ir_node *node) {
     bb->emplaceStartPhiInstruction<Asm::Label>(falseLabel);
     auto srcOp = getNodeResAsInstOperand(falsePred);
 
-    auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
-                                  Asm::X86Reg::Mode::R, "phi tmp 4");
+    if (!dynamic_cast<Asm::Immediate*>(srcOp.get())) {
+      auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+      bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
+                                    Asm::X86Reg::Mode::R, "phi tmp 4");
+      srcOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+    }
 
     // This is basically writeValue but the basic block is not the one of the passed node!
     auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
                                                    Asm::X86Reg(Asm::X86Reg::Name::bp,
                                                                Asm::X86Reg::Mode::R));
-    tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
+    bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(dstOp),
                                   Asm::X86Reg::Mode::R, "phi dst");
     //bb->addComment("Fallthrough from fall case to phi Label");
   }
