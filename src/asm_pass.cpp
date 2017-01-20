@@ -571,7 +571,7 @@ void AsmMethodPass::visitStore(ir_node *node) {
   ir_node *source = get_Store_value(node);
   ir_node *dest = get_Store_ptr(node);
 
-  bb->addComment("Store(" + nodeStr(node) + "): " + nodeStr(source) + " into " + nodeStr(dest));
+  bb->addComment(nodeStr(node) + ": " + nodeStr(source) + " into " + nodeStr(dest));
 
   // dest is a pointer, so we need to save into the address of that pointer,
   // not into the register of that node.
@@ -590,16 +590,21 @@ void AsmMethodPass::visitStore(ir_node *node) {
   bb->emplaceInstruction<Asm::Mov>(std::move(destOp), std::move(tmpReg), destRegMode, "1)");
   // r15 now contains the address to write to!
 
-  // Load value to write to dest into tmp register
-  auto r14Op = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, destRegMode));
-  auto sourceOp = getNodeResAsInstOperand(source);
-  bb->emplaceInstruction<Asm::Mov>(std::move(sourceOp), std::move(r14Op), destRegMode, "2)");
+  Asm::OperandPtr tmpOp;
+  if (is_Const(source)) {
+    tmpOp = std::make_unique<Asm::Immediate>(get_Const_tarval(source));
+  } else {
+    // Load value to write to dest into tmp register
+    auto r14Op = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, destRegMode));
+    auto sourceOp = getNodeResAsInstOperand(source);
+    bb->emplaceInstruction<Asm::Mov>(std::move(sourceOp), std::move(r14Op), destRegMode, "2)");
+    tmpOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, sourceRegMode));
+  }
 
-  // Mov %cx into (%dx)
-   r14Op = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, sourceRegMode));
+  // Mov tmpOp into (%dx)
   auto r15Op = std::make_unique<Asm::MemoryBase>(0, Asm::X86Reg(Asm::X86Reg::Name::dx,
                                                  Asm::X86Reg::Mode::R)); // Pointer, force R
-  bb->emplaceInstruction<Asm::Mov>(std::move(r14Op), std::move(r15Op), sourceRegMode, "3)");
+  bb->emplaceInstruction<Asm::Mov>(std::move(tmpOp), std::move(r15Op), sourceRegMode, "3)");
 
 }
 
