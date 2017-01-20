@@ -106,23 +106,37 @@ void AsmSimpleOptimizer::printOptimizations() {
 void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
   for (size_t i = 0; i < block->instructions.size() - 1; i ++) {
     auto instr = block->instructions.at(i).get();
+    auto mov1 = dynamic_cast<Asm::Mov*>(instr);
+    auto mov2 = dynamic_cast<Asm::Mov*>(block->instructions.at(i + 1).get());
 
-    if (auto mov1 = dynamic_cast<Asm::Mov*>(instr)) {
+    if (mov1 && mov2) {
       auto mov1Src = dynamic_cast<Asm::Register*>(mov1->src.get());
       auto mov1Dest = dynamic_cast<Asm::MemoryBase*>(mov1->dest.get());
       if (mov1Src && mov1Dest) {
-        auto nextInstr = block->instructions.at(i + 1).get();
-        if (auto mov2 = dynamic_cast<Asm::Mov*>(nextInstr)) {
-          auto mov2Src = dynamic_cast<Asm::MemoryBase*>(mov2->src.get());
-          auto mov2Dest = dynamic_cast<Asm::Register*>(mov2->dest.get());
-          if (mov2Src && mov2Dest &&
-              mov1Src->reg.name == mov2Dest->reg.name && // TODO: Check dest->base as well?
-              mov1Dest->offset == mov2Src->offset) {
-            // Remove the second mov instruction
+        auto mov2Src = dynamic_cast<Asm::MemoryBase*>(mov2->src.get());
+        auto mov2Dest = dynamic_cast<Asm::Register*>(mov2->dest.get());
+        if (mov2Src && mov2Dest &&
+            mov1Dest->offset == mov2Src->offset) {
+
+          if (mov1Src->reg.name == mov2Dest->reg.name) {
+            // mov reg, slot
+            // mov slot, reg
+            // -> Just remove the second instruction!
             block->instructions.erase(block->instructions.begin() + i + 1);
             this->optimizations ++;
             continue;
           }
+
+          // mov reg1, slot
+          // mov slot, reg2
+          // -> replace second mov with 'mov reg1, reg2'
+          block->replaceInstruction<Asm::Mov>(i + 1,
+                                              Asm::Register::get(mov1Src->reg,
+                                                                 mov2Dest->reg.mode),
+                                              std::move(mov2->dest),
+                                              mov2->movMode);
+          this->optimizations ++;
+          continue;
         }
       }
     }
