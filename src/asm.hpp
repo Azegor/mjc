@@ -233,9 +233,7 @@ struct Instruction {
   Instruction(std::string comment) : comment(std::move(comment)) {}
   virtual ~Instruction() {}
 
-  virtual Operand *getDestOperand() const = 0;
   virtual void write(std::ostream &o) const = 0;
-  virtual bool isValid() const = 0; // call within assert
 
   void writeInstr(std::ostream &o, const std::string &mnemonic, const Operand *o1,
                   const Operand *o2) const {
@@ -243,7 +241,6 @@ struct Instruction {
   }
 
   friend std::ostream &operator<<(std::ostream &o, const Instruction &i) {
-    assert(i.isValid());
     i.write(o);
     if (i.comment.length()) {
       o << " /* " << i.comment << " */";
@@ -273,11 +270,6 @@ struct Label : Instruction {
   void write(std::ostream &o) const override {
     o << '.' << name << ':';
   }
-  Operand *getDestOperand() const override {
-    assert(0);
-    return nullptr;
-  }
-  bool isValid() const override { return true; }
 };
 
 using InstrPtr = std::unique_ptr<Instruction>;
@@ -324,11 +316,6 @@ struct Call : public Instruction {
   void write(std::ostream &o) const override {
     o << mnemonic::Call << " " << functionName;
   }
-  Operand *getDestOperand() const override {
-    assert(0);
-    return nullptr;
-  }
-  bool isValid() const override { return true; }
 };
 
 struct Cmp : public Instruction {
@@ -337,11 +324,6 @@ struct Cmp : public Instruction {
 
   Cmp(OperandPtr left, OperandPtr right, std::string comment = ""s) :
     Instruction(std::move(comment)), left(std::move(left)), right(std::move(right)) {}
-  bool isValid() const override { return true; }
-  Operand *getDestOperand() const override {
-    assert(false);
-    return nullptr;
-  }
   void write(std::ostream &o) const override {
     o << mnemonic::Cmp << ' ' << *left << ", " << *right;
   }
@@ -353,10 +335,6 @@ struct Jmp : public Instruction {
   Jmp(const std::string targetLabel, ir_relation relation)
     : Instruction(""), relation(relation), targetLabel(std::move(targetLabel)) {}
 
-  Operand *getDestOperand() const override {
-    assert(false);
-    return nullptr;
-  }
   void write(std::ostream &o) const override {
     switch(relation) {
       case ir_relation_equal:
@@ -385,39 +363,23 @@ struct Jmp : public Instruction {
     }
     o << " ." << targetLabel;
   }
-  bool isValid() const override { return true; }
 };
 
 struct Neg : public Instruction {
   const OperandPtr op;
   Neg(OperandPtr op, std::string comment = ""s) : Instruction(std::move(comment)), op(std::move(op)) {}
-  Operand *getDestOperand() const override {
-    assert(false);
-    return nullptr;
-  }
   void write(std::ostream &o) const override { o << mnemonic::Neg << ' ' << *op; }
-  bool isValid() const override { return true; }
 };
 
 struct Nop : public Instruction {
   Nop(std::string comment = ""s) : Instruction(std::move(comment)) {}
-  Operand *getDestOperand() const override {
-    assert(false);
-    return nullptr;
-  }
   void write(std::ostream &o) const override { o << mnemonic::Nop; }
-  bool isValid() const override { return true; }
 };
 
 struct Comment : public Instruction {
   Comment(std::string comment) : Instruction(std::move(comment)) {}
   void write(std::ostream &) const override { /* comment printing done by Instruction */
   }
-  Operand *getDestOperand() const override {
-    assert(false);
-    return nullptr;
-  }
-  bool isValid() const override { return true; }
 };
 
 struct Cqto : public Instruction {
@@ -425,11 +387,6 @@ struct Cqto : public Instruction {
   void write(std::ostream &o) const override {
     o << mnemonic::Cqto;
   }
-  Operand *getDestOperand() const override {
-    assert(false);
-    return nullptr;
-  }
-  bool isValid() const override { return true; }
 };
 
 struct ArithInstr : public Instruction {
@@ -437,11 +394,6 @@ struct ArithInstr : public Instruction {
   WritableOperandPtr dest;
   ArithInstr(OperandPtr s, WritableOperandPtr d, std::string c = ""s)
       : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)) {}
-  Operand *getDestOperand() const override { return dest.get(); }
-  bool isValid() const override {
-    // TODO: is this still necessary? we can enforce this via the typesystem
-    return src->isOneOf<Immediate, WritableOperand>() && dest->isOneOf<WritableOperand>();
-  }
 
   void writeInstr(std::ostream &o, const std::string &mnemonic) const {
     o << mnemonic << ' ' << *src << ", " << *dest;
@@ -474,8 +426,6 @@ struct Div : public Instruction {
   Div(OperandPtr s, std::string c = ""s)
       : Instruction(std::move(c)), src(std::move(s)){}
 
-  bool isValid() const override { return true; }
-  Operand *getDestOperand() const override { return nullptr; }
   void write(std::ostream &o) const override {
     o << mnemonic::Div << ' ' << *src;
   }
@@ -486,8 +436,6 @@ struct Inc : public Instruction {
   Inc(OperandPtr s, std::string c = ""s)
       : Instruction(std::move(c)), src(std::move(s)){}
 
-  bool isValid() const override { return true; }
-  Operand *getDestOperand() const override { return nullptr; }
   void write(std::ostream &o) const override {
     o << mnemonic::Inc << ' ' << *src;
   }
@@ -499,8 +447,6 @@ struct Xor : public Instruction {
   Xor(OperandPtr s, std::string c = ""s)
       : Instruction(std::move(c)), src(std::move(s)){}
 
-  bool isValid() const override { return true; }
-  Operand *getDestOperand() const override { return nullptr; }
   void write(std::ostream &o) const override {
     o << mnemonic::Xor << ' ' << *src << ", " << *src;
   }
@@ -515,11 +461,6 @@ struct Movslq : public Instruction {
       X86Reg::Mode movMode = X86Reg::Mode::None, std::string c = ""s)
       : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)), movMode(movMode) {}
 
-  Operand *getDestOperand() const override { return dest.get(); }
-  bool isValid() const override {
-    return true; // TODO
-  }
-
   void write(std::ostream &o) const override {
     writeInstr(o, mnemonic::Movslq, src.get(), dest.get());
   }
@@ -533,11 +474,6 @@ struct Mov : public Instruction {
   Mov(OperandPtr s, OperandPtr d,
       X86Reg::Mode movMode = X86Reg::Mode::None, std::string c = ""s)
       : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)), movMode(movMode) {}
-
-  Operand *getDestOperand() const override { return dest.get(); }
-  bool isValid() const override {
-    return true; // TODO
-  }
 
   void write(std::ostream &o) const override {
 
