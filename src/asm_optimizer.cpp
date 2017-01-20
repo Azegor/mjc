@@ -58,6 +58,13 @@ void AsmSimpleOptimizer::optimizeBlock(Asm::BasicBlock *block) {
           continue;
         }
       }
+    } else if (auto sub = dynamic_cast<Asm::Sub*>(instr)) {
+      if (auto c = dynamic_cast<Asm::Immediate*>(sub->src.get())) {
+        if (c->getValue() == 1) {
+          block->replaceInstruction<Asm::Dec>(i, std::move(sub->dest));
+          continue;
+        }
+      }
     } else if (auto mov = dynamic_cast<Asm::Mov*>(instr)) {
       // It's unclear to me whether this is actually faster, but this way we can check
       // that the code to replace instructions actualy works. Also, it's what firm does.

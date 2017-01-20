@@ -293,6 +293,7 @@ const char *const Jge  = "jge";
 const char *const Jl   = "jl";
 const char *const Jle  = "jle";
 const char *const Inc  = "inc";
+const char *const Dec  = "dec";
 const char *const Xor  = "xor";
 
 const char *const Mov  = "mov";
@@ -428,6 +429,16 @@ struct Div : public Instruction {
 
   void write(std::ostream &o) const override {
     o << mnemonic::Div << ' ' << *src;
+  }
+};
+
+struct Dec : public Instruction {
+  const OperandPtr src;
+  Dec(OperandPtr s, std::string c = ""s)
+      : Instruction(std::move(c)), src(std::move(s)){}
+
+  void write(std::ostream &o) const override {
+    o << mnemonic::Dec << ' ' << *src;
   }
 };
 
