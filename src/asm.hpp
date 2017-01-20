@@ -585,18 +585,11 @@ public:
     return res;
   }
 
-  template <typename... Args>
+  template <typename T, typename... Args>
   void emplaceJump(Args &&... args) {
-    auto p = std::make_unique<Asm::Jmp>(std::forward<Args>(args)...);
-    jumpInstructions.emplace_back(std::move(p));
-  }
-
-  template<typename T, typename... Args>
-  void emplaceJump2(Args &&... args) {
     auto p = std::make_unique<T>(std::forward<Args>(args)...);
     jumpInstructions.emplace_back(std::move(p));
   }
-
 
   template<typename T, typename... Args>
   void emplacePhiInstr(Args &&... args) {

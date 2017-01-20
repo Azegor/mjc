@@ -408,13 +408,13 @@ void AsmMethodPass::visitCmp(ir_node *node) {
   auto leftRegMode = Asm::X86Reg::getRegMode(leftNode);
   auto op = getNodeResAsInstOperand(leftNode);
   auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, leftRegMode));
-  bb->emplaceJump2<Asm::Mov>(std::move(op), std::move(tmpReg), leftRegMode);
+  bb->emplaceJump<Asm::Mov>(std::move(op), std::move(tmpReg), leftRegMode);
   leftOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, leftRegMode));
 
   rightOp = getNodeResAsInstOperand(rightNode);
 
   // left and right swapped!
-  bb->emplaceJump2<Asm::Cmp>(std::move(rightOp), std::move(leftOp), nodeStr(node));
+  bb->emplaceJump<Asm::Cmp>(std::move(rightOp), std::move(leftOp), nodeStr(node));
 }
 
 void AsmMethodPass::visitCond(ir_node *node) {
@@ -449,11 +449,11 @@ void AsmMethodPass::visitCond(ir_node *node) {
     // Successor block is the same for both true and false case. This is a boolean comparison.
     // Just jump to that block, and the Phi node (if it exists) will do the je/jne instructions
 
-    bb->emplaceJump(Asm::getBlockLabel(trueBlock), ir_relation_true);
+    bb->emplaceJump<Asm::Jmp>(Asm::getBlockLabel(trueBlock), ir_relation_true);
   } else {
     // Control flow comparison, jump to the appropriate basic block
-    bb->emplaceJump(Asm::getBlockLabel(trueBlock), relation);
-    bb->emplaceJump(Asm::getBlockLabel(falseBlock), getInverseRelation(relation));
+    bb->emplaceJump<Asm::Jmp>(Asm::getBlockLabel(trueBlock), relation);
+    bb->emplaceJump<Asm::Jmp>(Asm::getBlockLabel(falseBlock), getInverseRelation(relation));
   }
 }
 
@@ -467,7 +467,7 @@ void AsmMethodPass::visitJmp(ir_node *node) {
   ir_node *jumpTarget = getNthSucc(node, 0);
   assert(is_Block(jumpTarget));
 
-  bb->emplaceJump(Asm::getBlockLabel(jumpTarget), ir_relation_true);
+  bb->emplaceJump<Asm::Jmp>(Asm::getBlockLabel(jumpTarget), ir_relation_true);
 }
 
 void AsmMethodPass::visitEnd(ir_node *node) {
@@ -501,7 +501,7 @@ void AsmMethodPass::visitReturn(ir_node *node) {
 
   // Jump to end block
   // return nodes should have exactly one successor, the end block.
-  bb->emplaceJump(Asm::getBlockLabel(succ), ir_relation_true);
+  bb->emplaceJump<Asm::Jmp>(Asm::getBlockLabel(succ), ir_relation_true);
 }
 
 void AsmMethodPass::visitLoad(ir_node *node) {
