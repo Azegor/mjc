@@ -148,7 +148,7 @@ void AsmMethodPass::visitAdd(ir_node *node) {
   // before the Add instrudction (easier for optimizations)
   auto regMode = Asm::X86Reg::getRegMode(node);
   auto rightOp = getNodeResAsInstOperand(rightNode);
-  Asm::X86Reg rightReg(Asm::X86Reg::Name::cx, regMode);
+  Asm::X86Reg rightReg(Asm::X86Reg::Name::bx, regMode);
   auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
   bb->addInstruction(std::move(rightRegInst));
 
@@ -291,7 +291,7 @@ void AsmMethodPass::visitMul(ir_node *node) {
   auto leftOp = getNodeResAsInstOperand(get_Mul_left(node));
 
   auto rightOp = getNodeResAsInstOperand(get_Mul_right(node));
-  Asm::X86Reg rightReg(Asm::X86Reg::Name::cx, regMode);
+  Asm::X86Reg rightReg(Asm::X86Reg::Name::bx, regMode);
   auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
   bb->addInstruction(std::move(rightRegInst));
   bb->emplaceInstruction<Asm::Mul>(std::move(leftOp), Asm::Register::get(rightReg),
