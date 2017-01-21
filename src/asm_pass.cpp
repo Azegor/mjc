@@ -269,17 +269,17 @@ void AsmMethodPass::visitCall(ir_node *node) {
   ir_type *callType = get_Call_type(node);
   assert(is_Address(address));
   ir_entity *entity = get_Address_entity(address);
-  const char *funcName = get_entity_name(entity);
+  auto funcName = std::string(get_entity_name(entity));
   int nParams = get_Call_n_params(node);
   int addSize = 0;
 
-  if (strcmp(funcName, "print_int") == 0 ||
-      strcmp(funcName, "write_int") == 0) {
+  if (funcName == "print_int" ||
+      funcName == "write_int") {
     assert(nParams == 1);
     ir_node *p = get_Call_param(node, 0);
 
     bb->pushInstr(&Asm::Mov, getNodeOp(p), Asm::Op(Asm::RegName::di, Asm::RegMode::R));
-  } else if (strcmp(funcName, "allocate") == 0) {
+  } else if (funcName == "allocate") {
     assert(nParams == 2);
     ir_node *n = get_Call_param(node, 0);
     ir_node *size = get_Call_param(node, 1);
@@ -311,7 +311,7 @@ void AsmMethodPass::visitCall(ir_node *node) {
     }
   }
 
-  bb->pushInstr(&Asm::Call, std::string(funcName));
+  bb->pushInstr(&Asm::Call, std::move(funcName));
 
 
   if (addSize > 0) {
