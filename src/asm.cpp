@@ -97,19 +97,19 @@ RegMode getRegMode(ir_node *node) {
 std::ostream &operator<<(std::ostream &o, const Op &op) {
   switch(op.type) {
     case OP_IMM:
-      o << '$' << op.p.imm.value;
+      o << '$' << op.imm.value;
       break;
     case OP_REG:
-      o << getRegAsmName(op.p.reg.name, op.p.reg.mode);
+      o << getRegAsmName(op.reg.name, op.reg.mode);
       break;
     case OP_IND:
-      if (op.p.ind.offset != 0)
-        o << op.p.ind.offset << '(' << getRegAsmName(op.p.ind.base, op.p.ind.mode) << ')';
+      if (op.ind.offset != 0)
+        o << op.ind.offset << '(' << getRegAsmName(op.ind.base, op.ind.mode) << ')';
       else
-        o << '(' << getRegAsmName(op.p.ind.base, op.p.ind.mode) << ')';
+        o << '(' << getRegAsmName(op.ind.base, op.ind.mode) << ')';
     break;
       case OP_STR:
-      o << *(op.p.str.str);
+      o << *(op.str.str);
     break;
     default:
     assert(false);

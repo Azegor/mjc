@@ -27,7 +27,7 @@ void AsmJumpOptimizer::optimizeFunction(Asm::Function *func) {
     auto nextBB = func->orderedBasicBlocks.at(i + 1);
     if (bb->jumpInstrs.size() > 0) {
       auto lastJmp = &bb->jumpInstrs.back();
-      if (*(lastJmp->ops[0].p.str.str) == nextBB->getLabelStr()) {
+      if (*(lastJmp->ops[0].str.str) == nextBB->getLabelStr()) {
         // Just remove jump
         bb->jumpInstrs.pop_back();
         this->optimizations ++;
@@ -38,7 +38,7 @@ void AsmJumpOptimizer::optimizeFunction(Asm::Function *func) {
         // jump to the next block anyway.
         auto secondToLastJmp = &bb->jumpInstrs.at(bb->jumpInstrs.size() - 2);
         if (secondToLastJmp->isJmp() &&
-            *(secondToLastJmp->ops[0].p.str.str) == nextBB->getLabelStr()) {
+            *(secondToLastJmp->ops[0].str.str) == nextBB->getLabelStr()) {
           bb->jumpInstrs.erase(bb->jumpInstrs.end() - 2);
           this->optimizations ++;
           continue;
@@ -58,25 +58,25 @@ void AsmSimpleOptimizer::optimizeBlock(Asm::BasicBlock *block) {
     auto instr = &block->instrs.at(i);
     if (instr->mnemonic == &Asm::Add &&
         instr->ops[0].type == Asm::OP_IMM) {
-      if (instr->ops[0].p.imm.value == 0) {
+      if (instr->ops[0].imm.value == 0) {
         // Remove entirely
         block->removeInstr(i);
         this->optimizations ++;
-      } else if (instr->ops[0].p.imm.value == 1) {
+      } else if (instr->ops[0].imm.value == 1) {
          // Replace with inc
          block->replaceInstr(i, &Asm::Inc, instr->ops[1]);
         this->optimizations ++;
       }
     } else if (instr->mnemonic == &Asm::Sub &&
                 instr->ops[0].type == Asm::OP_IMM &&
-                instr->ops[0].p.imm.value == 1) {
+                instr->ops[0].imm.value == 1) {
       // sub $1, reg
       // replace with dec
       block->replaceInstr(i, &Asm::Dec, instr->ops[1]);
       this->optimizations ++;
     } else if (instr->isMov() &&
                 instr->ops[0].type == Asm::OP_IMM &&
-                instr->ops[0].p.imm.value == 0 &&
+                instr->ops[0].imm.value == 0 &&
                 instr->ops[1].type != Asm::OP_IND) { // only handle mov $0, reg
       block->replaceInstr(i, &Asm::Xor, instr->ops[1], instr->ops[1]);
       this->optimizations ++;
@@ -107,11 +107,11 @@ void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
           mov2->ops[1].type == Asm::OP_REG) {
         // mov reg1, slot1
         // mov slot2, reg2
-        if (mov1->ops[1].p.ind.base == mov2->ops[0].p.ind.base &&
-            mov1->ops[1].p.ind.offset == mov2->ops[0].p.ind.offset) {
+        if (mov1->ops[1].ind.base == mov2->ops[0].ind.base &&
+            mov1->ops[1].ind.offset == mov2->ops[0].ind.offset) {
           // the 2 slots are the same
 
-          if (mov1->ops[0].p.reg.name == mov2->ops[1].p.reg.name) {
+          if (mov1->ops[0].reg.name == mov2->ops[1].reg.name) {
             // mov reg, slot
             // mov slot, reg
             // -> Just remove the second mov!
@@ -125,9 +125,9 @@ void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
           // mov reg1, slot
           // mov slot, reg2
           // -> replace second mov with mov from first reg to second reg
-          block->replaceInstr(i + 1, Asm::makeMov(mov2->ops[1].p.reg.mode,
-                                                  Asm::Op(mov1->ops[0].p.reg.name,
-                                                          mov2->ops[1].p.reg.mode),
+          block->replaceInstr(i + 1, Asm::makeMov(mov2->ops[1].reg.mode,
+                                                  Asm::Op(mov1->ops[0].reg.name,
+                                                          mov2->ops[1].reg.mode),
                                                   mov2->ops[1]));
           this->optimizations ++;
         }

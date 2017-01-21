@@ -138,41 +138,41 @@ struct Op {
       RegMode mode;
       int32_t offset;
     } ind;
-  } p;
+  };
 
   Op() { type = static_cast<OpType>(-1); }
   Op(int v) {
     type = OP_IMM;
-    p.imm.value = v;
+    imm.value = v;
   }
   Op(RegName regName, RegMode regMode) {
     type = OP_REG;
-    p.reg.name = regName;
-    p.reg.mode = regMode;
+    reg.name = regName;
+    reg.mode = regMode;
   }
   Op(RegName base, RegMode mode, int offset) {
     type = OP_IND;
-    p.ind.base = base;
-    p.ind.mode = mode;
-    p.ind.offset = offset;
+    ind.base = base;
+    ind.mode = mode;
+    ind.offset = offset;
   }
   Op(const Op src, int offset) {
     if (src.type == OP_IND) {
       type = OP_IND;
-      p.ind.base = src.p.ind.base;
-      p.ind.mode = src.p.ind.mode;
-      p.ind.offset = offset;
+      ind.base = src.ind.base;
+      ind.mode = src.ind.mode;
+      ind.offset = offset;
     } else if (src.type == OP_REG) {
       type = OP_IND;
-      p.ind.base = src.p.reg.name;
-      p.ind.mode = src.p.reg.mode;
-      p.ind.offset = offset;
+      ind.base = src.reg.name;
+      ind.mode = src.reg.mode;
+      ind.offset = offset;
     } else
       assert(false);
   }
-  Op(const std::string &str) {
+  Op(const std::string &s) {
     type = OP_STR;
-    p.str.str = new std::string(str);
+    str.str = new std::string(s);
   }
 
   //~Op() {

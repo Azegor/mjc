@@ -512,7 +512,7 @@ void AsmMethodPass::visitStore(ir_node *node) {
                                sourceOp,
                                tmpOp,
                                "2)"));
-    tmpOp = Asm::Op(tmpOp.p.reg.name, Asm::getRegMode(source)); // Different mode!
+    tmpOp = Asm::Op(tmpOp.reg.name, Asm::getRegMode(source)); // Different mode!
   }
 
   bb->pushInstr(Asm::makeMov(Asm::getRegMode(source), tmpOp, Asm::Op(Asm::rbx(), 0), "3)"));
