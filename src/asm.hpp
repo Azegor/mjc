@@ -117,17 +117,18 @@ enum OpType {
   OP_IMM,
   OP_REG,
   OP_IND,
-  OP_STR
+  OP_STR,
+  OP_NONE
 };
 
 struct Op {
-  OpType type;
+  OpType type = OP_NONE;
   union {
     struct {
       int value;
     } imm;
     struct {
-      std::string *str;
+      std::string *str = nullptr;
     } str;
     struct {
       RegName name;
@@ -140,7 +141,7 @@ struct Op {
     } ind;
   };
 
-  Op() { type = static_cast<OpType>(-1); }
+  Op() { type = OP_NONE; str.str = nullptr; }
   Op(int v) {
     type = OP_IMM;
     imm.value = v;
@@ -156,7 +157,7 @@ struct Op {
     ind.mode = mode;
     ind.offset = offset;
   }
-  Op(const Op src, int offset) {
+  Op(const Op &src, int offset) {
     if (src.type == OP_IND) {
       type = OP_IND;
       ind.base = src.ind.base;
@@ -175,10 +176,84 @@ struct Op {
     str.str = new std::string(s);
   }
 
-  //~Op() {
-    //if (type == OP_STR)
-      //delete p.str.str;
-  //}
+  Op(const Op &op) {
+    type = op.type;
+    switch(op.type) {
+      case OP_IMM:
+        imm.value = op.imm.value;
+        break;
+      case OP_REG:
+        reg = op.reg;
+        break;
+      case OP_IND:
+        ind = op.ind;
+        break;
+      case OP_STR:
+        if (op.str.str != nullptr) {
+          str.str = new std::string(*op.str.str);
+        }
+        break;
+      case OP_NONE:
+        break;
+      default:
+        assert(false);
+    }
+  }
+
+  ~Op() {
+    if (type == OP_STR && str.str != nullptr) {
+      delete str.str;
+    }
+  }
+
+  Op &operator=(const Op& other) {
+    if (type == OP_STR && str.str != nullptr)
+      delete str.str;
+
+    type = other.type;
+    switch(type) {
+      case OP_IMM:
+        imm.value = other.imm.value;
+        break;
+      case OP_REG:
+        reg = other.reg;
+        break;
+      case OP_IND:
+        ind = other.ind;
+        break;
+      case OP_STR:
+        str.str = new std::string(*other.str.str);
+        break;
+      default:
+        assert(false);
+    }
+
+    return *this;
+  }
+
+  Op &operator=(Op&& other) {
+    if (type == OP_STR && str.str != nullptr)
+      delete str.str;
+
+    type = other.type;
+    switch(type) {
+      case OP_IMM:
+        imm.value = other.imm.value;
+        break;
+      case OP_REG:
+        reg = other.reg;
+        break;
+      case OP_IND:
+        ind = other.ind;
+        break;
+      case OP_STR:
+        str.str = new std::string(*other.str.str);
+        break;
+      default: {}
+    }
+
+    return *this;
+  }
 };
 
 std::ostream &operator<<(std::ostream &o, const Op &op);
