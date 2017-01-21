@@ -615,7 +615,7 @@ void AsmMethodPass::generateBoolPhi(ir_node *node) {
 
     bb->pushStartPhiInstr(&Asm::Movq,
                           srcOp,
-                          Asm::Op(Asm::rbp(), ssm.getStackSlot(node, bb)),
+                          Asm::Op(Asm::rbp(), ssm.getStackSlot(node)),
                           "phi dst");
     // end of true case, jump to phi label
     bb->pushStartPhiInstr(Asm::makeJump(phiLabel, ir_relation_true));
@@ -634,7 +634,7 @@ void AsmMethodPass::generateBoolPhi(ir_node *node) {
 
     bb->pushStartPhiInstr(&Asm::Movq,
                           srcOp,
-                          Asm::Op(Asm::rbp(), ssm.getStackSlot(node, bb)),
+                          Asm::Op(Asm::rbp(), ssm.getStackSlot(node)),
                           "phi dst");
   }
 
@@ -684,7 +684,7 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
 
     // Now from tmp register into our stack slot
     predBB->pushPhiInstr(&Asm::Movq,
-                         tmpReg, Asm::Op(Asm::rbp(), ssm.getStackSlot(node, bb)));
+                         tmpReg, Asm::Op(Asm::rbp(), ssm.getStackSlot(node)));
 
   }
 
@@ -701,7 +701,7 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
     predBB->pushPhiInstr(&Asm::Movq, getNodeOp(otherPred), tmpReg, "phi tmp 2");
 
     predBB->pushPhiInstr(&Asm::Movq, tmpReg,
-                         Asm::Op(Asm::rbp(), ssm.getStackSlot(node, predBB)),
+                         Asm::Op(Asm::rbp(), ssm.getStackSlot(node)),
                          nodeStr(node) + " commit");
   }
 }
@@ -731,7 +731,7 @@ void AsmMethodPass::generateNormalPhi(ir_node *node) {
     }
     predBB->pushPhiInstr(&Asm::Movq,
                          srcOp,
-                         Asm::Op(Asm::rbp(), ssm.getStackSlot(node, predBB)));
+                         Asm::Op(Asm::rbp(), ssm.getStackSlot(node)));
   }
 
 }

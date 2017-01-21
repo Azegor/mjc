@@ -43,7 +43,7 @@ class StackSlotManager {
 public:
   StackSlotManager() {}
 
-  int32_t getStackSlot(ir_node *node, Asm::BasicBlock *bb) {
+  int32_t getStackSlot(ir_node *node) {
     assert(!is_Block(node));
 
     auto pos = offsets.find(node);
@@ -52,7 +52,6 @@ public:
 #ifdef STACK_SLOTS
       ir_printf("New Stack slot for node %n %N: %d\n", node, node, pos->second);
 #endif
-      (void)bb; // TODO: Remove bb param
 
       currentOffset += 8;
     }
@@ -67,7 +66,7 @@ public:
     assert(!hasSlot(to));
     int offset;
     if (!hasSlot(from)) {
-      offset = getStackSlot(from, nullptr);
+      offset = getStackSlot(from);
     } else {
       offset = offsets[from];
     }
@@ -214,7 +213,7 @@ public:
     }
 
     // Return stack slot
-    return Asm::Op(Asm::rbp(), ssm.getStackSlot(node, getBB(node)));
+    return Asm::Op(Asm::rbp(), ssm.getStackSlot(node));
   }
 
 private:
