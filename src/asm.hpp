@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <ostream>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <typeinfo>
@@ -27,62 +28,38 @@ using namespace std::string_literals;
 //   GlobLabel, // name of function
 // };
 
-enum class Opcode : uint32_t {
-  Add,
-  Sub,
-  IMul,
-  Div,
-  Call,
-  Cmp,
-  Neg,
-  Je ,
-  Jne,
-  Jmp,
-  Jg ,
-  Jge,
-  Jl ,
-  Jle,
-  Inc,
-  Dec,
-  Xor,
-  Mov,
-  Movq,
-  Movl,
-  Movb,
-  Movslq,
-  Cqto,
-  Label,
-};
-
 struct Mnemonic {
-  Opcode opcode;
+  uint32_t opcode;
   const char *const name;
 };
-const Mnemonic Add    = { Opcode::Add, "add" };
-const Mnemonic Sub    = { Opcode::Sub, "sub" };
-const Mnemonic IMul   = { Opcode::IMul, "imul" };
-const Mnemonic Div    = { Opcode::Div, "idivq" };
-const Mnemonic Call   = { Opcode::Call, "call" };
-const Mnemonic Cmp    = { Opcode::Cmp, "cmp" };
-const Mnemonic Neg    = { Opcode::Neg, "neg" };
-const Mnemonic Je     = { Opcode::Je, "je" };
-const Mnemonic Jne    = { Opcode::Jne, "jne" };
-const Mnemonic Jmp    = { Opcode::Jmp, "jmp" };
-const Mnemonic Jg     = { Opcode::Jg, "jg" };
-const Mnemonic Jge    = { Opcode::Jge, "jge" };
-const Mnemonic Jl     = { Opcode::Jl, "jl" };
-const Mnemonic Jle    = { Opcode::Jle, "jle" };
-const Mnemonic Inc    = { Opcode::Inc, "inc" };
-const Mnemonic Dec    = { Opcode::Dec, "dec" };
-const Mnemonic Xor    = { Opcode::Xor, "xor" };
-const Mnemonic Mov    = { Opcode::Mov, "mov" };
-const Mnemonic Movq   = { Opcode::Movq, "movq" };
-const Mnemonic Movl   = { Opcode::Movl, "movl" };
-const Mnemonic Movb   = { Opcode::Movb, "movb" };
-const Mnemonic Movslq = { Opcode::Movslq, "movslq" };
-const Mnemonic Cqto   = { Opcode::Cqto, "cqto" };
 
-const Mnemonic Label  = { Opcode::Label, "______" };
+extern const Mnemonic *Foo;
+//= new Mnemonic{0, "foo"};
+
+extern const Mnemonic *Add;
+extern const Mnemonic *Sub;
+extern const Mnemonic *IMul;
+extern const Mnemonic *Div;
+extern const Mnemonic *Call;
+extern const Mnemonic *Cmp;
+extern const Mnemonic *Neg;
+extern const Mnemonic *Je;
+extern const Mnemonic *Jne;
+extern const Mnemonic *Jmp;
+extern const Mnemonic *Jg;
+extern const Mnemonic *Jge;
+extern const Mnemonic *Jl;
+extern const Mnemonic *Jle;
+extern const Mnemonic *Inc;
+extern const Mnemonic *Dec;
+extern const Mnemonic *Xor;
+extern const Mnemonic *Mov;
+extern const Mnemonic *Movq;
+extern const Mnemonic *Movl;
+extern const Mnemonic *Movb;
+extern const Mnemonic *Movslq;
+extern const Mnemonic *Cqto;
+extern const Mnemonic *Label;
 
 enum class RegName : uint8_t {
   ax,
@@ -285,20 +262,20 @@ struct Instr {
   }
 
   bool isJmp() const {
-    return mnemonic->opcode == Opcode::Jmp ||
-           mnemonic->opcode == Opcode::Je ||
-           mnemonic->opcode == Opcode::Jne ||
-           mnemonic->opcode == Opcode::Jg ||
-           mnemonic->opcode == Opcode::Jge ||
-           mnemonic->opcode == Opcode::Jl ||
-           mnemonic->opcode == Opcode::Jle;
+    return mnemonic == Jmp ||
+           mnemonic == Je  ||
+           mnemonic == Jne ||
+           mnemonic == Jg  ||
+           mnemonic == Jge ||
+           mnemonic == Jl  ||
+           mnemonic == Jle;
   }
 
   bool isMov() const {
-    return mnemonic->opcode == Opcode::Mov ||
-           mnemonic->opcode == Opcode::Movq ||
-           mnemonic->opcode == Opcode::Movl ||
-           mnemonic->opcode == Opcode::Movb;
+    return mnemonic == Mov ||
+           mnemonic == Movq ||
+           mnemonic == Movl ||
+           mnemonic == Movb;
   }
 };
 std::ostream &operator<<(std::ostream &o, const Instr &instr);
@@ -346,7 +323,7 @@ public:
   void writeComment(const std::string &comment) { out << "/* -- " << comment << " */\n"; }
 
   void writeInstr(const Instr &instr) {
-    if (instr.mnemonic->opcode != Opcode::Label)
+    if (instr.mnemonic != Label)
       out << '\t';
 
     out << instr << '\n';

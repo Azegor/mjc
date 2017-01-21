@@ -141,9 +141,9 @@ void AsmMethodPass::visitAdd(ir_node *node) {
   // Generate the right node first so the (maybe) constant left one is directly
   // before the Add instrudction (easier for optimizations)
 
-  bb->pushInstr(&Asm::Mov, getNodeOp(rightNode), Asm::rbx());
-  bb->pushInstr(&Asm::Add, getNodeOp(leftNode),  Asm::rbx());
-  bb->pushInstr(&Asm::Mov, Asm::rbx(), getNodeOp(node), nodeStr(node));
+  bb->pushInstr(Asm::Mov, getNodeOp(rightNode), Asm::rbx());
+  bb->pushInstr(Asm::Add, getNodeOp(leftNode),  Asm::rbx());
+  bb->pushInstr(Asm::Mov, Asm::rbx(), getNodeOp(node), nodeStr(node));
 }
 
 void AsmMethodPass::visitSub(ir_node *node) {
@@ -151,9 +151,9 @@ void AsmMethodPass::visitSub(ir_node *node) {
   auto bb = getBB(node);
 
   // TODO: Register modes!
-  bb->pushInstr(&Asm::Mov, getNodeOp(get_Sub_left(node)), Asm::rbx());
-  bb->pushInstr(&Asm::Sub, getNodeOp(get_Sub_right(node)), Asm::rbx());
-  bb->pushInstr(&Asm::Mov, Asm::rbx(), getNodeOp(node));
+  bb->pushInstr(Asm::Mov, getNodeOp(get_Sub_left(node)), Asm::rbx());
+  bb->pushInstr(Asm::Sub, getNodeOp(get_Sub_right(node)), Asm::rbx());
+  bb->pushInstr(Asm::Mov, Asm::rbx(), getNodeOp(node));
 }
 
 void AsmMethodPass::visitDiv(ir_node *node) {
@@ -166,39 +166,39 @@ void AsmMethodPass::visitDiv(ir_node *node) {
 
   // Move left into rax
   if (leftOp.type == Asm::OP_IMM) {
-    bb->pushInstr(&Asm::Mov, leftOp, Asm::rax());
+    bb->pushInstr(Asm::Mov, leftOp, Asm::rax());
 
-    bb->pushInstr(&Asm::Movslq,
+    bb->pushInstr(Asm::Movslq,
                   Asm::Op(Asm::RegName::ax, Asm::RegMode::E),
                   Asm::rax());
 
   } else {
-    bb->pushInstr(&Asm::Movslq, leftOp, Asm::rax());
+    bb->pushInstr(Asm::Movslq, leftOp, Asm::rax());
   }
 
   // Right into rcx
   if (rightOp.type == Asm::OP_IMM) {
-    bb->pushInstr(&Asm::Mov, rightOp, Asm::rcx());
+    bb->pushInstr(Asm::Mov, rightOp, Asm::rcx());
 
-    bb->pushInstr(&Asm::Movslq,
+    bb->pushInstr(Asm::Movslq,
                   Asm::Op(Asm::RegName::cx, Asm::RegMode::E),
                   Asm::rcx());
 
   } else {
-    bb->pushInstr(&Asm::Movslq, rightOp, Asm::rcx());
+    bb->pushInstr(Asm::Movslq, rightOp, Asm::rcx());
   }
 
   // "the instruction cqto is used to perform sign extension,
   //  copying the sign bit of %rax into every bit of %rdx."
-  bb->pushInstr(&Asm::Cqto);
+  bb->pushInstr(Asm::Cqto);
 
   // Div only takes one argument, divides rax by that and stores the result in rax
-  bb->pushInstr(&Asm::Div, Asm::rcx());
+  bb->pushInstr(Asm::Div, Asm::rcx());
 
   // division result is in rax
   ir_node *succ = getSucc(node, iro_Proj, mode_Ls);
   assert(is_Proj(succ));
-  bb->pushInstr(&Asm::Movq,
+  bb->pushInstr(Asm::Movq,
                 Asm::Op(Asm::RegName::ax, regMode),
                 getNodeOp(succ));
 }
@@ -213,39 +213,39 @@ void AsmMethodPass::visitMod(ir_node *node) {
 
   // Move left into rax
   if (leftOp.type == Asm::OP_IMM) {
-    bb->pushInstr(&Asm::Mov, leftOp, Asm::rax());
+    bb->pushInstr(Asm::Mov, leftOp, Asm::rax());
 
-    bb->pushInstr(&Asm::Movslq,
+    bb->pushInstr(Asm::Movslq,
                   Asm::Op(Asm::RegName::ax, Asm::RegMode::E),
                   Asm::rax());
 
   } else {
-    bb->pushInstr(&Asm::Movslq, leftOp, Asm::rax());
+    bb->pushInstr(Asm::Movslq, leftOp, Asm::rax());
   }
 
   // Right into rcx
   if (rightOp.type == Asm::OP_IMM) {
-    bb->pushInstr(&Asm::Mov, rightOp, Asm::rcx());
+    bb->pushInstr(Asm::Mov, rightOp, Asm::rcx());
 
-    bb->pushInstr(&Asm::Movslq,
+    bb->pushInstr(Asm::Movslq,
                   Asm::Op(Asm::RegName::cx, Asm::RegMode::E),
                   Asm::rcx());
 
   } else {
-    bb->pushInstr(&Asm::Movslq, rightOp, Asm::rcx());
+    bb->pushInstr(Asm::Movslq, rightOp, Asm::rcx());
   }
 
   // "the instruction cqto is used to perform sign extension,
   //  copying the sign bit of %rax into every bit of %rdx."
-  bb->pushInstr(&Asm::Cqto);
+  bb->pushInstr(Asm::Cqto);
 
   // Div only takes one argument, divides rax by that and stores the result in rax
-  bb->pushInstr(&Asm::Div, Asm::rcx());
+  bb->pushInstr(Asm::Div, Asm::rcx());
 
   // division result is in rax
   ir_node *succ = getSucc(node, iro_Proj, mode_Ls);
   assert(is_Proj(succ));
-  bb->pushInstr(&Asm::Movq,
+  bb->pushInstr(Asm::Movq,
                 Asm::Op(Asm::RegName::dx, regMode),
                 getNodeOp(succ));
 }
@@ -254,9 +254,9 @@ void AsmMethodPass::visitMul(ir_node *node) {
   PRINT_ORDER;
   auto bb = getBB(node);
 
-  bb->pushInstr(&Asm::Mov, getNodeOp(get_Mul_right(node)), Asm::rbx());
-  bb->pushInstr(&Asm::IMul, getNodeOp(get_Mul_left(node)), Asm::rbx());
-  bb->pushInstr(&Asm::Mov, Asm::rbx(), getNodeOp(node));
+  bb->pushInstr(Asm::Mov, getNodeOp(get_Mul_right(node)), Asm::rbx());
+  bb->pushInstr(Asm::IMul, getNodeOp(get_Mul_left(node)), Asm::rbx());
+  bb->pushInstr(Asm::Mov, Asm::rbx(), getNodeOp(node));
 }
 
 void AsmMethodPass::visitCall(ir_node *node) {
@@ -278,22 +278,22 @@ void AsmMethodPass::visitCall(ir_node *node) {
     assert(nParams == 1);
     ir_node *p = get_Call_param(node, 0);
 
-    bb->pushInstr(&Asm::Mov, getNodeOp(p), Asm::Op(Asm::RegName::di, Asm::RegMode::R));
+    bb->pushInstr(Asm::Mov, getNodeOp(p), Asm::Op(Asm::RegName::di, Asm::RegMode::R));
   } else if (funcName == "allocate") {
     assert(nParams == 2);
     ir_node *n = get_Call_param(node, 0);
     ir_node *size = get_Call_param(node, 1);
 
     // num in rdi
-    bb->pushInstr(&Asm::Mov, getNodeOp(n), Asm::Op(Asm::RegName::di, Asm::getRegMode(n)));
+    bb->pushInstr(Asm::Mov, getNodeOp(n), Asm::Op(Asm::RegName::di, Asm::getRegMode(n)));
     // size in rsi
-    bb->pushInstr(&Asm::Mov, getNodeOp(size), Asm::Op(Asm::RegName::si, Asm::getRegMode(size)));
+    bb->pushInstr(Asm::Mov, getNodeOp(size), Asm::Op(Asm::RegName::si, Asm::getRegMode(size)));
   } else {
     // Normal MiniJava functions
     addSize = nParams * 8;
 
     if (addSize > 0) {
-      bb->pushInstr(&Asm::Sub, Asm::Op(addSize), Asm::rsp());
+      bb->pushInstr(Asm::Sub, Asm::Op(addSize), Asm::rsp());
     }
 
     int offset = 0;
@@ -301,21 +301,21 @@ void AsmMethodPass::visitCall(ir_node *node) {
       auto paramOp = getNodeOp(get_Call_param(node, i));
       if (paramOp.type != Asm::OP_IMM) {
         auto regOp = Asm::Op(Asm::RegName::cx, Asm::RegMode::R);
-        bb->pushInstr(&Asm::Mov, paramOp, regOp);
+        bb->pushInstr(Asm::Mov, paramOp, regOp);
         paramOp = regOp;
       }
 
-      bb->pushInstr(&Asm::Movq, paramOp, Asm::Op(Asm::rsp(), offset));
+      bb->pushInstr(Asm::Movq, paramOp, Asm::Op(Asm::rsp(), offset));
 
       offset += 8;
     }
   }
 
-  bb->pushInstr(&Asm::Call, std::move(funcName));
+  bb->pushInstr(Asm::Call, std::move(funcName));
 
 
   if (addSize > 0) {
-    bb->pushInstr(&Asm::Add, Asm::Op(addSize), Asm::rsp());
+    bb->pushInstr(Asm::Add, Asm::Op(addSize), Asm::rsp());
   }
 
   // Write result of function call into stack slot of call->proj->proj node
@@ -327,7 +327,7 @@ void AsmMethodPass::visitCall(ir_node *node) {
       ir_node *resultProj = getProjSucc(projSucc);
 
       if (resultProj != nullptr) {
-        bb->pushInstr(&Asm::Mov, Asm::rax(), getNodeOp(resultProj));
+        bb->pushInstr(Asm::Mov, Asm::rax(), getNodeOp(resultProj));
       }
     }
   }
@@ -350,7 +350,7 @@ void AsmMethodPass::visitCmp(ir_node *node) {
                                  Asm::Op(Asm::RegName::bx, leftRegMode)));
 
   // Left and right swapped!
-  bb->pushJumpInstr(&Asm::Cmp,
+  bb->pushJumpInstr(Asm::Cmp,
                     getNodeOp(rightNode),
                     Asm::Op(Asm::RegName::bx, leftRegMode),
                     nodeStr(node));
@@ -432,7 +432,7 @@ void AsmMethodPass::visitReturn(ir_node *node) {
     ir_node *opNode = get_Return_res(node, 0);
 
     auto op = getNodeOp(opNode);
-    bb->pushInstr(Asm::Instr(&Asm::Mov, op, Asm::rax()));
+    bb->pushInstr(Asm::Instr(Asm::Mov, op, Asm::rax()));
   }
 
   // Jump to end block
@@ -478,7 +478,7 @@ void AsmMethodPass::visitLoad(ir_node *node) {
                              Asm::Op(Asm::RegName::bx, predRegMode, 0),
                              Asm::Op(Asm::RegName::cx, succRegMode), "2)"));
   // 3)
-  bb->pushInstr(&Asm::Movq, Asm::rcx(), getNodeOp(succ), "3)");
+  bb->pushInstr(Asm::Movq, Asm::rcx(), getNodeOp(succ), "3)");
 }
 
 void AsmMethodPass::visitStore(ir_node *node) {
@@ -609,11 +609,11 @@ void AsmMethodPass::generateBoolPhi(ir_node *node) {
 
     if (srcOp.type != Asm::OP_IMM) {
       auto tmpReg = Asm::Op(Asm::RegName::r15, Asm::RegMode::R);
-      bb->pushStartPhiInstr(&Asm::Movq, srcOp, tmpReg, "phi tmp 3");
+      bb->pushStartPhiInstr(Asm::Movq, srcOp, tmpReg, "phi tmp 3");
       srcOp = tmpReg;
     }
 
-    bb->pushStartPhiInstr(&Asm::Movq,
+    bb->pushStartPhiInstr(Asm::Movq,
                           srcOp,
                           Asm::Op(Asm::rbp(), ssm.getStackSlot(node)),
                           "phi dst");
@@ -623,23 +623,23 @@ void AsmMethodPass::generateBoolPhi(ir_node *node) {
 
   // False case
   {
-    bb->pushStartPhiInstr(&Asm::Label, falseLabel);
+    bb->pushStartPhiInstr(Asm::Label, falseLabel);
     auto srcOp = getNodeOp(falsePred);
 
     if (srcOp.type != Asm::OP_IMM) {
       auto tmpReg = Asm::Op(Asm::RegName::r15, Asm::RegMode::R);
-      bb->pushStartPhiInstr(&Asm::Movq, srcOp, tmpReg, "phi tmp 4");
+      bb->pushStartPhiInstr(Asm::Movq, srcOp, tmpReg, "phi tmp 4");
       srcOp = tmpReg;
     }
 
-    bb->pushStartPhiInstr(&Asm::Movq,
+    bb->pushStartPhiInstr(Asm::Movq,
                           srcOp,
                           Asm::Op(Asm::rbp(), ssm.getStackSlot(node)),
                           "phi dst");
   }
 
   // end phi
-  bb->pushStartPhiInstr(&Asm::Label, phiLabel);
+  bb->pushStartPhiInstr(Asm::Label, phiLabel);
 }
 
 void AsmMethodPass::generateSwapPhi(ir_node *node) {
@@ -648,9 +648,9 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
   {
     auto srcOp = getNodeOp(node);
     auto tmpReg = Asm::Op(Asm::RegName::r15, Asm::RegMode::R);
-    bb->pushStartPhiInstr(&Asm::Movq, srcOp, tmpReg);
+    bb->pushStartPhiInstr(Asm::Movq, srcOp, tmpReg);
 
-    bb->pushStartPhiInstr(&Asm::Movq, tmpReg,
+    bb->pushStartPhiInstr(Asm::Movq, tmpReg,
                           Asm::Op(Asm::rbp(), ssm.getTmpSlot(node)),
                           "swap phi old val " + nodeStr(node));
   }
@@ -678,12 +678,12 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
     assert(getBB(phiPred) == getBB(node));
     // tmp register
     auto tmpReg = Asm::Op(Asm::RegName::r15, Asm::RegMode::R);
-    predBB->pushPhiInstr(&Asm::Movq,
+    predBB->pushPhiInstr(Asm::Movq,
                          Asm::Op(Asm::rbp(), ssm.getTmpSlot(phiPred)),
                          tmpReg);
 
     // Now from tmp register into our stack slot
-    predBB->pushPhiInstr(&Asm::Movq,
+    predBB->pushPhiInstr(Asm::Movq,
                          tmpReg, Asm::Op(Asm::rbp(), ssm.getStackSlot(node)));
 
   }
@@ -698,9 +698,9 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
     /* Control flow, generate phi instructions in the predecessor basic blocks */
     // Write this phiPred into the stack slot of the phi node
     auto tmpReg = Asm::Op(Asm::RegName::r15, Asm::RegMode::R);
-    predBB->pushPhiInstr(&Asm::Movq, getNodeOp(otherPred), tmpReg, "phi tmp 2");
+    predBB->pushPhiInstr(Asm::Movq, getNodeOp(otherPred), tmpReg, "phi tmp 2");
 
-    predBB->pushPhiInstr(&Asm::Movq, tmpReg,
+    predBB->pushPhiInstr(Asm::Movq, tmpReg,
                          Asm::Op(Asm::rbp(), ssm.getStackSlot(node)),
                          nodeStr(node) + " commit");
   }
@@ -725,11 +725,11 @@ void AsmMethodPass::generateNormalPhi(ir_node *node) {
     Asm::Op srcOp = getNodeOp(phiPred);
     if (srcOp.type != Asm::OP_IMM) {
       auto tmpReg = Asm::Op(Asm::RegName::r15, Asm::RegMode::R);
-      predBB->pushPhiInstr(&Asm::Movq,
+      predBB->pushPhiInstr(Asm::Movq,
                            srcOp, tmpReg);
       srcOp = tmpReg;
     }
-    predBB->pushPhiInstr(&Asm::Movq,
+    predBB->pushPhiInstr(Asm::Movq,
                          srcOp,
                          Asm::Op(Asm::rbp(), ssm.getStackSlot(node)));
   }
@@ -742,9 +742,9 @@ void AsmMethodPass::visitMinus(ir_node *node) {
   auto bb = getBB(node);
 
   auto regMode = Asm::getRegMode(node);
-  bb->pushInstr(&Asm::Mov, getNodeOp(sourceNode), Asm::Op(Asm::RegName::bx, regMode));
+  bb->pushInstr(Asm::Mov, getNodeOp(sourceNode), Asm::Op(Asm::RegName::bx, regMode));
 
-  bb->pushInstr(&Asm::Neg, Asm::Op(Asm::RegName::bx, regMode));
+  bb->pushInstr(Asm::Neg, Asm::Op(Asm::RegName::bx, regMode));
   bb->pushInstr(Asm::makeMov(regMode,
                              Asm::Op(Asm::RegName::bx, regMode),
                              getNodeOp(node)));

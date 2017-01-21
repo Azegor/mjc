@@ -1,7 +1,35 @@
 #include "asm.hpp"
 #include <cstring>
+#include <iostream>
 
 namespace Asm {
+
+const Mnemonic *Add    = new Mnemonic{ 0,  "add" };
+const Mnemonic *Sub    = new Mnemonic{ 1,  "sub" };
+const Mnemonic *IMul   = new Mnemonic{ 2,  "imul" };
+const Mnemonic *Div    = new Mnemonic{ 3,  "idivq" };
+const Mnemonic *Call   = new Mnemonic{ 4,  "call" };
+const Mnemonic *Cmp    = new Mnemonic{ 5,  "cmp" };
+const Mnemonic *Neg    = new Mnemonic{ 6,  "neg" };
+const Mnemonic *Je     = new Mnemonic{ 7,  "je" };
+const Mnemonic *Jne    = new Mnemonic{ 8,  "jne" };
+const Mnemonic *Jmp    = new Mnemonic{ 9,  "jmp" };
+const Mnemonic *Jg     = new Mnemonic{ 10, "jg" };
+const Mnemonic *Jge    = new Mnemonic{ 11, "jge" };
+const Mnemonic *Jl     = new Mnemonic{ 12, "jl" };
+const Mnemonic *Jle    = new Mnemonic{ 13, "jle" };
+const Mnemonic *Inc    = new Mnemonic{ 14, "inc" };
+const Mnemonic *Dec    = new Mnemonic{ 15, "dec" };
+const Mnemonic *Xor    = new Mnemonic{ 16, "xor" };
+const Mnemonic *Mov    = new Mnemonic{ 17, "mov" };
+const Mnemonic *Movq   = new Mnemonic{ 18, "movq" };
+const Mnemonic *Movl   = new Mnemonic{ 19, "movl" };
+const Mnemonic *Movb   = new Mnemonic{ 20, "movb" };
+const Mnemonic *Movslq = new Mnemonic{ 21, "movslq" };
+const Mnemonic *Cqto   = new Mnemonic{ 22, "cqto" };
+
+const Mnemonic *Label = new Mnemonic{ 23, "______" };
+
 
 
 
@@ -117,9 +145,8 @@ std::ostream &operator<<(std::ostream &o, const Op &op) {
 
   return o;
 }
-
 std::ostream &operator<<(std::ostream &o, const Instr &instr) {
-  if (instr.mnemonic->opcode == Opcode::Label) {
+  if (instr.mnemonic == Label) {
     // *Tiny* hack.
     o << instr.ops[0] << ':';
     return o;
@@ -145,25 +172,25 @@ Instr makeJump(std::string target, ir_relation relation) {
   const Mnemonic *mnemonic;
   switch(relation) {
     case ir_relation_equal:
-      mnemonic = &Je;
+      mnemonic = Je;
       break;
     case ir_relation_less_greater:
-      mnemonic = &Jne;
+      mnemonic = Jne;
       break;
     case ir_relation_true:
-      mnemonic = &Jmp;
+      mnemonic = Jmp;
       break;
     case ir_relation_greater:
-      mnemonic = &Jg;
+      mnemonic = Jg;
       break;
     case ir_relation_greater_equal:
-      mnemonic = &Jge;
+      mnemonic = Jge;
       break;
     case ir_relation_less:
-      mnemonic = &Jl;
+      mnemonic = Jl;
       break;
     case ir_relation_less_equal:
-      mnemonic = &Jle;
+      mnemonic = Jle;
       break;
     default:
       assert(false);
@@ -175,11 +202,11 @@ Instr makeJump(std::string target, ir_relation relation) {
 Instr makeMov(const RegMode mode, Op source, Op dest, std::string comment) {
   switch (mode) {
     case RegMode::R:
-      return Instr(&Movq, std::move(source), std::move(dest), comment);
+      return Instr(Movq, std::move(source), std::move(dest), comment);
     case RegMode::E:
-      return Instr(&Movl, std::move(source), std::move(dest), comment);
+      return Instr(Movl, std::move(source), std::move(dest), comment);
     case RegMode::L:
-      return Instr(&Movb, std::move(source), std::move(dest), comment);
+      return Instr(Movb, std::move(source), std::move(dest), comment);
     default:
       assert(false);
   }

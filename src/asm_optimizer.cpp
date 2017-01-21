@@ -56,7 +56,7 @@ void AsmJumpOptimizer::printOptimizations() {
 void AsmSimpleOptimizer::optimizeBlock(Asm::BasicBlock *block) {
   for (size_t i = 0; i < block->instrs.size(); i ++) {
     auto instr = &block->instrs.at(i);
-    if (instr->mnemonic == &Asm::Add &&
+    if (instr->mnemonic == Asm::Add &&
         instr->ops[0].type == Asm::OP_IMM) {
       if (instr->ops[0].imm.value == 0) {
         // Remove entirely
@@ -64,21 +64,21 @@ void AsmSimpleOptimizer::optimizeBlock(Asm::BasicBlock *block) {
         this->optimizations ++;
       } else if (instr->ops[0].imm.value == 1) {
          // Replace with inc
-         block->replaceInstr(i, &Asm::Inc, instr->ops[1]);
+         block->replaceInstr(i, Asm::Inc, instr->ops[1]);
         this->optimizations ++;
       }
-    } else if (instr->mnemonic == &Asm::Sub &&
+    } else if (instr->mnemonic == Asm::Sub &&
                 instr->ops[0].type == Asm::OP_IMM &&
                 instr->ops[0].imm.value == 1) {
       // sub $1, reg
       // replace with dec
-      block->replaceInstr(i, &Asm::Dec, instr->ops[1]);
+      block->replaceInstr(i, Asm::Dec, instr->ops[1]);
       this->optimizations ++;
     } else if (instr->isMov() &&
                 instr->ops[0].type == Asm::OP_IMM &&
                 instr->ops[0].imm.value == 0 &&
                 instr->ops[1].type != Asm::OP_IND) { // only handle mov $0, reg
-      block->replaceInstr(i, &Asm::Xor, instr->ops[1], instr->ops[1]);
+      block->replaceInstr(i, Asm::Xor, instr->ops[1], instr->ops[1]);
       this->optimizations ++;
     }
   }
