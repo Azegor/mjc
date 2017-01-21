@@ -333,9 +333,9 @@ private:
 public:
   FirmVisitor(bool print);
   virtual ~FirmVisitor() {
-    for (auto& e : classes) {
-      free_type(e.second.type());
-    }
+    //for (auto& e : classes) {
+      //free_type(e.second.type());
+    //}
     for (auto& e : methods) {
       delete[] e.second.params;
     }
