@@ -11,57 +11,12 @@
 
 #include <cassert>
 #include <cstdint>
+#include <cstring>
 
 #include <libfirm/firm.h>
 
 namespace Asm {
-
 using namespace std::string_literals;
-
-struct X86Reg {
-  enum class Name : uint8_t {
-    none,
-    ax,
-    bx,
-    cx,
-    dx,
-    bp,
-    sp,
-    si,
-    di,
-    r8,
-    r9,
-    r10,
-    r11,
-    r12,
-    r13,
-    r14,
-    r15,
-  };
-  enum class Mode : uint8_t {
-    None,
-    R, // 64 bit
-    E, // 32 bit
-    _, // 16 bit
-    H, // 8 bit upper part
-    L, // 8 bit lower part
-  };
-
-  const Name name;
-  const Mode mode;
-
-  X86Reg(Name n, Mode m) : name(n), mode(m) {}
-  const char *getAsmName() const;
-
-  static Mode getRegMode(ir_node *node);
-
-  static X86Reg noReg;
-
-private:
-  X86Reg() : name(Name::none), mode(Mode::None) {}
-};
-
-std::ostream &operator<<(std::ostream &o, const Asm::X86Reg::Mode mode);
 
 // enum class OperandType : uint8_t {
 //   Reg,       // value from register
@@ -72,36 +27,216 @@ std::ostream &operator<<(std::ostream &o, const Asm::X86Reg::Mode mode);
 //   GlobLabel, // name of function
 // };
 
-/// --- instruction operands ---
-
-struct Operand {
-  virtual ~Operand() {}
-  virtual void write(std::ostream &o) const = 0;
-
-  friend std::ostream &operator<<(std::ostream &o, const Operand &op) {
-    op.write(o);
-    return o;
-  }
+enum class Opcode : uint32_t {
+  Add,
+  Sub,
+  IMul,
+  Div,
+  Call,
+  Cmp,
+  Neg,
+  Je ,
+  Jne,
+  Jmp,
+  Jg ,
+  Jge,
+  Jl ,
+  Jle,
+  Inc,
+  Dec,
+  Xor,
+  Mov,
+  Movq,
+  Movl,
+  Movb,
+  Movslq,
+  Cqto,
+  Label,
 };
 
-struct Register : public Operand {
-  X86Reg reg;
-  Register(X86Reg r) : reg(r) {}
+struct Mnemonic {
+  Opcode opcode;
+  const char *const name;
+};
+const Mnemonic Add    = { Opcode::Add, "add" };
+const Mnemonic Sub    = { Opcode::Sub, "sub" };
+const Mnemonic IMul   = { Opcode::IMul, "imul" };
+const Mnemonic Div    = { Opcode::Div, "idivq" };
+const Mnemonic Call   = { Opcode::Call, "call" };
+const Mnemonic Cmp    = { Opcode::Cmp, "cmp" };
+const Mnemonic Neg    = { Opcode::Neg, "neg" };
+const Mnemonic Je     = { Opcode::Je, "je" };
+const Mnemonic Jne    = { Opcode::Jne, "jne" };
+const Mnemonic Jmp    = { Opcode::Jmp, "jmp" };
+const Mnemonic Jg     = { Opcode::Jg, "jg" };
+const Mnemonic Jge    = { Opcode::Jge, "jge" };
+const Mnemonic Jl     = { Opcode::Jl, "jl" };
+const Mnemonic Jle    = { Opcode::Jle, "jle" };
+const Mnemonic Inc    = { Opcode::Inc, "inc" };
+const Mnemonic Dec    = { Opcode::Dec, "dec" };
+const Mnemonic Xor    = { Opcode::Xor, "xor" };
+const Mnemonic Mov    = { Opcode::Mov, "mov" };
+const Mnemonic Movq   = { Opcode::Movq, "movq" };
+const Mnemonic Movl   = { Opcode::Movl, "movl" };
+const Mnemonic Movb   = { Opcode::Movb, "movb" };
+const Mnemonic Movslq = { Opcode::Movslq, "movslq" };
+const Mnemonic Cqto   = { Opcode::Cqto, "cqto" };
 
-  void write(std::ostream &o) const override { o << reg.getAsmName(); }
+const Mnemonic Label  = { Opcode::Label, "______" };
 
-  static std::unique_ptr<Register> get(X86Reg::Name name, X86Reg::Mode mode) {
-    return get(X86Reg(name, mode));
-  }
-  static std::unique_ptr<Register> get(X86Reg reg, X86Reg::Mode mode) {
-    return get(X86Reg(reg.name, mode));
-  }
-  static std::unique_ptr<Register> get(X86Reg reg) {
-    return std::make_unique<Register>(reg);
-  }
+enum class RegName : uint8_t {
+  ax,
+  bx,
+  cx,
+  dx,
+  bp,
+  sp,
+  si,
+  di,
+  r8,
+  r9,
+  r10,
+  r11,
+  r12,
+  r13,
+  r14,
+  r15,
 };
 
-struct MemoryOperand : public Operand {};
+enum class RegMode : uint8_t {
+  R, // 64 bit
+  E, // 32 bit
+  L, // 8 bit lower part
+};
+
+RegMode getRegMode(ir_node *node);
+
+const char *getRegAsmName(const RegName name, const RegMode mode);
+
+enum OpType {
+  OP_IMM,
+  OP_REG,
+  OP_IND,
+  OP_STR
+};
+
+struct Op {
+  OpType type;
+  union {
+    struct {
+      int value;
+    } imm;
+    struct {
+      std::string *str;
+    } str;
+    struct {
+      RegName name;
+      RegMode mode;
+    } reg;
+    struct {
+      RegName base;
+      RegMode mode;
+      int32_t offset;
+    } ind;
+  } p;
+
+  Op() { type = static_cast<OpType>(-1); }
+  Op(int v) {
+    type = OP_IMM;
+    p.imm.value = v;
+  }
+  Op(RegName regName, RegMode regMode) {
+    type = OP_REG;
+    p.reg.name = regName;
+    p.reg.mode = regMode;
+  }
+  Op(RegName base, RegMode mode, int offset) {
+    type = OP_IND;
+    p.ind.base = base;
+    p.ind.mode = mode;
+    p.ind.offset = offset;
+  }
+  Op(const Op src, int offset) {
+    if (src.type == OP_IND) {
+      type = OP_IND;
+      p.ind.base = src.p.ind.base;
+      p.ind.mode = src.p.ind.mode;
+      p.ind.offset = offset;
+    } else if (src.type == OP_REG) {
+      type = OP_IND;
+      p.ind.base = src.p.reg.name;
+      p.ind.mode = src.p.reg.mode;
+      p.ind.offset = offset;
+    } else
+      assert(false);
+  }
+  Op(const std::string &str) {
+    type = OP_STR;
+    p.str.str = new std::string(str);
+  }
+
+  //~Op() {
+    //if (type == OP_STR)
+      //delete p.str.str;
+  //}
+};
+
+std::ostream &operator<<(std::ostream &o, const Op &op);
+
+
+struct Instr {
+  Op ops[2];
+  int nOps = -1;
+  const Mnemonic *mnemonic;
+  std::string comment;
+
+  Instr(const Mnemonic *mne) {
+    mnemonic = mne;
+    nOps = 0;
+  }
+  Instr(const Mnemonic *mne, Op op1, Op op2, std::string c = ""s) {
+    mnemonic = mne;
+    nOps = 2;
+    ops[0] = std::move(op1);
+    ops[1] = std::move(op2);
+    comment = std::move(c);
+  }
+
+  Instr(const Mnemonic *mne, Op op1, std::string c = ""s) {
+    mnemonic = mne;
+    nOps = 1;
+    ops[0] = std::move(op1);
+    comment = std::move(c);
+  }
+
+  bool isJmp() const {
+    return mnemonic->opcode == Opcode::Jmp ||
+           mnemonic->opcode == Opcode::Je ||
+           mnemonic->opcode == Opcode::Jne ||
+           mnemonic->opcode == Opcode::Jg ||
+           mnemonic->opcode == Opcode::Jge ||
+           mnemonic->opcode == Opcode::Jl ||
+           mnemonic->opcode == Opcode::Jle;
+  }
+
+  bool isMov() const {
+    return mnemonic->opcode == Opcode::Mov ||
+           mnemonic->opcode == Opcode::Movq ||
+           mnemonic->opcode == Opcode::Movl ||
+           mnemonic->opcode == Opcode::Movb;
+  }
+};
+std::ostream &operator<<(std::ostream &o, const Instr &instr);
+
+// Convenience factory functions to create instructions/operands
+Instr makeJump(const std::string target, ir_relation relation);
+Instr makeMov(const RegMode mode, Op source, Op dest, std::string comment = ""s);
+Op    rax();
+Op    rbx();
+Op    rcx();
+Op    rbp();
+Op    rsp();
+
 /// Memory is adressed the following way:
 /// segment-override:signed-offset(base,index,scale)
 /// variations: (be carefull wich are missing!)
@@ -115,402 +250,6 @@ struct MemoryOperand : public Operand {};
 /// offset and scale can always be specified (0 and 1 respectively) -> no extra classes
 /// have Base, BaseIndex, IndexScale, BaseIndexScale
 
-// Indirect specifies a memory location
-struct MemoryBase : public MemoryOperand {
-
-  // ignore segment-override
-  int32_t offset;
-  X86Reg base;
-  MemoryBase(int32_t offset, X86Reg base) : offset(offset), base(base) {}
-
-  void write(std::ostream &o) const override {
-    // TODO: incorporate all values
-    if (offset) {
-      o << offset;
-    }
-    o << '(' << base.getAsmName() << ')';
-  }
-};
-
-struct MemoryIndex : public MemoryOperand {
-
-  // ignore segment-override
-  int32_t offset;
-  X86Reg base;
-  X86Reg index;
-  int32_t scale;
-  MemoryIndex(int32_t offset, X86Reg base, X86Reg index = X86Reg::noReg,
-              int32_t scale = 1)
-      : offset(offset), base(base), index(index), scale(scale) {
-    assert(scale); // may not be missing / zero
-  }
-
-  void write(std::ostream &o) const override {
-    // TODO: incorporate all values
-    if (offset) {
-      o << offset;
-    }
-    o << '(' << index.getAsmName() << ',' << scale << ')';
-  }
-};
-
-struct MemoryBaseIndex : public MemoryOperand {
-
-  // ignore segment-override
-  int32_t offset;
-  X86Reg base;
-  X86Reg index;
-  int32_t scale;
-  MemoryBaseIndex(int32_t offset, X86Reg base, X86Reg index = X86Reg::noReg,
-                  int32_t scale = 1)
-      : offset(offset), base(base), index(index), scale(scale) {}
-
-  void write(std::ostream &o) const override {
-    // TODO: incorporate all values
-    if (offset) {
-      o << offset;
-    }
-    o << '(' << base.getAsmName() << ',' << index.getAsmName() << ',' << scale << ')';
-  }
-};
-
-struct Immediate : public Operand {
-  ir_tarval *val = nullptr;
-  int ival;
-  Immediate(ir_tarval *val) : val(val) {}
-  Immediate(int ival) : ival(ival) {}
-
-  int getValue() const {
-    if (val != nullptr)
-      return get_tarval_long(val);
-    else
-      return ival;
-  }
-
-  void write(std::ostream &o) const override {
-    o << '$';
-    if (val != nullptr)
-      o << get_tarval_long(val);
-    else
-      o << ival;
-  }
-};
-
-struct LocalLabel : public Operand {
-  uint32_t nr;
-  LocalLabel() : nr(newNr()) {}
-  LocalLabel(const LocalLabel &) = default;
-  LocalLabel(LocalLabel &&) = default;
-  LocalLabel(uint32_t nr) : nr(nr) {}
-
-  void write(std::ostream &o) const override { o << ".L" << nr; }
-
-  static uint32_t newNr() {
-    static uint32_t curVal = 0;
-    return ++curVal;
-  }
-};
-
-struct NamedLabel : public Operand {
-  std::string name;
-  NamedLabel(std::string n) : name(std::move(n)) {}
-
-  void write(std::ostream &o) const override { o << name; }
-};
-
-/// --- instructions ---
-
-struct Instruction {
-  const std::string comment;
-
-  Instruction(std::string comment) : comment(std::move(comment)) {}
-  virtual ~Instruction() {}
-
-  virtual void write(std::ostream &o) const = 0;
-
-  void writeInstr(std::ostream &o, const std::string &mnemonic, const Operand *o1,
-                  const Operand *o2) const {
-    o << mnemonic << ' ' << *o1 << ", " << *o2;
-  }
-
-  friend std::ostream &operator<<(std::ostream &o, const Instruction &i) {
-    i.write(o);
-    if (i.comment.length()) {
-      o << " /* " << i.comment << " */";
-    }
-    return o;
-  }
-};
-
-// for assembly code in string form (predefined assembly code)
-struct StringInstructionBlock : public Instruction {
-  std::string content;
-  StringInstructionBlock(std::string content, std::string comment)
-      : Instruction(std::move(comment)), content(std::move(content)) {}
-
-  virtual void write(std::ostream &o) const {
-    o << "/* begin custom assembly code */\n";
-    o << content << "\n\t/* end custom assembly code */";
-    // here comes the comment from Instruction::friend operator<<
-  }
-};
-
-struct Label : Instruction {
-  const std::string name;
-  Label(std::string name, std::string comment = ""s)
-    : Instruction(std::move(comment)), name(std::move(name)) {}
-
-  void write(std::ostream &o) const override {
-    o << '.' << name << ':';
-  }
-};
-
-using InstrPtr = std::unique_ptr<Instruction>;
-
-/// --- x86 instructions ---
-
-namespace mnemonic {
-const char *const Nop  = "nop";
-const char *const Add  = "add";
-const char *const Sub  = "sub";
-const char *const IMul = "imul";
-const char *const Div  = "idivq";
-const char *const Call = "call";
-const char *const Cmp  = "cmp";
-const char *const Neg  = "neg";
-const char *const Je   = "je";
-const char *const Jne  = "jne";
-const char *const Jmp  = "jmp";
-const char *const Jg   = "jg";
-const char *const Jge  = "jge";
-const char *const Jl   = "jl";
-const char *const Jle  = "jle";
-const char *const Inc  = "inc";
-const char *const Dec  = "dec";
-const char *const Xor  = "xor";
-
-const char *const Mov  = "mov";
-const char *const Movq = "movq";
-const char *const Movl = "movl";
-const char *const Movb = "movb";
-const char *const Movslq = "movslq";
-
-const char *const Cqto = "cqto";
-
-// GAS inferrs the operand type if not specified (b, s, w, l, q, t)
-}
-
-using OperandPtr = std::unique_ptr<Operand>;
-using OperandPtr = std::unique_ptr<Operand>;
-
-struct Call : public Instruction {
-  std::string functionName;
-  Call(std::string functionName, std::string comment = ""s)
-    : Instruction(std::move(comment)), functionName(functionName) {}
-  void write(std::ostream &o) const override {
-    o << mnemonic::Call << " " << functionName;
-  }
-};
-
-struct Cmp : public Instruction {
-  const OperandPtr left;
-  const OperandPtr right;
-
-  Cmp(OperandPtr left, OperandPtr right, std::string comment = ""s) :
-    Instruction(std::move(comment)), left(std::move(left)), right(std::move(right)) {}
-  void write(std::ostream &o) const override {
-    o << mnemonic::Cmp << ' ' << *left << ", " << *right;
-  }
-};
-
-struct Jmp : public Instruction {
-  ir_relation relation;
-  std::string targetLabel;
-  Jmp(const std::string targetLabel, ir_relation relation)
-    : Instruction(""), relation(relation), targetLabel(std::move(targetLabel)) {}
-
-  void write(std::ostream &o) const override {
-    switch(relation) {
-      case ir_relation_equal:
-        o << mnemonic::Je;
-        break;
-      case ir_relation_less_greater:
-        o << mnemonic::Jne;
-        break;
-      case ir_relation_true:
-        o << mnemonic::Jmp;
-        break;
-      case ir_relation_greater:
-        o << mnemonic::Jg;
-        break;
-      case ir_relation_greater_equal:
-        o << mnemonic::Jge;
-        break;
-      case ir_relation_less:
-        o << mnemonic::Jl;
-        break;
-      case ir_relation_less_equal:
-        o << mnemonic::Jle;
-        break;
-      default:
-        assert(false);
-    }
-    o << " ." << targetLabel;
-  }
-};
-
-struct Neg : public Instruction {
-  const OperandPtr op;
-  Neg(OperandPtr op, std::string comment = ""s) : Instruction(std::move(comment)), op(std::move(op)) {}
-  void write(std::ostream &o) const override { o << mnemonic::Neg << ' ' << *op; }
-};
-
-struct Nop : public Instruction {
-  Nop(std::string comment = ""s) : Instruction(std::move(comment)) {}
-  void write(std::ostream &o) const override { o << mnemonic::Nop; }
-};
-
-struct Comment : public Instruction {
-  Comment(std::string comment) : Instruction(std::move(comment)) {}
-  void write(std::ostream &) const override { /* comment printing done by Instruction */
-  }
-};
-
-struct Cqto : public Instruction {
-  Cqto(std::string comment = ""s) : Instruction(std::move(comment)) {}
-  void write(std::ostream &o) const override {
-    o << mnemonic::Cqto;
-  }
-};
-
-struct ArithInstr : public Instruction {
-  const OperandPtr src;
-  OperandPtr dest;
-  ArithInstr(OperandPtr s, OperandPtr d, std::string c = ""s)
-      : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)) {}
-
-  void writeInstr(std::ostream &o, const std::string &mnemonic) const {
-    o << mnemonic << ' ' << *src << ", " << *dest;
-  }
-};
-
-struct Add : public ArithInstr {
-  Add(OperandPtr s, OperandPtr d, std::string c = ""s)
-      : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
-
-  void write(std::ostream &o) const override { writeInstr(o, mnemonic::Add); }
-};
-
-struct Sub : public ArithInstr {
-  Sub(OperandPtr s, OperandPtr d, std::string c = ""s)
-      : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
-
-  void write(std::ostream &o) const override { writeInstr(o, mnemonic::Sub); }
-};
-
-struct Mul : public ArithInstr {
-  Mul(OperandPtr s, OperandPtr d, std::string c = ""s)
-      : ArithInstr(std::move(s), std::move(d), std::move(c)) {}
-
-  void write(std::ostream &o) const override { writeInstr(o, mnemonic::IMul); }
-};
-
-struct Div : public Instruction {
-  const OperandPtr src;
-  Div(OperandPtr s, std::string c = ""s)
-      : Instruction(std::move(c)), src(std::move(s)){}
-
-  void write(std::ostream &o) const override {
-    o << mnemonic::Div << ' ' << *src;
-  }
-};
-
-struct Dec : public Instruction {
-  const OperandPtr src;
-  Dec(OperandPtr s, std::string c = ""s)
-      : Instruction(std::move(c)), src(std::move(s)){}
-
-  void write(std::ostream &o) const override {
-    o << mnemonic::Dec << ' ' << *src;
-  }
-};
-
-struct Inc : public Instruction {
-  const OperandPtr src;
-  Inc(OperandPtr s, std::string c = ""s)
-      : Instruction(std::move(c)), src(std::move(s)){}
-
-  void write(std::ostream &o) const override {
-    o << mnemonic::Inc << ' ' << *src;
-  }
-};
-
-// We only take one parameter here since we only use this for zero-ing registers(so far)
-struct Xor : public Instruction {
-  const OperandPtr src;
-  Xor(OperandPtr s, std::string c = ""s)
-      : Instruction(std::move(c)), src(std::move(s)){}
-
-  void write(std::ostream &o) const override {
-    o << mnemonic::Xor << ' ' << *src << ", " << *src;
-  }
-};
-
-struct Movslq : public Instruction {
-  const OperandPtr src;
-  OperandPtr dest;
-  const X86Reg::Mode movMode;
-
-  Movslq(OperandPtr s, OperandPtr d,
-      X86Reg::Mode movMode = X86Reg::Mode::None, std::string c = ""s)
-      : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)), movMode(movMode) {}
-
-  void write(std::ostream &o) const override {
-    writeInstr(o, mnemonic::Movslq, src.get(), dest.get());
-  }
-};
-
-struct Mov : public Instruction {
-  const OperandPtr src;
-  OperandPtr dest;
-  const X86Reg::Mode movMode;
-
-  Mov(OperandPtr s, OperandPtr d,
-      X86Reg::Mode movMode = X86Reg::Mode::None, std::string c = ""s)
-      : Instruction(std::move(c)), src(std::move(s)), dest(std::move(d)), movMode(movMode) {}
-
-  void write(std::ostream &o) const override {
-
-    if (movMode != X86Reg::Mode::None) {
-      // mov mode explicitly set
-      if (movMode == X86Reg::Mode::E)
-        writeInstr(o, mnemonic::Movl, src.get(), dest.get());
-      else if (movMode == X86Reg::Mode::L)
-        writeInstr(o, mnemonic::Movb, src.get(), dest.get());
-      else
-        writeInstr(o, mnemonic::Movq, src.get(), dest.get());
-    } else {
-      // No explicit mov mode set, try to figure it out by looking at the dest operand
-      // XXX Ehm this is a little ugly
-      if (auto d = dynamic_cast<Asm::Register*>(dest.get())) {
-        if (d->reg.mode == X86Reg::Mode::E)
-          writeInstr(o, mnemonic::Movl, src.get(), dest.get());
-        else
-          writeInstr(o, mnemonic::Movq, src.get(), dest.get());
-      } else if (auto d = dynamic_cast<Asm::MemoryBase*>(dest.get())) {
-        if (d->base.mode == X86Reg::Mode::E)
-          writeInstr(o, mnemonic::Movl, src.get(), dest.get());
-        else
-          writeInstr(o, mnemonic::Movq, src.get(), dest.get());
-      } else {
-        writeInstr(o, mnemonic::Mov, src.get(), dest.get());
-      }
-    }
-  }
-};
-
-// compound types:
-
 class AsmWriter {
   std::ostream &out;
 
@@ -521,42 +260,21 @@ public:
   void writeTextSection();
 
   void writeText(const std::string &text) { out << text << '\n'; }
-  void writeInstruction(const Instruction &instr) {
-    writeImpl(&instr, "");
-  }
   void writeString(const std::string &str) {
     out << '\t' << str << '\n';
   }
-  void writeLabel(const LocalLabel &label, const std::string &comment = ""s) {
-    writeLabelImpl(label, comment);
-  }
-  void writeLabel(const NamedLabel &label, const std::string &comment = ""s) {
-    writeLabelImpl(label, comment);
+
+  void writeLabel(const std::string l) {
+    out << l << ":\n";
   }
 
   void writeComment(const std::string &comment) { out << "/* -- " << comment << " */\n"; }
 
-
-private:
-  template <typename T>
-  void writeLabelImpl(const T& label, const std::string &comment) {
-    out << label << ':';
-    if (comment.length()) {
-      out << " /* " << comment << " */";
-    }
-    out << '\n';
-  }
-  template <typename T>
-  void writeImpl(const T& content, const std::string &comment) {
-    // Sorry.
-    if (dynamic_cast<const Asm::Label*>(content) == nullptr)
+  void writeInstr(const Instr &instr) {
+    if (instr.mnemonic->opcode != Opcode::Label)
       out << '\t';
 
-    out << *content;
-    if (comment.length()) {
-      out << " /* " << comment << " */";
-    }
-    out << '\n';
+    out << instr << '\n';
   }
 };
 
@@ -564,87 +282,85 @@ std::string getBlockLabel(ir_node *node);
 
 class BasicBlock {
   std::string comment;
-  const LocalLabel label;
   ir_node *node;
-  std::vector<InstrPtr> startPhiInstructions;
-  std::vector<InstrPtr> swapPhiInstructions;
-  std::vector<InstrPtr> phiInstructions;
+
+  std::vector<Instr> startPhiInstrs;
+  std::vector<Instr> phiInstrs;
 
 public:
-  std::vector<InstrPtr> instructions;
-  std::vector<InstrPtr> jumpInstructions;
+  std::vector<Instr> instrs;
+  std::vector<Instr> jumpInstrs;
 
-  //BasicBlock(std::string comment = ""s) : comment(std::move(comment)), label() {}
   BasicBlock(ir_node *node, std::string comment = ""s)
-    : comment(std::move(comment)), label(get_irn_node_nr(node)), node(node) {}
+    : comment(std::move(comment)), node(node) {}
   BasicBlock(BasicBlock &&bb) = default;
 
-  void addInstruction(InstrPtr instr) { instructions.emplace_back(std::move(instr)); }
-
-  template <typename T, typename... Args>
-  Instruction *emplaceInstruction(Args &&... args) {
-    auto instr = std::make_unique<T>(std::forward<Args>(args)...);
-    auto res = instr.get(); // save before move
-    addInstruction(std::move(instr));
-    return res;
+  void pushInstr(const Instr instr) {
+    instrs.push_back(std::move(instr));
   }
 
-  template <typename T, typename... Args>
-  void emplaceJump(Args &&... args) {
-    auto p = std::make_unique<T>(std::forward<Args>(args)...);
-    jumpInstructions.emplace_back(std::move(p));
+  template<typename... Args>
+  void pushInstr(Args &&... args) {
+    instrs.push_back(Asm::Instr(std::forward<Args>(args)...));
   }
 
-  template<typename T, typename... Args>
-  void emplacePhiInstr(Args &&... args) {
-    auto p = std::make_unique<T>(std::forward<Args>(args)...);
-    phiInstructions.emplace_back(std::move(p));
+  template<typename... Args>
+  void pushJumpInstr(Args &&... args) {
+    jumpInstrs.push_back(Asm::Instr(std::forward<Args>(args)...));
   }
 
-  template<typename T, typename... Args>
-  void emplaceStartPhiInstruction(Args &&... args) {
-    auto p = std::make_unique<T>(std::forward<Args>(args)...);
-    startPhiInstructions.emplace_back(std::move(p));
+  template<typename... Args>
+  void pushPhiInstr(Args &&... args) {
+    phiInstrs.push_back(Asm::Instr(std::forward<Args>(args)...));
   }
 
-  template<typename T, typename... Args>
-  void replaceInstruction(size_t index, Args &&... args) {
-    auto p = std::make_unique<T>(std::forward<Args>(args)...);
-    instructions.at(index) = std::move(p);
+  template<typename... Args>
+  void pushStartPhiInstr(Args &&... args) {
+    startPhiInstrs.push_back(Asm::Instr(std::forward<Args>(args)...));
   }
 
-  void addComment(const std::string comment) {
-    this->emplaceInstruction<Asm::Comment>(std::move(comment));
+  template<typename... Args>
+  void replaceInstr(size_t index, Args &&... args) {
+    instrs.at(index) = Instr(args...);
+  }
+
+  void replaceInstr(size_t index, Instr instr) {
+    instrs.at(index) = std::move(instr);
+  }
+
+  void removeInstr(size_t index) {
+    this->instrs.erase(this->instrs.begin() + index);
   }
 
   void write(AsmWriter &writer) const {
-    writer.writeLabel(label, comment);
+    writer.writeLabel(getBlockLabel(node));
 
-    if (startPhiInstructions.size() > 0) {
+
+    if (startPhiInstrs.size() > 0) {
       writer.writeComment("------- StartPhiInstructions --------");
-      for (auto &instr : startPhiInstructions) {
-        writer.writeInstruction(*instr);
+      for (auto &instr : startPhiInstrs) {
+        writer.writeInstr(instr);
       }
     }
 
-    if (instructions.size() > 0) {
+    if (instrs.size() > 0) {
       writer.writeComment("------- Normal Instructions --------");
-      for (auto &instr : instructions) {
-        writer.writeInstruction(*instr);
+      for (auto &instr : instrs) {
+        writer.writeInstr(instr);
       }
     }
 
-    if (phiInstructions.size() > 0) {
+    if (phiInstrs.size() > 0) {
       writer.writeComment("------- PhiInstructions --------");
-      for (auto &instr : phiInstructions) {
-        writer.writeInstruction(*instr);
+      for (auto &instr : phiInstrs) {
+        writer.writeInstr(instr);
       }
     }
 
-    if (jumpInstructions.size() > 0) {
+    if (jumpInstrs.size() > 0) {
       writer.writeComment("------- JumpInstructions --------");
-      for (auto &instr : jumpInstructions) {
-        writer.writeInstruction(*instr);
+      for (auto &instr : jumpInstrs) {
+        writer.writeInstr(instr);
       }
     }
   }
@@ -655,7 +371,7 @@ public:
 };
 
 class Function {
-  NamedLabel fnName;
+  std::string fnName;
   int ARsize = 0;
   int startBlockId = -1;
 
@@ -664,7 +380,6 @@ public:
   std::unordered_map<ir_node *, BasicBlock *> basicBlocks;
 
   Function(std::string name) : fnName(std::move(name)) {}
-  Function(NamedLabel l) : fnName(std::move(l)) {}
   Function(Function &&) = default;
 
   ~Function () {
@@ -690,7 +405,7 @@ public:
   }
 
   std::string getEpilogLabel() const {
-    return fnName.name + "_epilog";
+    return fnName + "_epilog";
   }
 
   void setARSize(int size) { ARsize = size; }

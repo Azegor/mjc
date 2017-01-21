@@ -111,7 +111,7 @@ public:
   int32_t getLocVarUsedSize() const { return currentOffset; }
 };
 
-class AsmMethodPass : public FunctionPass<AsmMethodPass, Asm::Instruction> {
+class AsmMethodPass : public FunctionPass<AsmMethodPass, Asm::Instr> {
   StackSlotManager ssm;
   bool optimize;
 
@@ -170,19 +170,6 @@ public:
     ir_printf("  visiting node %n (%N)\n", n, n);
   }
 
-  void writeValue(Asm::OperandPtr reg, ir_node *node, const std::string comment = "") {
-    auto bb = getBB(node);
-
-    bb->emplaceInstruction<Asm::Mov>(std::move(reg),
-     std::make_unique<Asm::MemoryBase>(
-          ssm.getStackSlot(node, bb),
-          Asm::X86Reg(Asm::X86Reg::Name::bp,
-                      Asm::X86Reg::Mode::R)),
-     Asm::X86Reg::Mode::R,
-                      //Asm::X86Reg::getRegMode(node))),
-     std::move(comment));
-  }
-
   Asm::BasicBlock* getBB(ir_node *n) {
     ir_node *block;
     if (is_Block(n))
@@ -218,39 +205,16 @@ public:
   void visitAddress(ir_node *node) { PRINT_ORDER; }
   void visitConst(ir_node *node)   { PRINT_ORDER; }
 
-  Asm::OperandPtr getNodeResAsInstOperand(ir_node *node) {
+  Asm::Op getNodeOp(ir_node *node) {
     if (is_Const(node))
-      return std::make_unique<Asm::Immediate>(get_Const_tarval(node));
+      return Asm::Op(get_tarval_long(get_Const_tarval(node)));
+      //return std::make_unique<Asm::Immediate>(get_Const_tarval(node));
     else if (is_Conv(node) && is_Const(get_Conv_op(node))) {
-      return std::make_unique<Asm::Immediate>(get_Const_tarval(get_Conv_op(node)));
+      return Asm::Op(get_tarval_long(get_Const_tarval(get_Conv_op(node))));
     }
 
-    /* This assertion does not work for control flow/phi nodes, where we read first
-     * and later generate the write instructions */
-    //if (!ssm.hasSlot(node)) {
-      //ir_printf("%n %N has no stack slot!\n", node, node);
-      //assert(false);
-    //}
-
-    return std::make_unique<Asm::MemoryBase>(
-        ssm.getStackSlot(node, getBB(node)),
-        Asm::X86Reg(Asm::X86Reg::Name::bp,
-                    Asm::X86Reg::Mode::R));
-  }
-
-  Asm::InstrPtr loadToReg(Asm::OperandPtr val, Asm::X86Reg reg) {
-    return std::make_unique<Asm::Mov>(std::move(val), Asm::Register::get(reg));
-  }
-
-  Asm::InstrPtr writeResToStackSlot(Asm::X86Reg reg, ir_node *node) {
-    return std::make_unique<Asm::Mov>(
-        Asm::Register::get(reg, Asm::X86Reg::Mode::R),
-        std::make_unique<Asm::MemoryBase>(
-            ssm.getStackSlot(node, getBB(node)),
-            Asm::X86Reg(Asm::X86Reg::Name::bp,
-                        Asm::X86Reg::Mode::R)),
-        Asm::X86Reg::Mode::R,
-        "stack slot of " + nodeStr(node));
+    // Return stack slot
+    return Asm::Op(Asm::rbp(), ssm.getStackSlot(node, getBB(node)));
   }
 
 private:

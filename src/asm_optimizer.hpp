@@ -52,3 +52,13 @@ public:
   void optimizeBlock(Asm::BasicBlock *block) override;
   void printOptimizations() override;
 };
+
+// ====================================================================
+// Finds mov reg1, reg2 instructions and replaces
+// reg2 with reg1 in all following instructions until
+// a mov foo, reg2
+class AsmAliasOptimizer : public AsmBlockOptimizer {
+  AsmAliasOptimizer(Asm::Program *program) : AsmBlockOptimizer(program) {}
+  void optimizeBlock(Asm::BasicBlock *block) override;
+  void printOptimizations() override;
+};

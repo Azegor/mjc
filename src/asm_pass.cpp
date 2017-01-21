@@ -114,7 +114,7 @@ void AsmMethodPass::visitConv(ir_node *node) {
   PRINT_ORDER;
   ir_node *pred = get_Conv_op(node);
   if (is_Const(pred)) {
-    // We already handle this simple case in getNodeResAsInstOperand
+    // We already handle this simple case in getNodeOp
     return;
   }
 
@@ -125,17 +125,11 @@ void AsmMethodPass::visitConv(ir_node *node) {
 
   // Just use pred's stack slot for this Conv node as well.
   ssm.copySlot(pred, node);
-  // TODO: Depending on the conversion, this might actually promote a
-  //       value from e.g. L to R mode.
 }
 
 void AsmMethodPass::visitAdd(ir_node *node) {
   PRINT_ORDER;
   auto bb = getBB(node);
-  // 1. get left and right predecessor of add node
-  // 2. get values from predecessor. Either immediate or generated val (stack slot)
-  // 3. create memory or immediate operands
-  // 4. create instruction with operands
 
   ir_node *leftNode  = get_Add_left(node);
   ir_node *rightNode = get_Add_right(node);
@@ -146,157 +140,123 @@ void AsmMethodPass::visitAdd(ir_node *node) {
 
   // Generate the right node first so the (maybe) constant left one is directly
   // before the Add instrudction (easier for optimizations)
-  auto regMode = Asm::X86Reg::getRegMode(node);
-  auto rightOp = getNodeResAsInstOperand(rightNode);
-  Asm::X86Reg rightReg(Asm::X86Reg::Name::bx, regMode);
-  auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
-  bb->addInstruction(std::move(rightRegInst));
 
-  auto leftOp = getNodeResAsInstOperand(leftNode);
-
-  bb->emplaceInstruction<Asm::Add>(std::move(leftOp), Asm::Register::get(rightReg),
-                                   nodeStr(node));
-  bb->addInstruction(writeResToStackSlot(rightReg, node));
+  bb->pushInstr(&Asm::Mov, getNodeOp(rightNode), Asm::rbx());
+  bb->pushInstr(&Asm::Add, getNodeOp(leftNode),  Asm::rbx());
+  bb->pushInstr(&Asm::Mov, Asm::rbx(), getNodeOp(node), nodeStr(node));
 }
 
 void AsmMethodPass::visitSub(ir_node *node) {
   PRINT_ORDER;
   auto bb = getBB(node);
 
-  auto regMode = Asm::X86Reg::getRegMode(node);
-  auto leftOp = getNodeResAsInstOperand(get_Sub_left(node));
-  Asm::X86Reg leftReg(Asm::X86Reg::Name::bx, regMode);
-  auto leftRegInst = loadToReg(std::move(leftOp), leftReg);
-  bb->addInstruction(std::move(leftRegInst));
-
-  // Here we should have the Constant on the right side
-  // (and none on the left ever, because of constant propagation)
-  auto rightOp = getNodeResAsInstOperand(get_Sub_right(node));
-
-  // Left and right swapped!
-  bb->emplaceInstruction<Asm::Sub>(std::move(rightOp), Asm::Register::get(leftReg),
-                                   "Node " + std::to_string(get_irn_node_nr(node)));
-  bb->addInstruction(writeResToStackSlot(leftReg, node));
+  // TODO: Register modes!
+  bb->pushInstr(&Asm::Mov, getNodeOp(get_Sub_left(node)), Asm::rbx());
+  bb->pushInstr(&Asm::Sub, getNodeOp(get_Sub_right(node)), Asm::rbx());
+  bb->pushInstr(&Asm::Mov, Asm::rbx(), getNodeOp(node));
 }
 
 void AsmMethodPass::visitDiv(ir_node *node) {
   PRINT_ORDER;
   auto bb = getBB(node);
 
-  auto regMode = Asm::X86Reg::getRegMode(node);
-  auto leftOp = getNodeResAsInstOperand(get_Div_left(node));
-  auto rightOp = getNodeResAsInstOperand(get_Div_right(node));
+  auto regMode = Asm::getRegMode(node);
+  auto leftOp = getNodeOp(get_Div_left(node));
+  auto rightOp = getNodeOp(get_Div_right(node));
 
-  auto axOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::R));
   // Move left into rax
-  if (dynamic_cast<Asm::Immediate*>(leftOp.get())) {
-    bb->emplaceInstruction<Asm::Mov>(std::move(leftOp), std::move(axOp));
+  if (leftOp.type == Asm::OP_IMM) {
+    bb->pushInstr(&Asm::Mov, leftOp, Asm::rax());
 
-    axOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::E));
-    auto axOp2 = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::R));
-    bb->emplaceInstruction<Asm::Movslq>(std::move(axOp), std::move(axOp2));
+    bb->pushInstr(&Asm::Movslq,
+                  Asm::Op(Asm::RegName::ax, Asm::RegMode::E),
+                  Asm::rax());
 
   } else {
-    bb->emplaceInstruction<Asm::Movslq>(std::move(leftOp), std::move(axOp));
+    bb->pushInstr(&Asm::Movslq, leftOp, Asm::rax());
   }
 
-  auto cxOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::R));
   // Right into rcx
-  if (dynamic_cast<Asm::Immediate*>(rightOp.get())) {
-    bb->emplaceInstruction<Asm::Mov>(std::move(rightOp), std::move(cxOp));
+  if (rightOp.type == Asm::OP_IMM) {
+    bb->pushInstr(&Asm::Mov, rightOp, Asm::rcx());
 
-    cxOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::E));
-    auto cxOp2 = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::R));
-    bb->emplaceInstruction<Asm::Movslq>(std::move(cxOp), std::move(cxOp2));
+    bb->pushInstr(&Asm::Movslq,
+                  Asm::Op(Asm::RegName::cx, Asm::RegMode::E),
+                  Asm::rcx());
 
   } else {
-    bb->emplaceInstruction<Asm::Movslq>(std::move(rightOp), std::move(cxOp));
+    bb->pushInstr(&Asm::Movslq, rightOp, Asm::rcx());
   }
 
   // "the instruction cqto is used to perform sign extension,
   //  copying the sign bit of %rax into every bit of %rdx."
-  bb->emplaceInstruction<Asm::Cqto>();
+  bb->pushInstr(&Asm::Cqto);
 
   // Div only takes one argument, divides rax by that and stores the result in rax
-  cxOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::R));
-  bb->emplaceInstruction<Asm::Div>(std::move(cxOp));
+  bb->pushInstr(&Asm::Div, Asm::rcx());
 
-
+  // division result is in rax
   ir_node *succ = getSucc(node, iro_Proj, mode_Ls);
   assert(is_Proj(succ));
-
-  auto dstReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, regMode));
-  writeValue(std::move(dstReg), succ);
+  bb->pushInstr(&Asm::Movq,
+                Asm::Op(Asm::RegName::ax, regMode),
+                getNodeOp(succ));
 }
 
 void AsmMethodPass::visitMod(ir_node *node) {
   PRINT_ORDER;
-  // Do the exact same thing we do in visitDiv, but use the value in dx in the end,
-  // which contains the remainder.
   auto bb = getBB(node);
 
-  auto regMode = Asm::X86Reg::getRegMode(node);
-  auto leftOp = getNodeResAsInstOperand(get_Mod_left(node));
-  auto rightOp = getNodeResAsInstOperand(get_Mod_right(node));
+  auto regMode = Asm::getRegMode(node);
+  auto leftOp = getNodeOp(get_Mod_left(node));
+  auto rightOp = getNodeOp(get_Mod_right(node));
 
-  // TODO: visitDiv and visitMod are largely the same, fix duplication!
-  auto axOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::R));
   // Move left into rax
-  if (dynamic_cast<Asm::Immediate*>(leftOp.get())) {
-    bb->emplaceInstruction<Asm::Mov>(std::move(leftOp), std::move(axOp));
+  if (leftOp.type == Asm::OP_IMM) {
+    bb->pushInstr(&Asm::Mov, leftOp, Asm::rax());
 
-    axOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::E));
-    auto axOp2 = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::R));
-    bb->emplaceInstruction<Asm::Movslq>(std::move(axOp), std::move(axOp2));
+    bb->pushInstr(&Asm::Movslq,
+                  Asm::Op(Asm::RegName::ax, Asm::RegMode::E),
+                  Asm::rax());
 
   } else {
-    bb->emplaceInstruction<Asm::Movslq>(std::move(leftOp), std::move(axOp));
+    bb->pushInstr(&Asm::Movslq, leftOp, Asm::rax());
   }
 
-  auto cxOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::R));
   // Right into rcx
-  if (dynamic_cast<Asm::Immediate*>(rightOp.get())) {
-    bb->emplaceInstruction<Asm::Mov>(std::move(rightOp), std::move(cxOp));
+  if (rightOp.type == Asm::OP_IMM) {
+    bb->pushInstr(&Asm::Mov, rightOp, Asm::rcx());
 
-    cxOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::E));
-    auto cxOp2 = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::R));
-    bb->emplaceInstruction<Asm::Movslq>(std::move(cxOp), std::move(cxOp2));
+    bb->pushInstr(&Asm::Movslq,
+                  Asm::Op(Asm::RegName::cx, Asm::RegMode::E),
+                  Asm::rcx());
 
   } else {
-    bb->emplaceInstruction<Asm::Movslq>(std::move(rightOp), std::move(cxOp));
+    bb->pushInstr(&Asm::Movslq, rightOp, Asm::rcx());
   }
 
   // "the instruction cqto is used to perform sign extension,
   //  copying the sign bit of %rax into every bit of %rdx."
-  bb->emplaceInstruction<Asm::Cqto>();
+  bb->pushInstr(&Asm::Cqto);
 
   // Div only takes one argument, divides rax by that and stores the result in rax
-  cxOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::R));
-  bb->emplaceInstruction<Asm::Div>(std::move(cxOp));
+  bb->pushInstr(&Asm::Div, Asm::rcx());
 
-
+  // division result is in rax
   ir_node *succ = getSucc(node, iro_Proj, mode_Ls);
   assert(is_Proj(succ));
-
-  auto dstReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::dx, regMode));
-  writeValue(std::move(dstReg), succ);
+  bb->pushInstr(&Asm::Movq,
+                Asm::Op(Asm::RegName::dx, regMode),
+                getNodeOp(succ));
 }
 
 void AsmMethodPass::visitMul(ir_node *node) {
   PRINT_ORDER;
   auto bb = getBB(node);
 
-  auto regMode = Asm::X86Reg::getRegMode(node);
-
-  auto leftOp = getNodeResAsInstOperand(get_Mul_left(node));
-
-  auto rightOp = getNodeResAsInstOperand(get_Mul_right(node));
-  Asm::X86Reg rightReg(Asm::X86Reg::Name::bx, regMode);
-  auto rightRegInst = loadToReg(std::move(rightOp), rightReg);
-  bb->addInstruction(std::move(rightRegInst));
-  bb->emplaceInstruction<Asm::Mul>(std::move(leftOp), Asm::Register::get(rightReg),
-                                   nodeStr(node));
-  bb->addInstruction(writeResToStackSlot(rightReg, node));
+  bb->pushInstr(&Asm::Mov, getNodeOp(get_Mul_right(node)), Asm::rbx());
+  bb->pushInstr(&Asm::IMul, getNodeOp(get_Mul_left(node)), Asm::rbx());
+  bb->pushInstr(&Asm::Mov, Asm::rbx(), getNodeOp(node));
 }
 
 void AsmMethodPass::visitCall(ir_node *node) {
@@ -317,64 +277,45 @@ void AsmMethodPass::visitCall(ir_node *node) {
       strcmp(funcName, "write_int") == 0) {
     assert(nParams == 1);
     ir_node *p = get_Call_param(node, 0);
-    //auto di = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::di, Asm::X86Reg::getRegMode(p)));
-    auto di = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::di, Asm::X86Reg::Mode::R));
 
-    bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(p), std::move(di));
-
+    bb->pushInstr(&Asm::Mov, getNodeOp(p), Asm::Op(Asm::RegName::di, Asm::RegMode::R));
   } else if (strcmp(funcName, "allocate") == 0) {
     assert(nParams == 2);
     ir_node *n = get_Call_param(node, 0);
     ir_node *size = get_Call_param(node, 1);
-    //ir_printf("Allocate params: %n %N, %n %N\n", n, n, size, size);
-    auto di = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::di, Asm::X86Reg::getRegMode(n)));
-    auto si = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::si, Asm::X86Reg::getRegMode(size)));
 
     // num in rdi
-    bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(n), std::move(di));
+    bb->pushInstr(&Asm::Mov, getNodeOp(n), Asm::Op(Asm::RegName::di, Asm::getRegMode(n)));
     // size in rsi
-    bb->emplaceInstruction<Asm::Mov>(getNodeResAsInstOperand(size), std::move(si));
+    bb->pushInstr(&Asm::Mov, getNodeOp(size), Asm::Op(Asm::RegName::si, Asm::getRegMode(size)));
   } else {
     // Normal MiniJava functions
     addSize = nParams * 8;
 
     if (addSize > 0) {
-      bb->emplaceInstruction<Asm::Sub>(std::make_unique<Asm::Immediate>(addSize),
-                                       Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::sp,
-                                                                      Asm::X86Reg::Mode::R)));
+      bb->pushInstr(&Asm::Sub, Asm::Op(addSize), Asm::rsp());
     }
 
-    if (!optimize)
-      bb->addComment(std::string(funcName) + " Parameters");
     int offset = 0;
     for (int i = 0; i < nParams; i ++) {
-      // TODO: This first mov is unnecessary for constants and normal registers
-      auto paramOp = getNodeResAsInstOperand(get_Call_param(node, i));
-
-      if (!dynamic_cast<Asm::Immediate*>(paramOp.get())) {
-        auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx,
-                                                     Asm::X86Reg::Mode::R));
-        bb->emplaceInstruction<Asm::Mov>(std::move(paramOp), std::move(tmpReg));
-        paramOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx,
-                                                 Asm::X86Reg::Mode::R));
+      auto paramOp = getNodeOp(get_Call_param(node, i));
+      if (paramOp.type != Asm::OP_IMM) {
+        auto regOp = Asm::Op(Asm::RegName::cx, Asm::RegMode::R);
+        bb->pushInstr(&Asm::Mov, paramOp, regOp);
+        paramOp = regOp;
       }
 
-      auto memOp = std::make_unique<Asm::MemoryBase>(offset,
-                                                     Asm::X86Reg(Asm::X86Reg::Name::sp,
-                                                                 Asm::X86Reg::Mode::R));
-      bb->emplaceInstruction<Asm::Mov>(std::move(paramOp), std::move(memOp));
+      bb->pushInstr(&Asm::Movq, paramOp, Asm::Op(Asm::rsp(), offset));
 
       offset += 8;
     }
   }
 
-  bb->emplaceInstruction<Asm::Call>(std::string(funcName));
+  bb->pushInstr(&Asm::Call, std::string(funcName));
 
 
   if (addSize > 0) {
-    bb->emplaceInstruction<Asm::Add>(std::make_unique<Asm::Immediate>(addSize),
-                                     Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::sp,
-                                                                    Asm::X86Reg::Mode::R)));
+    bb->pushInstr(&Asm::Add, Asm::Op(addSize), Asm::rsp());
   }
 
   // Write result of function call into stack slot of call->proj->proj node
@@ -386,13 +327,10 @@ void AsmMethodPass::visitCall(ir_node *node) {
       ir_node *resultProj = getProjSucc(projSucc);
 
       if (resultProj != nullptr) {
-        auto reg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, Asm::X86Reg::Mode::R));
-        writeValue(std::move(reg), resultProj, "Return value of " + std::string(funcName));
+        bb->pushInstr(&Asm::Mov, Asm::rax(), getNodeOp(resultProj));
       }
     }
   }
-
-
 }
 
 void AsmMethodPass::visitCmp(ir_node *node) {
@@ -404,22 +342,18 @@ void AsmMethodPass::visitCmp(ir_node *node) {
   ir_node *leftNode = get_Cmp_left(node);
   ir_node *rightNode = get_Cmp_right(node);
 
-  Asm::OperandPtr leftOp;
-  Asm::OperandPtr rightOp;
-
   // For simplicity, we ignore the case where the left node is a constant.
 
-  // Load stack slot into register
-  auto leftRegMode = Asm::X86Reg::getRegMode(leftNode);
-  auto op = getNodeResAsInstOperand(leftNode);
-  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, leftRegMode));
-  bb->emplaceJump<Asm::Mov>(std::move(op), std::move(tmpReg), leftRegMode);
-  leftOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, leftRegMode));
+  auto leftRegMode = Asm::getRegMode(leftNode);
+  bb->pushJumpInstr(Asm::makeMov(leftRegMode,
+                                 getNodeOp(leftNode),
+                                 Asm::Op(Asm::RegName::bx, leftRegMode)));
 
-  rightOp = getNodeResAsInstOperand(rightNode);
-
-  // left and right swapped!
-  bb->emplaceJump<Asm::Cmp>(std::move(rightOp), std::move(leftOp), nodeStr(node));
+  // Left and right swapped!
+  bb->pushJumpInstr(&Asm::Cmp,
+                    getNodeOp(rightNode),
+                    Asm::Op(Asm::RegName::bx, leftRegMode),
+                    nodeStr(node));
 }
 
 void AsmMethodPass::visitCond(ir_node *node) {
@@ -453,12 +387,11 @@ void AsmMethodPass::visitCond(ir_node *node) {
   if (falseBlock == trueBlock) {
     // Successor block is the same for both true and false case. This is a boolean comparison.
     // Just jump to that block, and the Phi node (if it exists) will do the je/jne instructions
-
-    bb->emplaceJump<Asm::Jmp>(Asm::getBlockLabel(trueBlock), ir_relation_true);
+    bb->pushJumpInstr(Asm::makeJump(Asm::getBlockLabel(trueBlock), ir_relation_true));
   } else {
     // Control flow comparison, jump to the appropriate basic block
-    bb->emplaceJump<Asm::Jmp>(Asm::getBlockLabel(trueBlock), relation);
-    bb->emplaceJump<Asm::Jmp>(Asm::getBlockLabel(falseBlock), getInverseRelation(relation));
+    bb->pushJumpInstr(Asm::makeJump(Asm::getBlockLabel(trueBlock), relation));
+    bb->pushJumpInstr(Asm::makeJump(Asm::getBlockLabel(falseBlock), getInverseRelation(relation)));
   }
 }
 
@@ -472,7 +405,7 @@ void AsmMethodPass::visitJmp(ir_node *node) {
   ir_node *jumpTarget = getNthSucc(node, 0);
   assert(is_Block(jumpTarget));
 
-  bb->emplaceJump<Asm::Jmp>(Asm::getBlockLabel(jumpTarget), ir_relation_true);
+  bb->pushJumpInstr(Asm::makeJump(Asm::getBlockLabel(jumpTarget), ir_relation_true));
 }
 
 void AsmMethodPass::visitEnd(ir_node *node) {
@@ -497,16 +430,14 @@ void AsmMethodPass::visitReturn(ir_node *node) {
 
   if (get_Return_n_ress(node) > 0) {
     ir_node *opNode = get_Return_res(node, 0);
-    auto op = getNodeResAsInstOperand(opNode);
-    auto regMode = Asm::X86Reg::getRegMode(opNode);
-    auto ax = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::ax, regMode));
 
-    bb->emplaceInstruction<Asm::Mov>(std::move(op), std::move(ax), regMode, "Return value");
+    auto op = getNodeOp(opNode);
+    bb->pushInstr(Asm::Instr(&Asm::Mov, op, Asm::rax()));
   }
 
   // Jump to end block
   // return nodes should have exactly one successor, the end block.
-  bb->emplaceJump<Asm::Jmp>(Asm::getBlockLabel(succ), ir_relation_true);
+  bb->pushJumpInstr(Asm::makeJump(Asm::getBlockLabel(succ), ir_relation_true));
 }
 
 void AsmMethodPass::visitLoad(ir_node *node) {
@@ -531,31 +462,24 @@ void AsmMethodPass::visitLoad(ir_node *node) {
 
   assert(get_irn_mode(succ) != mode_M); // ! Load nodes have 2 successor Proj nodes
 
-  if (!optimize)
-    bb->addComment("Load from " + nodeStr(pred));
   /*
    * 1) Load contents of pred slot into temporary register. This now contains the address to read from
    * 2) Write the value at that address into a second temporary register
    * 3) Write that value to succ's slot
    */
-  auto predRegMode = Asm::X86Reg::getRegMode(pred);
-  auto succRegMode = Asm::X86Reg::getRegMode(succ);
+  auto predRegMode = Asm::getRegMode(pred);
+  auto succRegMode = Asm::getRegMode(succ);
 
   // 1)
-  auto predOp = getNodeResAsInstOperand(pred);
-  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, predRegMode));
-  bb->emplaceInstruction<Asm::Mov>(std::move(predOp), std::move(tmpReg), predRegMode, "1)");
-
+  bb->pushInstr(Asm::makeMov(Asm::getRegMode(pred), getNodeOp(pred),
+                             Asm::Op(Asm::RegName::bx, predRegMode), "1)"));
   // 2)
-  auto bxOp = std::make_unique<Asm::MemoryBase>(0, Asm::X86Reg(Asm::X86Reg::Name::bx, predRegMode));
-  auto cxOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, succRegMode));
-  bb->emplaceInstruction<Asm::Mov>(std::move(bxOp), std::move(cxOp), succRegMode, "2)");
-
+  bb->pushInstr(Asm::makeMov(Asm::getRegMode(succ),
+                             Asm::Op(Asm::RegName::bx, predRegMode, 0),
+                             Asm::Op(Asm::RegName::cx, succRegMode), "2)"));
   // 3)
-  auto val = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, Asm::X86Reg::Mode::R));
-  writeValue(std::move(val), succ, "3)");
+  bb->pushInstr(&Asm::Movq, Asm::rcx(), getNodeOp(succ), "3)");
 }
-
 
 void AsmMethodPass::visitStore(ir_node *node) {
   PRINT_ORDER;
@@ -566,9 +490,6 @@ void AsmMethodPass::visitStore(ir_node *node) {
   ir_node *source = get_Store_value(node);
   ir_node *dest = get_Store_ptr(node);
 
-  if (!optimize)
-    bb->addComment(nodeStr(node) + ": " + nodeStr(source) + " into " + nodeStr(dest));
-
   // dest is a pointer, so we need to save into the address of that pointer,
   // not into the register of that node.
   assert(get_irn_mode(dest) == mode_P);
@@ -578,30 +499,23 @@ void AsmMethodPass::visitStore(ir_node *node) {
    * 2) write SOURCE value into address in tmp register.
    */
 
-  auto sourceRegMode = Asm::X86Reg::getRegMode(source);
-  auto destRegMode = Asm::X86Reg::getRegMode(dest);
+  bb->pushInstr(Asm::makeMov(Asm::getRegMode(dest), getNodeOp(dest), Asm::rbx(), "1)"));
 
-  auto destOp = getNodeResAsInstOperand(dest);
-  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::bx, destRegMode));
-  bb->emplaceInstruction<Asm::Mov>(std::move(destOp), std::move(tmpReg), destRegMode, "1)");
-  // r15 now contains the address to write to!
-
-  Asm::OperandPtr tmpOp;
-  if (is_Const(source)) {
-    tmpOp = std::make_unique<Asm::Immediate>(get_Const_tarval(source));
+  // rb now contains the address to write to!
+  auto sourceOp = getNodeOp(source);
+  Asm::Op tmpOp;
+  if (sourceOp.type == Asm::OP_IMM) {
+    tmpOp = sourceOp;
   } else {
-    // Load value to write to dest into tmp register
-    auto r14Op = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, destRegMode));
-    auto sourceOp = getNodeResAsInstOperand(source);
-    bb->emplaceInstruction<Asm::Mov>(std::move(sourceOp), std::move(r14Op), destRegMode, "2)");
-    tmpOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::cx, sourceRegMode));
+    tmpOp = Asm::Op(Asm::RegName::cx, Asm::getRegMode(dest));
+    bb->pushInstr(Asm::makeMov(Asm::getRegMode(dest),
+                               sourceOp,
+                               tmpOp,
+                               "2)"));
+    tmpOp = Asm::Op(tmpOp.p.reg.name, Asm::getRegMode(source)); // Different mode!
   }
 
-  // Mov tmpOp into (%bx)
-  auto r15Op = std::make_unique<Asm::MemoryBase>(0, Asm::X86Reg(Asm::X86Reg::Name::bx,
-                                                 Asm::X86Reg::Mode::R)); // Pointer, force R
-  bb->emplaceInstruction<Asm::Mov>(std::move(tmpOp), std::move(r15Op), sourceRegMode, "3)");
-
+  bb->pushInstr(Asm::makeMov(Asm::getRegMode(source), tmpOp, Asm::Op(Asm::rbx(), 0), "3)"));
 }
 
 void AsmMethodPass::visitPhi(ir_node *node) {
@@ -687,75 +601,58 @@ void AsmMethodPass::generateBoolPhi(ir_node *node) {
   std::string phiLabel = "phi_" + std::to_string(get_irn_node_nr(node));
 
   // TODO: The code duplication here isn't exactly nice
-  bb->emplaceStartPhiInstruction<Asm::Jmp>(falseLabel,
-                                           getInverseRelation(relation));
+  bb->pushStartPhiInstr(Asm::makeJump(falseLabel, getInverseRelation(relation)));
   // The cmp instruction was already written by visitCmp!
   {
     // Write this phiPred into the stack slot of the phi node
-    auto srcOp = getNodeResAsInstOperand(truePred);
+    auto srcOp = getNodeOp(truePred);
 
-    if (!dynamic_cast<Asm::Immediate*>(srcOp.get())) {
-      auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-      bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
-                                    Asm::X86Reg::Mode::R, "phi tmp 3");
-      srcOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+    if (srcOp.type != Asm::OP_IMM) {
+      auto tmpReg = Asm::Op(Asm::RegName::r15, Asm::RegMode::R);
+      bb->pushStartPhiInstr(&Asm::Movq, srcOp, tmpReg, "phi tmp 3");
+      srcOp = tmpReg;
     }
 
-    // This is basically writeValue but the basic block is not the one of the passed node!
-    auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
-                                                   Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                                               Asm::X86Reg::Mode::R));
-    bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(dstOp),
-                                  Asm::X86Reg::Mode::R, "phi dst");
+    bb->pushStartPhiInstr(&Asm::Movq,
+                          srcOp,
+                          Asm::Op(Asm::rbp(), ssm.getStackSlot(node, bb)),
+                          "phi dst");
     // end of true case, jump to phi label
-    bb->emplaceStartPhiInstruction<Asm::Jmp>(phiLabel, ir_relation_true);
+    bb->pushStartPhiInstr(Asm::makeJump(phiLabel, ir_relation_true));
   }
 
   // False case
   {
-    bb->emplaceStartPhiInstruction<Asm::Label>(falseLabel);
-    auto srcOp = getNodeResAsInstOperand(falsePred);
+    bb->pushStartPhiInstr(&Asm::Label, falseLabel);
+    auto srcOp = getNodeOp(falsePred);
 
-    if (!dynamic_cast<Asm::Immediate*>(srcOp.get())) {
-      auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-      bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
-                                    Asm::X86Reg::Mode::R, "phi tmp 4");
-      srcOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+    if (srcOp.type != Asm::OP_IMM) {
+      auto tmpReg = Asm::Op(Asm::RegName::r15, Asm::RegMode::R);
+      bb->pushStartPhiInstr(&Asm::Movq, srcOp, tmpReg, "phi tmp 4");
+      srcOp = tmpReg;
     }
 
-    // This is basically writeValue but the basic block is not the one of the passed node!
-    auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
-                                                   Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                                               Asm::X86Reg::Mode::R));
-    bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(dstOp),
-                                  Asm::X86Reg::Mode::R, "phi dst");
+    bb->pushStartPhiInstr(&Asm::Movq,
+                          srcOp,
+                          Asm::Op(Asm::rbp(), ssm.getStackSlot(node, bb)),
+                          "phi dst");
   }
 
   // end phi
-  bb->emplaceStartPhiInstruction<Asm::Label>(phiLabel);
+  bb->pushStartPhiInstr(&Asm::Label, phiLabel);
 }
 
 void AsmMethodPass::generateSwapPhi(ir_node *node) {
   auto bb = getBB(node);
   // Write this node's current value into its tmp slot
   {
-    auto srcOp =  std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
-                                                    Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                                                Asm::X86Reg::Mode::R));
+    auto srcOp = getNodeOp(node);
+    auto tmpReg = Asm::Op(Asm::RegName::r15, Asm::RegMode::R);
+    bb->pushStartPhiInstr(&Asm::Movq, srcOp, tmpReg);
 
-    // tmp register
-    auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(srcOp), std::move(tmpReg));
-
-    // No from tmp register into our stack slot
-    tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    auto destOp = std::make_unique<Asm::MemoryBase>(ssm.getTmpSlot(node),
-                                                    Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                                                Asm::X86Reg::Mode::R));
-    bb->emplaceStartPhiInstruction<Asm::Mov>(std::move(tmpReg),
-                                             std::move(destOp),
-                                             Asm::X86Reg::Mode::R,
-                                             "swap phi old val " + nodeStr(node));
+    bb->pushStartPhiInstr(&Asm::Movq, tmpReg,
+                          Asm::Op(Asm::rbp(), ssm.getTmpSlot(node)),
+                          "swap phi old val " + nodeStr(node));
   }
 
   ir_node *phiPred = get_Phi_pred(node, 0);
@@ -777,29 +674,18 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
   // write into the stack slot of this node
   {
     auto predBB = getBB(phiProj);
-    //auto predBB = getBB(pget_nodes_block(get_Block_cfgpred(get_nodes_block(node), i))
 
     assert(getBB(phiPred) == getBB(node));
-    if (!optimize)
-      predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node) + " for pred " + nodeStr(phiPred));
-    // tmp slot of predecessor phi
-    auto srcOp =  std::make_unique<Asm::MemoryBase>(ssm.getTmpSlot(phiPred),
-                                                    Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                                                Asm::X86Reg::Mode::R));
-
     // tmp register
-    auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    predBB->emplacePhiInstr<Asm::Mov>(std::move(srcOp), std::move(tmpReg));
+    auto tmpReg = Asm::Op(Asm::RegName::r15, Asm::RegMode::R);
+    predBB->pushPhiInstr(&Asm::Movq,
+                         Asm::Op(Asm::rbp(), ssm.getTmpSlot(phiPred)),
+                         tmpReg);
 
-    // No from tmp register into our stack slot
-    tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    //auto destOp =  std::make_unique<Asm::MemoryBase>(ssm.getTmpSlot(node),
-    auto destOp =  std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, bb),
-                                                     Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                                                 Asm::X86Reg::Mode::R));
-    predBB->emplacePhiInstr<Asm::Mov>(std::move(tmpReg), std::move(destOp),
-                                             Asm::X86Reg::Mode::R,
-                                             "phiPred read from tmp of " + nodeStr(phiPred));
+    // Now from tmp register into our stack slot
+    predBB->pushPhiInstr(&Asm::Movq,
+                         tmpReg, Asm::Op(Asm::rbp(), ssm.getStackSlot(node, bb)));
+
   }
 
   // Not a phi pred. Write into its basic block,
@@ -811,23 +697,12 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
     assert(predBB != bb);
     /* Control flow, generate phi instructions in the predecessor basic blocks */
     // Write this phiPred into the stack slot of the phi node
-    if (!optimize)
-      predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node) + " for pred " + nodeStr(otherPred));
-    auto srcOp = getNodeResAsInstOperand(otherPred);
+    auto tmpReg = Asm::Op(Asm::RegName::r15, Asm::RegMode::R);
+    predBB->pushPhiInstr(&Asm::Movq, getNodeOp(otherPred), tmpReg, "phi tmp 2");
 
-    auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    predBB->emplacePhiInstr<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
-                                  Asm::X86Reg::Mode::R, "phi tmp 2");
-
-    // This is basically writeValue but the basic block is not the one of the passed node!
-    tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-    //auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getTmpSlot(node),
-    auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, predBB),
-                                                   Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                                               Asm::X86Reg::Mode::R));
-    predBB->emplacePhiInstr<Asm::Mov>(std::move(tmpReg), std::move(dstOp),
-                                      Asm::X86Reg::Mode::R,
-                                      nodeStr(node) + "commit");
+    predBB->pushPhiInstr(&Asm::Movq, tmpReg,
+                         Asm::Op(Asm::rbp(), ssm.getStackSlot(node, predBB)),
+                         nodeStr(node) + " commit");
   }
 }
 
@@ -843,27 +718,20 @@ void AsmMethodPass::generateNormalPhi(ir_node *node) {
     ir_node *blockPredNode = get_Block_cfgpred(get_nodes_block(node), i);
 
     auto predBB = getBB(blockPredNode);
-    //predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node));
     assert(predBB != bb);
     /* Control flow, generate phi instructions in the predecessor basic blocks */
     // Write this phiPred into the stack slot of the phi node
-    if (!optimize)
-      predBB->emplacePhiInstr<Asm::Comment>(nodeStr(node) + " for pred " + nodeStr(phiPred));
 
-    auto srcOp = getNodeResAsInstOperand(phiPred);
-    if (!dynamic_cast<Asm::Immediate*>(srcOp.get())) {
-      auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
-      predBB->emplacePhiInstr<Asm::Mov>(std::move(srcOp), std::move(tmpReg),
-                                    Asm::X86Reg::Mode::R, "phi tmp 1");
-      srcOp = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, Asm::X86Reg::Mode::R));
+    Asm::Op srcOp = getNodeOp(phiPred);
+    if (srcOp.type != Asm::OP_IMM) {
+      auto tmpReg = Asm::Op(Asm::RegName::r15, Asm::RegMode::R);
+      predBB->pushPhiInstr(&Asm::Movq,
+                           srcOp, tmpReg);
+      srcOp = tmpReg;
     }
-
-    // This is basically writeValue but the basic block is not the one of the passed node!
-    auto dstOp = std::make_unique<Asm::MemoryBase>(ssm.getStackSlot(node, predBB),
-                                                   Asm::X86Reg(Asm::X86Reg::Name::bp,
-                                                               Asm::X86Reg::Mode::R));
-    predBB->emplacePhiInstr<Asm::Mov>(std::move(srcOp), std::move(dstOp),
-                                  Asm::X86Reg::Mode::R, "phi dst: " + nodeStr(blockPredNode));
+    predBB->pushPhiInstr(&Asm::Movq,
+                         srcOp,
+                         Asm::Op(Asm::rbp(), ssm.getStackSlot(node, predBB)));
   }
 
 }
@@ -872,18 +740,12 @@ void AsmMethodPass::visitMinus(ir_node *node) {
   PRINT_ORDER;
   ir_node *sourceNode = get_Minus_op(node);
   auto bb = getBB(node);
-  auto regMode = Asm::X86Reg::getRegMode(node);
-  if (!optimize)
-    bb->addComment("Negate " + nodeStr(sourceNode) + " into " + nodeStr(node));
-  auto sourceOp = getNodeResAsInstOperand(sourceNode);
 
-  auto tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, regMode));
-  bb->emplaceInstruction<Asm::Mov>(std::move(sourceOp), std::move(tmpReg));
+  auto regMode = Asm::getRegMode(node);
+  bb->pushInstr(&Asm::Mov, getNodeOp(sourceNode), Asm::Op(Asm::RegName::bx, regMode));
 
-  tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, regMode));
-  bb->emplaceInstruction<Asm::Neg>(std::move(tmpReg), "Negate " + nodeStr(sourceNode));
-
-  tmpReg = Asm::Register::get(Asm::X86Reg(Asm::X86Reg::Name::r15, regMode));
-  auto destOp = getNodeResAsInstOperand(node);
-  bb->emplaceInstruction<Asm::Mov>(std::move(tmpReg), std::move(destOp), regMode);
+  bb->pushInstr(&Asm::Neg, Asm::Op(Asm::RegName::bx, regMode));
+  bb->pushInstr(Asm::makeMov(regMode,
+                             Asm::Op(Asm::RegName::bx, regMode),
+                             getNodeOp(node)));
 }
