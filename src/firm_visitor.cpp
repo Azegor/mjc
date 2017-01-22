@@ -1,3 +1,5 @@
+#include <deque>
+#include <unordered_map>
 #include "firm_visitor.hpp"
 
 __attribute__((unused))
@@ -35,6 +37,60 @@ static void booleanToControlFlow(ir_node *boolean, ir_node *trueBlock, ir_node *
   ir_node *projFalse = new_Proj(cond, mode_X, pn_Cond_false);
   add_immBlock_pred(trueBlock, projTrue);
   add_immBlock_pred(falseBlock, projFalse);
+}
+
+static void remove_critical_edges(ir_graph *graph) {
+  std::unordered_map<ir_node*, int> numBlockPreds;
+  std::unordered_map<ir_node*, int> numBlockSuccs;
+  std::deque<ir_node*> newBlocks;
+
+  newBlocks.emplace_back(get_irg_end_block(graph));
+
+  // get keepalive blocks
+  ir_node *end = get_irg_end(graph);
+  int nKeepAlives = get_End_n_keepalives(end);
+  for (int i = 0; i < nKeepAlives; i++) {
+    ir_node *pred = get_End_keepalive(end, i);
+    if (pred && is_Block(pred)) {
+      newBlocks.emplace_back(pred);
+    }
+  }
+
+  while (!newBlocks.empty()) {
+    ir_node *block = newBlocks.front();
+    newBlocks.pop_front();
+
+    // new block
+    if (numBlockPreds.count(block) < 1) {
+      int nPreds = get_Block_n_cfgpreds(block);
+      numBlockPreds[block] = nPreds;
+
+      for (int i = 0; i < nPreds; i++) {
+        ir_node *predBlock = get_Block_cfgpred_block(block, i);
+        // might be Bad, in which case it seems to actually be NULL ?
+        if (predBlock && is_Block(predBlock)) {
+          newBlocks.emplace_back(predBlock);
+          numBlockSuccs[predBlock] += 1;
+        }
+      }
+    }
+  }
+
+  for (const auto& kv : numBlockPreds) {
+    ir_node *block = kv.first;
+    int nPreds = kv.second;
+    if (nPreds > 1) {
+      for (int i = 0; i < nPreds; i++) {
+        ir_node *predBlock = get_Block_cfgpred_block(block, i);
+        if (numBlockSuccs[predBlock] > 1) {
+          ir_node *pred = get_Block_cfgpred(block, i);
+          ir_node *newBlock = new_r_Block(graph, 1, &pred);
+          ir_node *newJmp = new_r_Jmp(newBlock);
+          set_Block_cfgpred(block, i, newJmp);
+        }
+      }
+    }
+  }
 }
 
 
@@ -145,6 +201,9 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
     dump_ir_graph(current_ir_graph, "");
   }
   irg_finalize_cons(mainMethodGraph);
+
+  remove_critical_edges(mainMethodGraph);
+
   firmGraphs.push_back(mainMethodGraph);
 }
 
@@ -169,6 +228,9 @@ void FirmVisitor::visitRegularMethod(ast::RegularMethod &method) {
   mature_immBlock(get_r_cur_block(methodGraph));
 
   irg_finalize_cons(methodGraph);
+
+  remove_critical_edges(methodGraph);
+
   if (printGraphs) {
     dump_ir_graph(current_ir_graph, "");
   }
