@@ -99,23 +99,29 @@ enum OpType {
 };
 
 struct Op {
+private:
+  struct _imm {
+    int value;
+  };
+  struct _str {
+    std::string *str = nullptr;
+  };
+  struct _reg {
+    RegName name;
+    RegMode mode;
+  };
+  struct _ind {
+    RegName base;
+    RegMode mode;
+    int32_t offset;
+  };
+public:
   OpType type = OP_NONE;
   union {
-    struct {
-      int value;
-    } imm;
-    struct {
-      std::string *str = nullptr;
-    } str;
-    struct {
-      RegName name;
-      RegMode mode;
-    } reg;
-    struct {
-      RegName base;
-      RegMode mode;
-      int32_t offset;
-    } ind;
+    _imm imm;
+    _str str;
+    _reg reg;
+    _ind ind;
   };
 
   Op() { type = OP_NONE; str.str = nullptr; }
