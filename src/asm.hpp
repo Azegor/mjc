@@ -425,7 +425,6 @@ public:
 class Function {
   std::string fnName;
   int ARsize = 0;
-  int startBlockId = -1;
 
 public:
   std::vector<BasicBlock *> orderedBasicBlocks;
@@ -444,8 +443,6 @@ public:
     basicBlocks.insert({node, bb});
     orderedBasicBlocks.push_back(bb);
   }
-
-  void setStartBlockId(int id) { startBlockId = id; }
 
   BasicBlock *getBB(ir_node *node) {
     assert(is_Block(node));

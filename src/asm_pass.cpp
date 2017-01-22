@@ -80,7 +80,6 @@ void AsmPass::before() {
 void AsmPass::visitMethod(ir_graph *graph) {
   const char *functionName = get_entity_ld_name(get_irg_entity(graph));
   Asm::Function func(functionName);
-  func.setStartBlockId(get_irn_node_nr(get_irg_start_block(graph)));
   AsmMethodPass methodPass(graph, &func, this->optimize);
   methodPass.run();
   asmProgram.addFunction(std::move(func));
