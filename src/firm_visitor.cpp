@@ -907,7 +907,6 @@ void FirmVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
   mature_immBlock(afterBlock);
 
   set_cur_block(loopBlock);
-  keep_alive(loopBlock);
 
   get_store();
 
@@ -915,6 +914,8 @@ void FirmVisitor::visitWhileStatement(ast::WhileStatement &stmt) {
   if (stmt.getStatement() != nullptr) {
     stmt.getStatement()->accept(this);
   }
+
+  keep_alive(get_cur_block());
 
   // don't add jump if the Statement returns
   if ((stmt.getStatement() == nullptr) ||
