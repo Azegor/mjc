@@ -27,6 +27,7 @@
 #ifndef CONST_PROP_PASS_H
 #define CONST_PROP_PASS_H
 
+#include <unordered_map>
 #include <iostream>
 #include <cassert>
 
@@ -57,6 +58,8 @@ void exchangeWithLink(ir_node *oldNode, ir_node* newNode) {
 class ConstPropPass : public FunctionPass<ConstPropPass, ir_tarval>
 {
 private:
+  std::unordered_map<ir_node*, bool> controlFlowVisited;
+
   void enqueueAllChildren(ir_node *node) {
     foreach_out_edge_safe(node, edge) {
 //       std::cout << "   " << get_irn_opname(get_edge_src_irn(edge)) << std::endl;
@@ -70,6 +73,58 @@ private:
 //       std::cout << get_irn_opname(node) << ": " << tarvalToStr(val) << std::endl;
       setVal(node, val);
       enqueueAllChildren(node);
+    }
+  }
+
+  // remember that the control flow via this node will be taken (or not, respectively)
+  // BUT: only set 'true' if we actually know that our block is reachable in the first place
+  void maybeMarkControlFlow(ir_node *node, bool taken) {
+    // I'm actually suprised that everything below works if node is Bad...
+    assert(is_Proj(node) || is_Jmp(node) || is_Bad(node));
+
+    if (controlFlowVisited.count(node) && controlFlowVisited[node] == taken) {
+      return;
+    }
+    // node is a Proj_X that is currently not taken -> no need to queue following Phis and control flow
+    // we should never change from true to false, because that would imply the Cmp going from bad to const
+    // might still happen if the Cmp was unknown before
+    if (taken == false) {
+      controlFlowVisited[node] = taken;
+      return;
+    }
+
+    ir_node *block = get_nodes_block(node);
+    if (block == get_irg_start_block(graph)) {
+      controlFlowVisited[node] = taken;
+    } else {
+      int n = get_Block_n_cfgpreds(block);
+      ir_node **arr = get_Block_cfgpred_arr(block);
+      bool currentlyTaken = false;
+      bool visitorReachable = false;
+      for (int i = 0; i < n; i++) {
+        if (controlFlowVisited.count(arr[i])) {
+          visitorReachable = true;
+          currentlyTaken = currentlyTaken || (taken && controlFlowVisited[arr[i]]);
+        }
+      }
+      if (visitorReachable) {
+        controlFlowVisited[node] = currentlyTaken;
+        if (currentlyTaken) {
+          foreach_out_edge_safe(node, edge) {
+            ir_node *targetBlock = get_edge_src_irn(edge);
+            foreach_out_edge_safe(targetBlock, edge2) {
+              ir_node *irn = get_edge_src_irn(edge2);
+              if (get_irn_mode(irn) == mode_X) {
+                enqueue(irn);
+              } else if (is_Phi(irn)) {
+                enqueue(irn);
+              }
+	    }
+          }
+        }
+      } else {
+        enqueue(node);
+      }
     }
   }
 
@@ -279,38 +334,66 @@ public:
   }
 
   void visitProj(ir_node *proj) {
-    // TODO: if mode_X and Cond const -> replace with jump (will be fun(n|k)y)
-    // watch out when replacing node regarding the work list (successor node)!
+    if (get_irn_mode(proj) == mode_X) {
+      ir_node *cond = get_Proj_pred(proj);
+      assert(is_Cond(cond));
+
+      ir_node *cmp = get_Cond_selector(cond);
+      ir_tarval *cmpVal = getVal(cmp);
+      if(tarval_is_constant(cmpVal)) {
+        assert((cmpVal == tarval_b_true) || (cmpVal == tarval_b_false));
+        if ((cmpVal == tarval_b_true) == (get_Proj_num(proj) == pn_Cond_true)) {
+          maybeMarkControlFlow(proj, true);
+        } else {
+          maybeMarkControlFlow(proj, false);
+        }
+      } else {
+        maybeMarkControlFlow(proj, true);
+      }
+    }
     if (get_irn_mode(proj) != mode_M) {
       ir_node *pred = get_Proj_pred(proj);
       setNodeLink(proj, getVal(pred));
     }
   }
 
+  void visitJmp(ir_node *jmp) {
+    maybeMarkControlFlow(jmp, true);
+  }
+
+  void visitBad(ir_node *bad) {
+    if (get_irn_mode(bad) == mode_X) {
+      maybeMarkControlFlow(bad, false);
+    }    
+  }
+
   void visitPhi(ir_node *phi) {
     int nPreds = get_Phi_n_preds(phi);
-    ir_tarval *val;
+    ir_tarval *val = tarval_unknown;
 
     assert(nPreds);
-    val = getVal(get_Phi_pred(phi,0));
-    if (nPreds > 1) {
-      for (int i = 1; i < nPreds; i ++) {
-        ir_node *pred = get_Phi_pred(phi, i);
-        ir_tarval *predVal = getVal(pred);
+    for (int i = 0; i < nPreds; i ++) {
+      ir_node *block = get_nodes_block(phi);
+      ir_node *pred = get_Phi_pred(phi, i);
+      ir_node *blockPred = get_Block_cfgpred(block, i);
+      // skip any predecessors that are in unreachable blocks (as determined by constprop)
+      if (controlFlowVisited.count(blockPred) && controlFlowVisited[blockPred] == false) {
+        continue;
+      }
+      ir_tarval *predVal = getVal(pred);
 
-        if (val == tarval_bad || predVal == tarval_bad) {
-          val = tarval_bad;
-          break;
-        } else if (val == tarval_unknown) {
-          val = predVal;
-        } else if (predVal == tarval_unknown) {
-          // val = val;
-        } else if (tarval_cmp (val, predVal) != ir_relation_equal) {
-          val = tarval_bad;
-          break;
-        } else {
-          // keep val -> nop
-        }
+      if (val == tarval_bad || predVal == tarval_bad) {
+        val = tarval_bad;
+        break;
+      } else if (val == tarval_unknown) {
+        val = predVal;
+      } else if (predVal == tarval_unknown) {
+        // val = val;
+      } else if (tarval_cmp (val, predVal) != ir_relation_equal) {
+        val = tarval_bad;
+        break;
+      } else {
+        // keep val -> nop
       }
     }
 
