@@ -162,8 +162,8 @@ public:
   }
 
   void initConst(ir_node *konst) {
-    setVal(konst, get_Const_tarval(konst)); // also adds successors to worklist
-    enqueue(konst);
+    setVal(konst, get_Const_tarval(konst));
+    // don't enqueue Const nodes as we don't do anything for them after this
   }
   void initAdd(ir_node *add) {
     setVal(add, tarval_unknown);
