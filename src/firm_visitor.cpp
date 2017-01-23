@@ -197,13 +197,12 @@ void FirmVisitor::visitMainMethod(ast::MainMethod &method) {
   // seals current block (-> all predecessors known)
   mature_immBlock(get_r_cur_block(mainMethodGraph));
   irg_finalize_cons(mainMethodGraph);
-  if (printGraphs) {
-    dump_ir_graph(current_ir_graph, "");
-  }
-  irg_finalize_cons(mainMethodGraph);
 
   remove_critical_edges(mainMethodGraph);
 
+  if (printGraphs) {
+    dump_ir_graph(current_ir_graph, "");
+  }
   firmGraphs.push_back(mainMethodGraph);
 }
 
