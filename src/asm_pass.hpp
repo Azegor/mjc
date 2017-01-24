@@ -219,7 +219,7 @@ public:
 private:
   Asm::Function *func;
 
-  void generateNormalPhi(ir_node *node);
+  void generateNormalPhi(ir_node *node, bool writeInTmpSlot);
   void generateBoolPhi(ir_node *node);
   void generateSwapPhi(ir_node *node);
 };
