@@ -272,6 +272,8 @@ void AsmMethodPass::visitCall(ir_node *node) {
   int nParams = get_Call_n_params(node);
   int addSize = 0;
 
+  std::string comment = "Result of " + funcName;
+
   if (funcName == "print_int" ||
       funcName == "write_int") {
     assert(nParams == 1);
@@ -283,6 +285,7 @@ void AsmMethodPass::visitCall(ir_node *node) {
     ir_node *n = get_Call_param(node, 0);
     ir_node *size = get_Call_param(node, 1);
 
+    funcName = "calloc"; // Just inline this here.
     // num in rdi
     bb->pushInstr(Asm::Mov, getNodeOp(n), Asm::Op(Asm::RegName::di, Asm::getRegMode(n)));
     // size in rsi
@@ -326,7 +329,7 @@ void AsmMethodPass::visitCall(ir_node *node) {
       ir_node *resultProj = getProjSucc(projSucc);
 
       if (resultProj != nullptr) {
-        bb->pushInstr(Asm::Mov, Asm::rax(), getNodeOp(resultProj));
+        bb->pushInstr(Asm::Mov, Asm::rax(), getNodeOp(resultProj), comment);
       }
     }
   }
