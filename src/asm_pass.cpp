@@ -542,6 +542,19 @@ void AsmMethodPass::visitPhi(ir_node *node) {
   }
   swapCheck:
 
+  /* Whenever a phi node depends on another phi node, we need to read
+   * that node's tmp slot, not the real slot. That means we need to know
+   * which phi nodes have phi successors, so we only write into tmp slots
+   * when we have to. */
+  bool writeInTmpSlot = false;
+  foreach_out_edge_safe(node, edge) {
+    ir_node *src = get_edge_src_irn(edge);
+    if (is_Phi(src)) {
+      writeInTmpSlot = true;
+      break;
+    }
+  }
+
   int nPreds = get_Phi_n_preds(node);
   assert(nPreds == 2);
   bool needsLabels = get_nodes_block(get_Block_cfgpred(get_nodes_block(node), 0)) ==
@@ -556,12 +569,12 @@ void AsmMethodPass::visitPhi(ir_node *node) {
       generateBoolPhi(node);
     } else {
       //std::cout << "Normal: " << nodeStr(node) << std::endl;
-      generateNormalPhi(node);
+      generateNormalPhi(node, writeInTmpSlot);
     }
   }
 
 #if 0
-  std::cout << nodeStr(node) << " in block " << nodeStr(get_nodes_block(node)) << ":" << std::endl;
+  std::cout << nodeStr(node) << " in block " << nodeStr(get_nodes_block(node)) << " (" << writeInTmpSlot << ") :" << std::endl;
   for (int i = 0; i < get_Phi_n_preds(node); i ++) {
     ir_node *pred = get_Phi_pred(node, i);
     //ir_node *cfgPred = get_Block_cfgpred(get_nodes_block(node), i);
@@ -706,11 +719,25 @@ void AsmMethodPass::generateSwapPhi(ir_node *node) {
 }
 
 
-void AsmMethodPass::generateNormalPhi(ir_node *node) {
+void AsmMethodPass::generateNormalPhi(ir_node *node, bool writeInTmpSlot) {
   auto bb = getBB(node);
+
 
   int nPreds = get_Phi_n_preds(node);
   assert(nPreds == 2);
+
+  if (writeInTmpSlot) {
+    // Take the current phi value and write it into the tmp slot
+    bb->pushStartPhiInstr(Asm::Movq,
+                              getNodeOp(node),
+                              Asm::rbx(),
+                              "1) Write in tmp slot of " + nodeStr(node));
+
+    bb->pushStartPhiInstr(Asm::Movq,
+                              Asm::rbx(),
+                              Asm::Op(Asm::rbp(), ssm.getTmpSlot(node)),
+                              "2) Write in tmp slot of "+ nodeStr(node));
+  }
 
   for (int i = 0; i < nPreds; i ++) {
     ir_node *phiPred = get_Phi_pred(node, i);
@@ -721,16 +748,24 @@ void AsmMethodPass::generateNormalPhi(ir_node *node) {
     /* Control flow, generate phi instructions in the predecessor basic blocks */
     // Write this phiPred into the stack slot of the phi node
 
-    Asm::Op srcOp = getNodeOp(phiPred);
+    Asm::Op srcOp;
+    if (is_Phi(phiPred))
+      srcOp = Asm::Op(Asm::rbp(), ssm.getTmpSlot(phiPred));
+    else
+      srcOp = getNodeOp(phiPred);
+
     if (srcOp.type != Asm::OP_IMM) {
       auto tmpReg = Asm::Op(Asm::RegName::r15, Asm::RegMode::R);
       predBB->pushPhiInstr(Asm::Movq,
-                           srcOp, tmpReg);
+                           srcOp, tmpReg,
+                           "1) Normal " + nodeStr(node) + " for pred " + nodeStr(phiPred));
       srcOp = tmpReg;
     }
+
     predBB->pushPhiInstr(Asm::Movq,
                          srcOp,
-                         Asm::Op(Asm::rbp(), ssm.getStackSlot(node)));
+                         getNodeOp(node),
+                         "2) Normal " + nodeStr(node) + " for pred " + nodeStr(phiPred));
   }
 
 }
