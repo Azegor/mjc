@@ -348,10 +348,36 @@ class BasicBlock {
 public:
   std::vector<Instr> instrs;
   std::vector<Instr> jumpInstrs;
+  // Keep this separate for debugging
+  std::vector<Instr> flattenedInstrs;
+
 
   BasicBlock(ir_node *node, std::string comment = ""s)
     : comment(std::move(comment)), node(node) {}
   BasicBlock(BasicBlock &&bb) = default;
+
+
+  void flattenInstrs() {
+    assert(flattenedInstrs.size() == 0);
+    // So far, we have several lists of instructions, now
+    // flatten them all to one list.
+
+    for (auto &instr : startPhiInstrs) {
+      flattenedInstrs.push_back(instr);
+    }
+
+    for (auto &instr : instrs) {
+      flattenedInstrs.push_back(instr);
+    }
+
+    for (auto &instr : phiInstrs) {
+      flattenedInstrs.push_back(instr);
+    }
+
+    for (auto &instr : jumpInstrs) {
+      flattenedInstrs.push_back(instr);
+    }
+  }
 
   void pushInstr(const Instr instr) {
     instrs.push_back(std::move(instr));
@@ -379,47 +405,41 @@ public:
 
   template<typename... Args>
   void replaceInstr(size_t index, Args &&... args) {
+    assert(this->flattenedInstrs.size() == 0);
     instrs.at(index) = Instr(args...);
   }
 
   void replaceInstr(size_t index, Instr instr) {
+    assert(this->flattenedInstrs.size() == 0);
     instrs.at(index) = std::move(instr);
   }
 
+  template<typename... Args>
+  void replaceFlattenedInstr(size_t index, Args &&... args) {
+    assert(this->flattenedInstrs.size() > 0);
+    flattenedInstrs.at(index) = Instr(args...);
+  }
+
+  void replaceFlattenedInstr(size_t index, Instr instr) {
+    assert(this->flattenedInstrs.size() > 0);
+    flattenedInstrs.at(index) = std::move(instr);
+  }
+
   void removeInstr(size_t index) {
+    assert(this->flattenedInstrs.size() == 0);
     this->instrs.erase(this->instrs.begin() + index);
+  }
+
+  void removeFlattenedInstr(size_t index) {
+    assert(this->flattenedInstrs.size() > 0);
+    this->flattenedInstrs.erase(this->flattenedInstrs.begin() + index);
   }
 
   void write(AsmWriter &writer) const {
     writer.writeLabel(getBlockLabel(node));
 
-
-    if (startPhiInstrs.size() > 0) {
-      writer.writeComment("------- StartPhiInstructions --------");
-      for (auto &instr : startPhiInstrs) {
-        writer.writeInstr(instr);
-      }
-    }
-
-    if (instrs.size() > 0) {
-      writer.writeComment("------- Normal Instructions --------");
-      for (auto &instr : instrs) {
-        writer.writeInstr(instr);
-      }
-    }
-
-    if (phiInstrs.size() > 0) {
-      writer.writeComment("------- PhiInstructions --------");
-      for (auto &instr : phiInstrs) {
-        writer.writeInstr(instr);
-      }
-    }
-
-    if (jumpInstrs.size() > 0) {
-      writer.writeComment("------- JumpInstructions --------");
-      for (auto &instr : jumpInstrs) {
-        writer.writeInstr(instr);
-      }
+    for (auto &instr : flattenedInstrs) {
+      writer.writeInstr(instr);
     }
   }
 
@@ -476,6 +496,13 @@ struct Program {
   std::vector<Function> functions;
 
 public:
+  void flattenFunctions() {
+    for (auto &f : functions) {
+      for (auto &b : f.orderedBasicBlocks) {
+        b->flattenInstrs();
+      }
+    }
+  }
   void addFunction(Function f) { functions.emplace_back(std::move(f)); }
 
   friend std::ostream &operator<<(std::ostream &o, const Program &p) {

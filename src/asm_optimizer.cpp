@@ -63,8 +63,8 @@ void AsmStackOptimizer::optimizeFunction(Asm::Function *func) {
   // First, find all stack slots we actually read out of
   for (size_t i = 0; i < func->orderedBasicBlocks.size(); i ++) {
     auto block = func->orderedBasicBlocks.at(i);
-    for (size_t x = 0; x < block->instrs.size(); x ++) {
-      auto instr = &block->instrs.at(x);
+    for (size_t x = 0; x < block->flattenedInstrs.size(); x ++) {
+      auto instr = &block->flattenedInstrs.at(x);
 
       if (instr->isMov() &&
           instr->ops[0].type == Asm::OP_IND) {
@@ -74,7 +74,6 @@ void AsmStackOptimizer::optimizeFunction(Asm::Function *func) {
         if (offset < 0) {
           usedSlots[ (-offset) / 8] = true;
         }
-        std::cout << offset << std::endl;
       }
 
     }
@@ -84,18 +83,17 @@ void AsmStackOptimizer::optimizeFunction(Asm::Function *func) {
   // instruction is used.
   for (size_t i = 0; i < func->orderedBasicBlocks.size(); i ++) {
     auto block = func->orderedBasicBlocks.at(i);
-    for (size_t x = 0; x < block->instrs.size(); x ++) {
-      auto instr = &block->instrs.at(x);
+    for (size_t x = 0; x < block->flattenedInstrs.size(); x ++) {
+      auto instr = &block->flattenedInstrs.at(x);
 
       if (instr->isMov() &&
           instr->ops[1].type == Asm::OP_IND) {
         // Write into a stack slot.
         int offset = instr->ops[1].ind.offset;
         if (offset < 0 && !usedSlots[(- offset) / 8]) {
-          std::cout << "Removing " << *instr << std::endl;
           // Write into a stack slot we never read out of again!
           // -> remove the instruction.
-          block->removeInstr(x);
+          block->removeFlattenedInstr(x);
           x --;
           this->optimizations ++;
         }
@@ -156,11 +154,12 @@ void AsmSimpleOptimizer::printOptimizations() {
 // into just
 // mov reg, slot
 void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
-  for (size_t i = 0; i < block->instrs.size() - 1; i ++) {
-    auto mov1 = &block->instrs.at(i);
-    auto mov2 = &block->instrs.at(i + 1);
+  for (size_t i = 0; i < block->flattenedInstrs.size() - 1; i ++) {
+    auto mov1 = &block->flattenedInstrs.at(i);
+    auto mov2 = &block->flattenedInstrs.at(i + 1);
 
     if (mov1->isMov() && mov2->isMov()) {
+
       if (mov1->ops[0].type == Asm::OP_REG &&
           mov1->ops[1].type == Asm::OP_IND &&
           mov2->ops[0].type == Asm::OP_IND &&
@@ -175,7 +174,7 @@ void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
             // mov reg, slot
             // mov slot, reg
             // -> Just remove the second mov!
-            block->removeInstr(i + 1);
+            block->removeFlattenedInstr(i + 1);
             this->optimizations ++;
 
             continue;
@@ -185,10 +184,10 @@ void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
           // mov reg1, slot
           // mov slot, reg2
           // -> replace second mov with mov from first reg to second reg
-          block->replaceInstr(i + 1, Asm::makeMov(mov2->ops[1].reg.mode,
-                                                  Asm::Op(mov1->ops[0].reg.name,
-                                                          mov2->ops[1].reg.mode),
-                                                  mov2->ops[1]));
+          block->replaceFlattenedInstr(i + 1, Asm::makeMov(mov2->ops[1].reg.mode,
+                                                           Asm::Op(mov1->ops[0].reg.name,
+                                                                   mov2->ops[1].reg.mode),
+                                                           mov2->ops[1]));
           this->optimizations ++;
         }
       }
