@@ -41,7 +41,9 @@ protected:
   std::queue<ir_node*> worklist;
   T *sub() { return static_cast<T*>(this); }
 public:
-  FunctionPass(ir_graph *firmgraph) : graph(firmgraph) {}
+  FunctionPass(ir_graph *firmgraph) : graph(firmgraph) {
+    assert(firmgraph);
+  }
 
 private:
   void initNodesTopological() {
@@ -110,6 +112,7 @@ protected:
   void after() {};
 
   void enqueue(ir_node *node) {
+    assert(node);
     worklist.push(node);
   }
 
@@ -396,16 +399,21 @@ template <typename T>
 class ProgramPass {
 protected:
   std::queue<ir_graph*> worklist;
+  std::vector<ir_graph *> &allGraphs;
   T *sub() { return static_cast<T*>(this); }
 public:
-  ProgramPass(std::vector<ir_graph *> &graphs) {
-    for (auto g : graphs) {
+  ProgramPass(std::vector<ir_graph *> &graphs) : allGraphs(graphs) {}
+
+  void initWorkList() {
+    for (auto g : allGraphs) {
       enqueue(g);
     }
   }
 
   void run() {
     sub()->before();
+
+    sub()->initWorkList();
 
     while(!worklist.empty()) {
       ir_graph *graph = worklist.front();
@@ -417,6 +425,7 @@ public:
   }
 
   void enqueue(ir_graph *graph) {
+    assert(graph);
     worklist.push(graph);
   }
 

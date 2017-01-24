@@ -28,6 +28,7 @@
 #define OPTIMIZER_H
 
 #include "const_prop_pass.hpp"
+#include "unused_fn_remove_pass.hpp"
 #include "firm_pass.hpp"
 #include <libfirm/firm.h>
 #include <vector>
@@ -52,6 +53,8 @@ public:
       ConstPropPass cpp(g);
       cpp.run();
 
+
+
       // -- print graphs and verify if necessary --
 
       if (printGraphs)
@@ -67,6 +70,10 @@ public:
     }
     if (graphErrors)
       return false;
+
+    UnusedFnRmPass ufrp(firmGraphs);
+    ufrp.run();
+
     return true;
   }
 };
