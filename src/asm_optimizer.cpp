@@ -58,7 +58,6 @@ void AsmJumpOptimizer::printOptimizations() {
 void AsmStackOptimizer::optimizeFunction(Asm::Function *func) {
   const int slots = func->getARSize();
   bool *usedSlots = new bool[slots]();
-  for (int i = 0; i < slots; i ++) usedSlots[i] = true;
 
   // First, find all stack slots we actually read out of
   for (size_t i = 0; i < func->orderedBasicBlocks.size(); i ++) {
@@ -66,7 +65,7 @@ void AsmStackOptimizer::optimizeFunction(Asm::Function *func) {
     for (size_t x = 0; x < block->flattenedInstrs.size(); x ++) {
       auto instr = &block->flattenedInstrs.at(x);
 
-      if (instr->isMov() &&
+      if (instr->nOps >= 1 &&
           instr->ops[0].type == Asm::OP_IND) {
         // Mov into stack slot
         int offset = instr->ops[0].ind.offset;
