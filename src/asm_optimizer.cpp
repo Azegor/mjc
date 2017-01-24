@@ -52,6 +52,66 @@ void AsmJumpOptimizer::printOptimizations() {
   std::cout << "Removed " << this->optimizations << " redundant jumps" << std::endl;
 }
 
+
+// ====================================================================
+// Removes mov instructions into stack slots we never read from again
+void AsmStackOptimizer::optimizeFunction(Asm::Function *func) {
+  const int slots = func->getARSize();
+  bool *usedSlots = new bool[slots]();
+  for (int i = 0; i < slots; i ++) usedSlots[i] = true;
+
+  // First, find all stack slots we actually read out of
+  for (size_t i = 0; i < func->orderedBasicBlocks.size(); i ++) {
+    auto block = func->orderedBasicBlocks.at(i);
+    for (size_t x = 0; x < block->instrs.size(); x ++) {
+      auto instr = &block->instrs.at(x);
+
+      if (instr->isMov() &&
+          instr->ops[0].type == Asm::OP_IND) {
+        // Mov into stack slot
+        int offset = instr->ops[0].ind.offset;
+        // Positive stack slots are function arguments
+        if (offset < 0) {
+          usedSlots[ (-offset) / 8] = true;
+        }
+        std::cout << offset << std::endl;
+      }
+
+    }
+  }
+
+  // same loop, but this time check if the first operand of a mov
+  // instruction is used.
+  for (size_t i = 0; i < func->orderedBasicBlocks.size(); i ++) {
+    auto block = func->orderedBasicBlocks.at(i);
+    for (size_t x = 0; x < block->instrs.size(); x ++) {
+      auto instr = &block->instrs.at(x);
+
+      if (instr->isMov() &&
+          instr->ops[1].type == Asm::OP_IND) {
+        // Write into a stack slot.
+        int offset = instr->ops[1].ind.offset;
+        if (offset < 0 && !usedSlots[(- offset) / 8]) {
+          std::cout << "Removing " << *instr << std::endl;
+          // Write into a stack slot we never read out of again!
+          // -> remove the instruction.
+          block->removeInstr(x);
+          x --;
+          this->optimizations ++;
+        }
+      }
+
+    }
+  }
+
+  delete[] usedSlots;
+}
+
+void AsmStackOptimizer::printOptimizations() {
+  std::cout << "Removed " << this->optimizations << " movs into unused stack slots" << std::endl;
+}
+
+
 // ====================================================================
 void AsmSimpleOptimizer::optimizeBlock(Asm::BasicBlock *block) {
   for (size_t i = 0; i < block->instrs.size(); i ++) {

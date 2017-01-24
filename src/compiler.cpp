@@ -255,6 +255,10 @@ bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs,
       AsmMovOptimizer opt3(program);
       opt3.run();
       opt3.printOptimizations(); // TODO: Maybe add -g or something for these?
+
+      AsmStackOptimizer opt4(program);
+      opt4.run();
+      opt4.printOptimizations();
     }
 
     // Actually write ASM output

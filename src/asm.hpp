@@ -464,6 +464,7 @@ public:
   }
 
   void setARSize(int size) { ARsize = size; }
+  int getARSize() { return ARsize; }
 
   void writeProlog(AsmWriter &writer) const;
   void writeEpilog(AsmWriter &writer) const;

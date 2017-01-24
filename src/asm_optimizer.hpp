@@ -36,6 +36,14 @@ public:
 };
 
 // ====================================================================
+class AsmStackOptimizer : public AsmFunctionOptimizer {
+public:
+  AsmStackOptimizer(Asm::Program *program) : AsmFunctionOptimizer(program) {}
+  void optimizeFunction(Asm::Function *func) override;
+  void printOptimizations() override;
+};
+
+// ====================================================================
 // Exchanges single slower instructions for single faster ones
 class AsmSimpleOptimizer : public AsmBlockOptimizer {
 public:
