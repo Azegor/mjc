@@ -201,6 +201,48 @@ void AsmMovOptimizer::printOptimizations() {
 
 
 // ====================================================================
+void AsmArrayOptimizer::optimizeBlock(Asm::BasicBlock *block) {
+  for (size_t i = 0; i < block->flattenedInstrs.size() - 1; i ++) {
+    auto mov1 = &block->flattenedInstrs.at(i);
+    auto mov2 = &block->flattenedInstrs.at(i + 1);
+
+    if (mov1->mnemonic == Asm::Add && mov2->isMov()) {
+      // We are looking for
+      // add $val, reg
+      // mov op, (reg)
+      // which is just longer for
+      // mov op, val(reg)
+      // So replace it with that.
+      if (mov1->ops[0].type == Asm::OP_IMM &&
+          mov1->ops[1].type == Asm::OP_REG &&
+          mov2->ops[0].type != Asm::OP_IND &&
+          mov2->ops[1].type == Asm::OP_IND &&
+          mov2->ops[1].ind.base == mov1->ops[1].reg.name &&
+          mov2->ops[1].ind.offset == 0) {
+        std::cout << __FUNCTION__ << ": " << *mov1 << " / " << *mov2 << std::endl;
+
+        //continue;
+
+
+        int val = mov1->ops[0].imm.value;
+        auto regName = mov1->ops[1].reg.name;
+        auto regMode = mov1->ops[1].reg.mode;
+        // Above case!
+        // Remove add
+        // Now mov2 is at pos i!
+        mov2->ops[1] = Asm::Op(regName, regMode, val);
+        block->removeFlattenedInstr(i);
+        this->optimizations ++;
+      }
+    }
+  }
+}
+
+void AsmArrayOptimizer::printOptimizations() {
+  std::cout << "Replaced " << this->optimizations << " mov/add with just movs" << std::endl;
+}
+
+// ====================================================================
 void AsmAliasOptimizer::optimizeBlock(Asm::BasicBlock *block) {
   (void)block;
 #if 0

@@ -261,6 +261,11 @@ bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs,
       AsmStackOptimizer opt4(program);
       opt4.run();
       opt4.printOptimizations();
+
+      AsmArrayOptimizer opt5(program);
+      opt5.run();
+      opt5.printOptimizations();
+
     } else {
       program->flattenFunctions();
     }
