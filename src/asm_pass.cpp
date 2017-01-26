@@ -474,13 +474,13 @@ void AsmMethodPass::visitLoad(ir_node *node) {
 
   // 1)
   bb->pushInstr(Asm::makeMov(Asm::getRegMode(pred), getNodeOp(pred),
-                             Asm::Op(Asm::RegName::bx, predRegMode), "1)"));
+                             Asm::Op(Asm::RegName::bx, predRegMode), "1) Load"));
   // 2)
   bb->pushInstr(Asm::makeMov(Asm::getRegMode(succ),
                              Asm::Op(Asm::RegName::bx, predRegMode, 0),
-                             Asm::Op(Asm::RegName::cx, succRegMode), "2)"));
+                             Asm::Op(Asm::RegName::cx, succRegMode), "2) Load"));
   // 3)
-  bb->pushInstr(Asm::Movq, Asm::rcx(), getNodeOp(succ), "3)");
+  bb->pushInstr(Asm::Movq, Asm::rcx(), getNodeOp(succ), "3) Load");
 }
 
 void AsmMethodPass::visitStore(ir_node *node) {
@@ -501,7 +501,7 @@ void AsmMethodPass::visitStore(ir_node *node) {
    * 2) write SOURCE value into address in tmp register.
    */
 
-  bb->pushInstr(Asm::makeMov(Asm::getRegMode(dest), getNodeOp(dest), Asm::rbx(), "1)"));
+  bb->pushInstr(Asm::makeMov(Asm::getRegMode(dest), getNodeOp(dest), Asm::rbx(), "1) Store"));
 
   // rb now contains the address to write to!
   auto sourceOp = getNodeOp(source);
@@ -513,11 +513,11 @@ void AsmMethodPass::visitStore(ir_node *node) {
     bb->pushInstr(Asm::makeMov(Asm::getRegMode(dest),
                                sourceOp,
                                tmpOp,
-                               "2)"));
+                               "2) Store"));
     tmpOp = Asm::Op(tmpOp.reg.name, Asm::getRegMode(source)); // Different mode!
   }
 
-  bb->pushInstr(Asm::makeMov(Asm::getRegMode(source), tmpOp, Asm::Op(Asm::rbx(), 0), "3)"));
+  bb->pushInstr(Asm::makeMov(Asm::getRegMode(source), tmpOp, Asm::Op(Asm::rbx(), 0), "3) Store"));
 }
 
 void AsmMethodPass::visitPhi(ir_node *node) {
