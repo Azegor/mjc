@@ -283,6 +283,23 @@ void AsmArrayOptimizer::optimizeBlock(Asm::BasicBlock *block) {
         block->removeFlattenedInstr(i);
         this->optimizations ++;
       }
+
+      // Case 2:
+      // mov const, reg
+      // mov (reg), reg
+      // to
+      // mov const(reg), reg
+      if (mov1->ops[0].type == Asm::OP_IMM &&
+          mov1->ops[1].type == Asm::OP_REG &&
+          mov2->ops[0].type == Asm::OP_IND &&
+          mov2->ops[0].ind.base == mov1->ops[1].reg.name) {
+
+        // change op1 of mov2
+        mov2->ops[0].ind.offset = mov1->ops[0].imm.value;
+
+        this->optimizations ++;
+        block->removeFlattenedInstr(i); // remove Add
+      }
     }
   }
 }
