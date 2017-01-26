@@ -76,3 +76,12 @@ public:
   void optimizeBlock(Asm::BasicBlock *block) override;
   void printOptimizations() override;
 };
+
+
+// ====================================================================
+class AsmAliasOptimizer : public AsmBlockOptimizer {
+public:
+  AsmAliasOptimizer(Asm::Program *program) : AsmBlockOptimizer(program) {}
+  void optimizeBlock(Asm::BasicBlock *block) override;
+  void printOptimizations() override;
+};

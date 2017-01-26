@@ -268,7 +268,7 @@ void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
   // mov c(reg2), reg1
   // and change that to
   // mov (reg1), reg1
-  // which look dumb but works.
+  // which looks dumb but works.
   for (size_t i = 0; i < block->flattenedInstrs.size() - 1; i ++) {
     auto mov1 = &block->flattenedInstrs.at(i);
     auto mov2 = &block->flattenedInstrs.at(i + 1);
@@ -284,7 +284,6 @@ void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
       this->optimizations ++;
     }
   }
-
 }
 
 void AsmMovOptimizer::printOptimizations() {
@@ -438,4 +437,68 @@ void AsmArithOptimizer::optimizeBlock(Asm::BasicBlock *block) {
 
 void AsmArithOptimizer::printOptimizations() {
   std::cout << "Removed " << this->optimizations << " arithmethic operations" << std::endl;
+}
+
+// ====================================================================
+void AsmAliasOptimizer::optimizeBlock(Asm::BasicBlock *block) {
+  // Look for
+  // mov reg1, reg2
+  // instr reg2
+  // and replace it with
+  // instr reg1
+  for (size_t i = 0; i < block->flattenedInstrs.size() - 1; i ++) {
+    auto mov1 = &block->flattenedInstrs.at(i);
+
+    if (mov1->isMov() &&
+        mov1->ops[0].type == Asm::OP_REG &&
+        mov1->ops[1].type == Asm::OP_REG) {
+
+      auto srcRegName = mov1->ops[0].reg.name;
+      auto dstRegName = mov1->ops[1].reg.name;
+
+      if (dstRegName == Asm::RegName::di ||
+          dstRegName == Asm::RegName::si) {
+        // These are special for function calls!
+        continue;
+      }
+
+      bool removeInstr = false;
+
+
+      for (size_t x = i + 1; x < block->flattenedInstrs.size() - 1; x ++) {
+        auto instr2 = &block->flattenedInstrs.at(x);
+        if (touchesReg(instr2, srcRegName)) {
+          removeInstr = false;
+          break;
+        }
+        if (touchesReg(instr2, dstRegName)) {
+          break;
+        }
+
+        if (instr2->nOps == 0)
+          continue;
+
+        // Replace dstRegName with srcRegName
+        for (int opIdx = 0; opIdx < instr2->nOps; opIdx ++) {
+         if ((instr2->ops[opIdx].type == Asm::OP_REG &&
+               instr2->ops[opIdx].reg.name == dstRegName)) {
+            instr2->ops[opIdx].reg.name = srcRegName;
+          } else if (instr2->ops[opIdx].type == Asm::OP_IND &&
+                     instr2->ops[opIdx].ind.base == dstRegName) {
+            instr2->ops[opIdx].ind.base = srcRegName;
+          }
+        }
+        removeInstr = true;
+      }
+
+      if (removeInstr) {
+        block->removeFlattenedInstr(i);
+        this->optimizations ++;
+      }
+    }
+  }
+}
+
+void AsmAliasOptimizer::printOptimizations() {
+  std::cout << "Removed " << this->optimizations << " mov reg reg operations" << std::endl;
 }
