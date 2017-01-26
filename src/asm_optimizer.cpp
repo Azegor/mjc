@@ -161,7 +161,8 @@ static bool touchesReg(Asm::Instr *instr, Asm::RegName reg) {
     if (instr->ops[0].type == Asm::OP_REG &&
         instr->ops[0].reg.name == reg) {
       if (instr->mnemonic == Asm::Inc ||
-          instr->mnemonic == Asm::Dec) {
+          instr->mnemonic == Asm::Dec ||
+          instr->mnemonic == Asm::Div) {
         // modify their first op
         return true;
       }
@@ -261,6 +262,29 @@ void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
       }
     }
   }
+
+  // Look for
+  // mov reg1, reg2
+  // mov c(reg2), reg1
+  // and change that to
+  // mov (reg1), reg1
+  // which look dumb but works.
+  for (size_t i = 0; i < block->flattenedInstrs.size() - 1; i ++) {
+    auto mov1 = &block->flattenedInstrs.at(i);
+    auto mov2 = &block->flattenedInstrs.at(i + 1);
+
+    if (mov1->isMov() && mov2->isMov() &&
+        mov1->ops[0].type == Asm::OP_REG &&
+        mov1->ops[1].type == Asm::OP_REG &&
+        mov2->ops[0].type == Asm::OP_IND &&
+        mov2->ops[1].type == Asm::OP_REG &&
+        mov2->ops[0].ind.base == mov1->ops[1].reg.name) {
+      mov2->ops[0].ind.base = mov1->ops[0].reg.name;
+      block->removeFlattenedInstr(i);
+      this->optimizations ++;
+    }
+  }
+
 }
 
 void AsmMovOptimizer::printOptimizations() {
