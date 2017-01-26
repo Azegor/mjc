@@ -290,30 +290,3 @@ void AsmArrayOptimizer::optimizeBlock(Asm::BasicBlock *block) {
 void AsmArrayOptimizer::printOptimizations() {
   std::cout << "Replaced " << this->optimizations << " mov/add with just movs" << std::endl;
 }
-
-// ====================================================================
-void AsmAliasOptimizer::optimizeBlock(Asm::BasicBlock *block) {
-  (void)block;
-#if 0
-  for (size_t i = 0; i < block->instructions.size(); i ++) {
-    auto mov = dynamic_cast<Asm::Mov*>(block->instructions.at(i).get());
-    if (mov) {
-      auto reg1 = dynamic_cast<Asm::Register*>(mov->src.get());
-      auto reg2 = dynamic_cast<Asm::Register*>(mov->dest.get());
-
-      if (reg1 && reg2) {
-        for (size_t x = i; x < block->instructions.size(); x ++) {
-
-        }
-
-      }
-
-    }
-  }
-#endif
-}
-
-
-void AsmAliasOptimizer::printOptimizations() {
-  std::cout << "Removed " << this->optimizations << " redundant movs" << std::endl;
-}
