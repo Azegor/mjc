@@ -224,7 +224,7 @@ void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
   // Walk instruction list backwards and remove unnecessary movs like
   // mov slot, reg
   // (instruction not touching reg)
-  // miov slot, reg
+  // mov slot, reg
   const int MAX_LOOKBEHIND = 3;
   for (size_t i = block->flattenedInstrs.size() - 1; i > 0; i --) {
     auto instr1 = &block->flattenedInstrs.at(i);
@@ -314,13 +314,47 @@ void AsmArrayOptimizer::optimizeBlock(Asm::BasicBlock *block) {
           // mov const(reg1), reg2
           mov2->ops[0].ind.offset = offset;
           removeInstr = true;
-        }
+        } else if (touchesReg(mov2, regName))
+          break;
+      }
+    } else if (mov1->mnemonic == Asm::Inc &&
+               mov1->ops[0].type == Asm::OP_REG) {
 
-        else if (touchesReg(mov2, regName))
+      auto regName = mov1->ops[0].reg.name;
+      auto regMode = mov1->ops[0].reg.mode;
+      for (int l = 1; l <= MAX_LOOKAHEAD; l ++) {
+        if (i + l >= block->flattenedInstrs.size()) break;
+        auto mov2 = &block->flattenedInstrs.at(i + l);
+
+        if (mov2->isMov() &&
+            mov2->ops[0].type != Asm::OP_IND &&
+            mov2->ops[1].type == Asm::OP_IND &&
+            mov2->ops[1].ind.base == regName &&
+            mov2->ops[1].ind.offset == 0) {
+          // Case:
+          // inc reg
+          // mov op, (reg)
+          // which is just longer for
+          // mov op, 1(reg)
+          mov2->ops[1] = Asm::Op(regName, regMode, 1);
+
+          removeInstr = true;
+        } else if (mov2->isMov() &&
+                   mov2->ops[0].type == Asm::OP_IND &&
+                   mov2->ops[0].ind.base == regName) {
+          // Case 2:
+          // inc reg1
+          // mov (reg1), reg2
+          // to
+          // mov 1(reg1), reg2
+          mov2->ops[0].ind.offset = 1;
+          removeInstr = true;
+        } else if (touchesReg(mov2, regName))
           break;
       }
 
     }
+
 
     if (removeInstr) {
       block->removeFlattenedInstr(i);
