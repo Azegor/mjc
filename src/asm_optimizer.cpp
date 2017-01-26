@@ -192,6 +192,59 @@ void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
       }
     }
   }
+
+  // Walk instruction list backwards and remove unnecessary movs like
+  // mov slot, reg
+  // (instruction not touching reg)
+  // miov slot, reg
+  for (size_t i = block->flattenedInstrs.size() - 1; i > 0; i --) {
+    auto instr1 = &block->flattenedInstrs.at(i);
+    auto instr2 = &block->flattenedInstrs.at(i - 1); // !!!
+
+    if (instr1->isMov() &&
+        instr1->ops[0].type == Asm::OP_IND &&
+        instr1->ops[1].type == Asm::OP_REG) {
+      // instr1: mov slot, reg
+
+      if (instr2->nOps >= 1) {
+          // instr reg[, op2]
+        if (instr2->ops[0].type == Asm::OP_REG &&
+            instr2->ops[0].reg.name == instr1->ops[1].reg.name) {
+          if (instr2->mnemonic == Asm::Inc ||
+              instr2->mnemonic == Asm::Dec) {
+            // modify their first op
+            continue;
+          }
+        }
+
+        if (instr2->nOps == 2) {
+          // If an instruction has 2 operands, the second one is always modified unless...
+          if (instr2->mnemonic != Asm::Cmp &&
+              instr2->ops[1].type == Asm::OP_REG &&
+              (instr2->ops[1].reg.name == instr1->ops[1].reg.name ||
+               instr2->ops[1].reg.name == instr1->ops[0].ind.base)) {
+            continue;
+          }
+
+          // Here we know insrt2 does not modify our register, so check the next one...
+          if (i <= 1) continue;
+
+          auto instr3 = &block->flattenedInstrs.at(i - 2);
+          if (instr3->isMov() &&
+              instr3->ops[0].type == Asm::OP_IND &&
+              instr3->ops[0].ind.base == instr1->ops[0].ind.base &&
+              instr3->ops[0].ind.offset == instr1->ops[0].ind.offset &&
+              instr3->ops[1].type == Asm::OP_REG &&
+              instr3->ops[1].reg.name == instr1->ops[1].reg.name) {
+            // Ok, remove inst1.
+            block->removeFlattenedInstr(i);
+            this->optimizations ++;
+            continue;
+          }
+        }
+      }
+    }
+  }
 }
 
 void AsmMovOptimizer::printOptimizations() {
@@ -219,10 +272,6 @@ void AsmArrayOptimizer::optimizeBlock(Asm::BasicBlock *block) {
           mov2->ops[1].type == Asm::OP_IND &&
           mov2->ops[1].ind.base == mov1->ops[1].reg.name &&
           mov2->ops[1].ind.offset == 0) {
-        std::cout << __FUNCTION__ << ": " << *mov1 << " / " << *mov2 << std::endl;
-
-        //continue;
-
 
         int val = mov1->ops[0].imm.value;
         auto regName = mov1->ops[1].reg.name;
