@@ -256,7 +256,6 @@ bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs,
 
       AsmMovOptimizer opt3(program);
       opt3.run();
-      opt3.printOptimizations(); // TODO: Maybe add -g or something for these?
 
       AsmStackOptimizer opt4(program);
       opt4.run();
@@ -266,9 +265,14 @@ bool Compiler::lowerFirmGraphs(std::vector<ir_graph*> &graphs, bool printGraphs,
       opt5.run();
       opt5.printOptimizations();
 
-      AsmMovOptimizer opt6(program); // MovOptimizer again
-      opt6.run();
-      opt6.printOptimizations();
+      opt3.run(); // MovOptimizer again
+      opt3.printOptimizations();
+
+
+      AsmArithOptimizer opt7(program);
+      opt7.run();
+      opt7.printOptimizations();
+
     } else {
       program->flattenFunctions();
     }

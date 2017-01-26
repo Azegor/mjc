@@ -68,3 +68,11 @@ public:
   void optimizeBlock(Asm::BasicBlock *block) override;
   void printOptimizations() override;
 };
+
+// ====================================================================
+class AsmArithOptimizer : public AsmBlockOptimizer {
+public:
+  AsmArithOptimizer(Asm::Program *program) : AsmBlockOptimizer(program) {}
+  void optimizeBlock(Asm::BasicBlock *block) override;
+  void printOptimizations() override;
+};

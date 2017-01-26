@@ -290,3 +290,52 @@ void AsmArrayOptimizer::optimizeBlock(Asm::BasicBlock *block) {
 void AsmArrayOptimizer::printOptimizations() {
   std::cout << "Replaced " << this->optimizations << " mov/add with just movs" << std::endl;
 }
+
+// ====================================================================
+void AsmArithOptimizer::optimizeBlock(Asm::BasicBlock *block) {
+  for (size_t i = 0; i < block->flattenedInstrs.size() - 1; i ++) {
+    auto instr1 = &block->flattenedInstrs.at(i);
+    auto instr2 = &block->flattenedInstrs.at(i + 1);
+
+
+    if (instr1->mnemonic == Asm::Add && instr2->mnemonic == Asm::Sub) {
+      if (instr1->ops[0].type == Asm::OP_IMM &&
+          instr1->ops[1].type == Asm::OP_REG &&
+          instr2->ops[0].type == Asm::OP_IMM &&
+          instr2->ops[1].type == Asm::OP_REG &&
+          instr1->ops[1].reg.name == instr2->ops[1].reg.name) {
+        // add const1, reg
+        // sub const2, reg
+        if (instr1->ops[0].imm.value == instr2->ops[0].imm.value) {
+          // const1 == const2, remove both instructions.
+          block->removeFlattenedInstr(i + 1);
+          block->removeFlattenedInstr(i);
+          this->optimizations += 2;
+          continue;
+        } else {
+          // const1 != const2, remove one instruction and replace the other one
+          // with a single add/sub
+          int diff = instr1->ops[0].imm.value - instr2->ops[0].imm.value;
+          block->removeFlattenedInstr(i + 1);
+          if (diff < 0) {
+            block->replaceFlattenedInstr(i, Asm::Instr(Asm::Sub,
+                                                       Asm::Op(-diff),
+                                                       Asm::Op(instr1->ops[1].reg.name,
+                                                               instr1->ops[1].reg.mode)));
+          } else {
+            block->replaceFlattenedInstr(i, Asm::Instr(Asm::Add,
+                                                       Asm::Op(diff),
+                                                       Asm::Op(instr1->ops[1].reg.name,
+                                                               instr1->ops[1].reg.mode)));
+          }
+          this->optimizations ++;
+        }
+      }
+    }
+
+  }
+}
+
+void AsmArithOptimizer::printOptimizations() {
+  std::cout << "Removed " << this->optimizations << " arithmethic operations" << std::endl;
+}
