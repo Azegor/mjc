@@ -152,6 +152,34 @@ void AsmSimpleOptimizer::printOptimizations() {
 //
 // into just
 // mov reg, slot
+
+static bool touchesReg(Asm::Instr *instr, Asm::RegName reg) {
+  if (instr->nOps == 0) return false;
+
+  if (instr->nOps >= 1) {
+      // instr reg[, op2]
+    if (instr->ops[0].type == Asm::OP_REG &&
+        instr->ops[0].reg.name == reg) {
+      if (instr->mnemonic == Asm::Inc ||
+          instr->mnemonic == Asm::Dec) {
+        // modify their first op
+        return true;
+      }
+    }
+  }
+
+  if (instr->nOps == 2) {
+    // If an instruction has 2 operands, the second one is always modified unless Cmp
+    if (instr->mnemonic != Asm::Cmp &&
+        instr->ops[1].type == Asm::OP_REG &&
+        instr->ops[1].reg.name == reg) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
   for (size_t i = 0; i < block->flattenedInstrs.size() - 1; i ++) {
     auto mov1 = &block->flattenedInstrs.at(i);
@@ -197,50 +225,38 @@ void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
   // mov slot, reg
   // (instruction not touching reg)
   // miov slot, reg
+  const int MAX_LOOKBEHIND = 3;
   for (size_t i = block->flattenedInstrs.size() - 1; i > 0; i --) {
     auto instr1 = &block->flattenedInstrs.at(i);
-    auto instr2 = &block->flattenedInstrs.at(i - 1); // !!!
 
     if (instr1->isMov() &&
         instr1->ops[0].type == Asm::OP_IND &&
         instr1->ops[1].type == Asm::OP_REG) {
       // instr1: mov slot, reg
 
-      if (instr2->nOps >= 1) {
-          // instr reg[, op2]
-        if (instr2->ops[0].type == Asm::OP_REG &&
-            instr2->ops[0].reg.name == instr1->ops[1].reg.name) {
-          if (instr2->mnemonic == Asm::Inc ||
-              instr2->mnemonic == Asm::Dec) {
-            // modify their first op
-            continue;
-          }
+      for (int l = 1; l <= MAX_LOOKBEHIND; l ++) {
+        int idx = i - l;
+        if (idx < 0) {
+          break;
         }
+        auto instr2 = &block->flattenedInstrs.at(idx);
+        bool sameMov = instr2->isMov() &&
+                       instr2->ops[0].type == Asm::OP_IND &&
+                       instr2->ops[0].ind.base == instr1->ops[0].ind.base &&
+                       instr2->ops[0].ind.offset == instr1->ops[0].ind.offset &&
+                       instr2->ops[1].type == Asm::OP_REG &&
+                       instr2->ops[1].reg.name == instr1->ops[1].reg.name;
+        if (!sameMov &&
+            (touchesReg(instr2, instr1->ops[1].reg.name) ||
+            touchesReg(instr2, instr1->ops[0].ind.base)))
+          break;
 
-        if (instr2->nOps == 2) {
-          // If an instruction has 2 operands, the second one is always modified unless...
-          if (instr2->mnemonic != Asm::Cmp &&
-              instr2->ops[1].type == Asm::OP_REG &&
-              (instr2->ops[1].reg.name == instr1->ops[1].reg.name ||
-               instr2->ops[1].reg.name == instr1->ops[0].ind.base)) {
-            continue;
-          }
-
-          // Here we know insrt2 does not modify our register, so check the next one...
-          if (i <= 1) continue;
-
-          auto instr3 = &block->flattenedInstrs.at(i - 2);
-          if (instr3->isMov() &&
-              instr3->ops[0].type == Asm::OP_IND &&
-              instr3->ops[0].ind.base == instr1->ops[0].ind.base &&
-              instr3->ops[0].ind.offset == instr1->ops[0].ind.offset &&
-              instr3->ops[1].type == Asm::OP_REG &&
-              instr3->ops[1].reg.name == instr1->ops[1].reg.name) {
-            // Ok, remove inst1.
-            block->removeFlattenedInstr(i);
-            this->optimizations ++;
-            continue;
-          }
+        // instr2 doesn't modify reg
+        if (sameMov) {
+          // Ok, remove inst1.
+          block->removeFlattenedInstr(i);
+          this->optimizations ++;
+          continue;
         }
       }
     }
