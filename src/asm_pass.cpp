@@ -196,10 +196,13 @@ void AsmMethodPass::visitDiv(ir_node *node) {
 
   // division result is in rax
   ir_node *succ = getSucc(node, iro_Proj, mode_Ls);
-  assert(is_Proj(succ));
-  bb->pushInstr(Asm::Movq,
-                Asm::Op(Asm::RegName::ax, regMode),
-                getNodeOp(succ));
+  // no successor if the div result is unused
+  if (succ != nullptr) {
+    assert(is_Proj(succ));
+    bb->pushInstr(Asm::Movq,
+                  Asm::Op(Asm::RegName::ax, regMode),
+                  getNodeOp(succ));
+  }
 }
 
 void AsmMethodPass::visitMod(ir_node *node) {
@@ -241,12 +244,15 @@ void AsmMethodPass::visitMod(ir_node *node) {
   // Div only takes one argument, divides rax by that and stores the result in rax
   bb->pushInstr(Asm::Div, Asm::rcx());
 
-  // division result is in rax
+  // division rest is in rdx
   ir_node *succ = getSucc(node, iro_Proj, mode_Ls);
   assert(is_Proj(succ));
-  bb->pushInstr(Asm::Movq,
-                Asm::Op(Asm::RegName::dx, regMode),
-                getNodeOp(succ));
+  // no successor if the div result is unused
+  if (succ != nullptr) {
+    bb->pushInstr(Asm::Movq,
+                  Asm::Op(Asm::RegName::dx, regMode),
+                  getNodeOp(succ));
+  }
 }
 
 void AsmMethodPass::visitMul(ir_node *node) {
