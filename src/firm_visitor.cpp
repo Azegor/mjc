@@ -539,56 +539,61 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
       pushRequiresNonBool();
       expr.getLeft()->accept(this);
       auto leftNode = popNode();
+      ir_node *leftVal;
+      if (op != ast::BinaryExpression::Op::Assign) {
+        leftVal = leftNode->load(); // enforce correct evaluation order!
+        // don't make a load for the Assign case, since we will do a store later instead!
+      }
       expr.getRight()->accept(this);
       auto rightNode = popNode();
+      auto rightVal = rightNode->load();
       ir_node* outNode = nullptr;
       bool is_boolean = false;
       popRequiresBoolInfo();
 
-      switch (expr.getOperation()) {
+      switch (op) {
         case ast::BinaryExpression::Op::Assign: {
-          auto rightVal = rightNode->load();
           leftNode->store(rightVal);
           outNode = rightVal;
           break;
         }
         case ast::BinaryExpression::Op::Equals:
-          outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_equal));
+          outNode = new_Cond(new_Cmp(leftVal, rightVal, ir_relation_equal));
           is_boolean = true;
           break;
         case ast::BinaryExpression::Op::NotEquals:
-          outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_greater));
+          outNode = new_Cond(new_Cmp(leftVal, rightVal, ir_relation_less_greater));
           is_boolean = true;
           break;
         case ast::BinaryExpression::Op::Less:
-          outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less));
+          outNode = new_Cond(new_Cmp(leftVal, rightVal, ir_relation_less));
           is_boolean = true;
           break;
         case ast::BinaryExpression::Op::LessEquals:
-          outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_less_equal));
+          outNode = new_Cond(new_Cmp(leftVal, rightVal, ir_relation_less_equal));
           is_boolean = true;
           break;
         case ast::BinaryExpression::Op::Greater:
-          outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_greater));
+          outNode = new_Cond(new_Cmp(leftVal, rightVal, ir_relation_greater));
           is_boolean = true;
           break;
         case ast::BinaryExpression::Op::GreaterEquals:
-          outNode = new_Cond(new_Cmp(leftNode->load(), rightNode->load(), ir_relation_greater_equal));
+          outNode = new_Cond(new_Cmp(leftVal, rightVal, ir_relation_greater_equal));
           is_boolean = true;
           break;
         case ast::BinaryExpression::Op::Plus:
-          outNode = new_Add(leftNode->load(), rightNode->load());
+          outNode = new_Add(leftVal, rightVal);
           break;
         case ast::BinaryExpression::Op::Minus:
-          outNode = new_Sub(leftNode->load(), rightNode->load());
+          outNode = new_Sub(leftVal, rightVal);
           break;
         case ast::BinaryExpression::Op::Mul:
-          outNode = new_Mul(leftNode->load(), rightNode->load());
+          outNode = new_Mul(leftVal, rightVal);
           break;
         case ast::BinaryExpression::Op::Div: {
           ir_node *divNode = new_DivRL(get_store(),
-                  new_Conv(leftNode->load(), mode_Ls),
-                  new_Conv(rightNode->load(), mode_Ls),
+                  new_Conv(leftVal, mode_Ls),
+                  new_Conv(rightVal, mode_Ls),
                   op_pin_state_pinned);
           set_store(new_Proj(divNode, mode_M, pn_Div_M));
           ir_node *resNode = new_Proj(divNode, mode_Ls, pn_Div_res);
@@ -597,8 +602,8 @@ void FirmVisitor::visitBinaryExpression(ast::BinaryExpression &expr) {
         }
         case ast::BinaryExpression::Op::Mod: {
           ir_node *modNode = new_Mod(get_store(),
-                  new_Conv(leftNode->load(), mode_Ls),
-                  new_Conv(rightNode->load(), mode_Ls),
+                  new_Conv(leftVal, mode_Ls),
+                  new_Conv(rightVal, mode_Ls),
                   op_pin_state_pinned);
           set_store(new_Proj(modNode, mode_M, pn_Mod_M));
           ir_node *resNode = new_Proj(modNode, mode_Ls, pn_Mod_res);

@@ -27,15 +27,14 @@ public:
 class VarValue : public Value {
   size_t varIndex;
   ir_mode *mode;
-  ir_node *loadValue;
 public:
-  VarValue(size_t index, ir_mode *mode) : varIndex(index), mode(mode), loadValue(get_value(varIndex, mode)) {
+  VarValue(size_t index, ir_mode *mode) : varIndex(index), mode(mode) {
     assert(mode);
   }
   VarValue(size_t index, ir_type *type)
   : VarValue(index, get_type_mode(type)) {}
   ir_node *load() override {
-    return loadValue;
+    return get_value(varIndex, mode);
   }
   void store(ir_node *val) override {
     set_value(varIndex, val);
