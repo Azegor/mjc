@@ -184,8 +184,17 @@ static bool touchesReg(Asm::Instr *instr, Asm::RegName reg) {
 
 void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
   for (size_t i = 0; i < block->flattenedInstrs.size() - 1; i ++) {
+    int k = 1;
     auto mov1 = &block->flattenedInstrs.at(i);
-    auto mov2 = &block->flattenedInstrs.at(i + 1);
+    auto mov2 = &block->flattenedInstrs.at(i + k);
+
+    if (!mov2->isMov() && i + 2 < block->flattenedInstrs.size()) {
+      if (mov1->isMov() && mov1->ops[0].type == Asm::OP_REG &&
+          !touchesReg(mov2, mov1->ops[0].reg.name)) {
+        k = 2;
+        mov2 = &block->flattenedInstrs.at(i + k);
+      }
+    }
 
     if (mov1->isMov() && mov2->isMov()) {
 
@@ -203,7 +212,7 @@ void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
             // mov reg, slot
             // mov slot, reg
             // -> Just remove the second mov!
-            block->removeFlattenedInstr(i + 1);
+            block->removeFlattenedInstr(i + k);
             this->optimizations ++;
 
             continue;
@@ -213,7 +222,7 @@ void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
           // mov reg1, slot
           // mov slot, reg2
           // -> replace second mov with mov from first reg to second reg
-          block->replaceFlattenedInstr(i + 1, Asm::makeMov(mov2->ops[1].reg.mode,
+          block->replaceFlattenedInstr(i + k, Asm::makeMov(mov2->ops[1].reg.mode,
                                                            Asm::Op(mov1->ops[0].reg.name,
                                                                    mov2->ops[1].reg.mode),
                                                            mov2->ops[1]));
