@@ -162,7 +162,8 @@ static bool touchesReg(Asm::Instr *instr, Asm::RegName reg) {
         instr->ops[0].reg.name == reg) {
       if (instr->mnemonic == Asm::Inc ||
           instr->mnemonic == Asm::Dec ||
-          instr->mnemonic == Asm::Div) {
+          instr->mnemonic == Asm::Div ||
+          instr->mnemonic == Asm::Neg) {
         // modify their first op
         return true;
       }
