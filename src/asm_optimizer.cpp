@@ -183,53 +183,68 @@ static bool touchesReg(Asm::Instr *instr, Asm::RegName reg) {
 }
 
 void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
+  // Look for
+  // mov slot, reg
+  // mov reg, slot
+  // and remove the second mov
   for (size_t i = 0; i < block->flattenedInstrs.size() - 1; i ++) {
-    int k = 1;
     auto mov1 = &block->flattenedInstrs.at(i);
-    auto mov2 = &block->flattenedInstrs.at(i + k);
+    auto mov2 = &block->flattenedInstrs.at(i + 1);
 
-    if (!mov2->isMov() && i + 2 < block->flattenedInstrs.size()) {
-      if (mov1->isMov() && mov1->ops[0].type == Asm::OP_REG &&
-          !touchesReg(mov2, mov1->ops[0].reg.name)) {
-        k = 2;
-        mov2 = &block->flattenedInstrs.at(i + k);
+    if (mov1->isMov() && mov2->isMov() &&
+        mov1->ops[0].type == Asm::OP_REG &&
+        mov1->ops[1].type == Asm::OP_IND &&
+        mov2->ops[0].type == Asm::OP_IND &&
+        mov2->ops[1].type == Asm::OP_REG) {
+      // mov reg1, slot1
+      // mov slot2, reg2
+      if (mov1->ops[1].ind.base == mov2->ops[0].ind.base &&
+          mov1->ops[1].ind.offset == mov2->ops[0].ind.offset &&
+          mov1->ops[0].reg.name == mov2->ops[1].reg.name) {
+        // the 2 slots are the same
+        block->removeFlattenedInstr(i + 1);
+        this->optimizations ++;
+
+        continue;
       }
     }
 
-    if (mov1->isMov() && mov2->isMov()) {
+  }
 
-      if (mov1->ops[0].type == Asm::OP_REG &&
-          mov1->ops[1].type == Asm::OP_IND &&
-          mov2->ops[0].type == Asm::OP_IND &&
-          mov2->ops[1].type == Asm::OP_REG) {
-        // mov reg1, slot1
-        // mov slot2, reg2
-        if (mov1->ops[1].ind.base == mov2->ops[0].ind.base &&
-            mov1->ops[1].ind.offset == mov2->ops[0].ind.offset) {
-          // the 2 slots are the same
 
-          if (mov1->ops[0].reg.name == mov2->ops[1].reg.name) {
-            // mov reg, slot
-            // mov slot, reg
-            // -> Just remove the second mov!
-            block->removeFlattenedInstr(i + k);
-            this->optimizations ++;
+  // Look for
+  // mov reg1, slot
+  // mov slot, reg2
+  // and replace it with
+  // mov reg1, slot
+  // mov reg1, reg
+  for (size_t i = 0; i < block->flattenedInstrs.size() - 1; i ++) {
+    auto mov1 = &block->flattenedInstrs.at(i);
+    auto mov2 = &block->flattenedInstrs.at(i + 1);
 
-            continue;
-          }
+    if (mov1->isMov() && mov2->isMov() &&
+        mov1->ops[0].type == Asm::OP_REG &&
+        mov1->ops[1].type == Asm::OP_IND &&
+        mov2->ops[0].type == Asm::OP_IND &&
+        mov2->ops[1].type == Asm::OP_REG) {
+      // mov reg1, slot1
+      // mov slot2, reg2
+      if (mov1->ops[1].ind.base == mov2->ops[0].ind.base &&
+          mov1->ops[1].ind.offset == mov2->ops[0].ind.offset &&
+          mov1->ops[0].reg.name != mov2->ops[1].reg.name) {
+        // the 2 slots are the same, but the registers aren't!
 
-          // the 2 registers are *not* the same.
-          // mov reg1, slot
-          // mov slot, reg2
-          // -> replace second mov with mov from first reg to second reg
-          block->replaceFlattenedInstr(i + k, Asm::makeMov(mov2->ops[1].reg.mode,
-                                                           Asm::Op(mov1->ops[0].reg.name,
-                                                                   mov2->ops[1].reg.mode),
-                                                           mov2->ops[1]));
-          this->optimizations ++;
-        }
+        block->replaceFlattenedInstr(i + 1,
+                                     Asm::makeMov(mov2->ops[1].reg.mode,
+                                                  Asm::Op(mov1->ops[0].reg.name,
+                                                          mov2->ops[1].reg.mode),
+                                                  mov2->ops[1]));
+        this->optimizations ++;
+
+
       }
     }
+
   }
 
   // Walk instruction list backwards and remove unnecessary movs like
