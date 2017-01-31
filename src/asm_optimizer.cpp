@@ -233,7 +233,8 @@ void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
 
     if (instr1->isMov() &&
         instr1->ops[0].type == Asm::OP_IND &&
-        instr1->ops[1].type == Asm::OP_REG) {
+        instr1->ops[1].type == Asm::OP_REG &&
+        instr1->ops[0].ind.base != instr1->ops[1].reg.name) {
       // instr1: mov slot, reg
 
       for (int l = 1; l <= MAX_LOOKBEHIND; l ++) {
@@ -268,7 +269,7 @@ void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
   // mov reg1, reg2
   // mov c(reg2), reg1
   // and change that to
-  // mov (reg1), reg1
+  // mov c(reg1), reg1
   // which looks dumb but works.
   for (size_t i = 0; i < block->flattenedInstrs.size() - 1; i ++) {
     auto mov1 = &block->flattenedInstrs.at(i);
