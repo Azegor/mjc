@@ -286,6 +286,29 @@ void AsmMovOptimizer::optimizeBlock(Asm::BasicBlock *block) {
       this->optimizations ++;
     }
   }
+
+  // Look for
+  // mov slot, reg1,
+  // mov reg1, reg2
+  for (size_t i = 0; i < block->flattenedInstrs.size() - 1; i ++) {
+    auto mov1 = &block->flattenedInstrs.at(i);
+    auto mov2 = &block->flattenedInstrs.at(i + 1);
+
+    if (mov1->isMov() &&
+        mov2->isMov() &&
+        mov1->ops[0].type == Asm::OP_IND &&
+        mov1->ops[1].type == Asm::OP_REG &&
+        mov2->ops[0].type == Asm::OP_REG &&
+        mov2->ops[1].type == Asm::OP_REG &&
+        mov1->ops[1].reg.name == mov2->ops[0].reg.name) {
+
+      mov1->ops[1].reg.name = mov2->ops[1].reg.name;
+      block->removeFlattenedInstr(i + 1);
+      this->optimizations ++;
+      continue;
+    }
+  }
+
 }
 
 void AsmMovOptimizer::printOptimizations() {
