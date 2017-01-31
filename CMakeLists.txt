@@ -94,7 +94,8 @@ target_link_libraries(mjc ${Boost_LIBRARIES} ${JEMALLOC_LIBRARIES} ${libfirm_LIB
 
 add_custom_target(mjtest
 	COMMAND env "ASAN_OPTIONS=detect_leaks=0" "${CMAKE_CURRENT_SOURCE_DIR}/mjtest/mjt.py" all --parallel $<TARGET_FILE:mjc> 
-	COMMAND env "ASAN_OPTIONS=detect_leaks=0" "${CMAKE_CURRENT_SOURCE_DIR}/mjtest/mjt.py" all --parallel --only_incorrect_tests $<TARGET_FILE:mjc> 
+	COMMAND env "ASAN_OPTIONS=detect_leaks=0" "${CMAKE_CURRENT_SOURCE_DIR}/mjtest/mjt.py" all --parallel --only_incorrect_tests $<TARGET_FILE:mjc>
+	DEPENDS mjc	
 	VERBATIM)
 
 set(ENABLE_FUZZING OFF CACHE BOOL "Enable building off fuzzer binaries")
